@@ -1,0 +1,14 @@
+# Evergrove Wellness - platform showcase.
+#
+# A separate Worker from cosmic-intake on purpose. It has no D1 database, no
+# R2 bucket and no email key, so nothing here can read or write the live
+# intake records. All sample data lives in the visitor's own browser.
+name = "wellness-showcase"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
+
+# To serve it on your own domain instead of workers.dev, uncomment and edit:
+# routes = [{ pattern = "showcase.yourdomain.com", custom_domain = true }]

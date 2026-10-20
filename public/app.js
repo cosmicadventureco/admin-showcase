@@ -1,0 +1,798 @@
+/* Evergrove Wellness showcase - the console.
+ *
+ * One page, nine views. Every view reads and writes the same small store, kept
+ * in this browser's localStorage, so a booking made on one screen shows up on
+ * the calendar, a submitted intake shows up in Clients, and so on. Nothing is
+ * sent anywhere: emails and orders are simulated and logged on screen.
+ */
+(function () {
+  'use strict';
+
+  var KEY = 'evergrove-showcase-v3';
+  var S = load();
+  var ui = {
+    view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
+    calMonth: null, quoteId: 'q1', drawer: null, intakeDone: null, simulating: false, log: []
+  };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 3) return s; }
+    } catch (e) { /* storage blocked: fall through to fresh sample data */ }
+    return EG.seed();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* keep in memory */ } }
+
+  /* ---------------------------------------------------------------- helpers */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function money(n, cents) {
+    var v = Math.round(Number(n || 0) * 100) / 100;
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: cents === false ? 0 : 2, maximumFractionDigits: cents === false ? 0 : 2 });
+  }
+  function d(isoStr) { return new Date(isoStr + 'T12:00:00'); }
+  function fmtDate(isoStr, opts) {
+    return d(isoStr).toLocaleDateString('en-US', opts || { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function fmtTime(t) {
+    var p = t.split(':'), h = +p[0];
+    return ((h % 12) || 12) + ':' + p[1] + (h < 12 ? 'am' : 'pm');
+  }
+  function initials(name) { return name.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase(); }
+  function client(id) { for (var i = 0; i < S.clients.length; i++) if (S.clients[i].id === id) return S.clients[i]; return null; }
+  function service(id) { for (var i = 0; i < EG.SERVICES.length; i++) if (EG.SERVICES[i].id === id) return EG.SERVICES[i]; return EG.SERVICES[0]; }
+  function first(name) { return String(name || '').split(' ')[0]; }
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function today() { return EG.iso(0); }
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+  function goalPills(goals) {
+    return '<span class="pills">' + goals.map(function (g) { return '<span class="pill">' + esc(EG.goalLabel(g)) + '</span>'; }).join('') + '</span>';
+  }
+  function intakePill(c) {
+    if (!c.consent) return '<span class="pill bad">No consent yet</span>';
+    if (!c.intake) return '<span class="pill warn">Consent signed, no intake</span>';
+    return '<span class="pill ok">Intake complete</span>';
+  }
+  function orderTotal(o) {
+    return o.items.reduce(function (t, it) { return t + EG.product(it[0]).price * it[1]; }, 0);
+  }
+  function orderCost(o) {
+    return o.items.reduce(function (t, it) { return t + EG.product(it[0]).cost * it[1]; }, 0);
+  }
+  function lineTotal(l) { return (Number(l[1]) || 1) * (Number(l[2]) || 0); }
+  function pitch(kind, text) {
+    return '<div class="pitch"><b>' + (kind === 'new' ? 'Custom build' : 'Proven today') + '</b><span>' + text + '</span></div>';
+  }
+  function head(eyebrow, title, lede) {
+    return '<p class="eyebrow">' + eyebrow + '</p><h1 class="h1">' + title + '</h1><p class="lede">' + lede + '</p>';
+  }
+
+  /* ---------------------------------------------------------------- views */
+  var VIEWS = {};
+
+  /* Dashboard ---------------------------------------------------------- */
+  VIEWS.dashboard = function () {
+    var t = today();
+    var week = EG.iso(7);
+    var upcoming = S.bookings.filter(function (b) { return b.date >= t && b.date <= week; });
+    var todays = S.bookings.filter(function (b) { return b.date === t; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+    var active = S.clients.filter(function (c) { return c.plan !== 'newsletter'; }).length;
+    var subs = S.clients.filter(function (c) { return c.autoship; }).length;
+    var rev = S.revenue.reduce(function (a, b) { return a + b; }, 0);
+    var last = S.revenue[S.revenue.length - 1], prev = S.revenue[S.revenue.length - 2];
+
+    var todos = [];
+    S.bookings.filter(function (b) { return b.date >= t; }).forEach(function (b) {
+      b.guests.forEach(function (g) {
+        var c = client(g);
+        if (c && (!c.consent || !c.intake)) {
+          todos.push({ kind: c.consent ? 'warn' : 'bad', text: '<b>' + esc(c.name) + '</b> ' + (c.consent ? 'has not finished the intake questionnaire' : 'has not signed consent') + ' for ' + esc(service(b.service).label) + ' on ' + fmtDate(b.date), go: 'schedule' });
+        }
+      });
+    });
+    var seen = {};
+    todos = todos.filter(function (x) { if (seen[x.text.split('</b>')[0]]) return false; seen[x.text.split('</b>')[0]] = 1; return true; }).slice(0, 4);
+    S.clients.forEach(function (c) {
+      var r = EG.recommend(c);
+      if (r.needsReview && r.flags.length) todos.push({ kind: 'warn', text: '<b>' + esc(c.name) + '</b> needs practitioner review before their plan ships (' + r.flags.map(function (f) { return { bloodthinner: 'blood thinner', pregnant: 'pregnancy', thyroid: 'thyroid' }[f]; }).join(', ') + ')', go: 'clients' });
+    });
+    S.agreements.forEach(function (a) {
+      if (a.status !== 'Signed') todos.push({ kind: 'warn', text: '<b>' + esc(a.client) + '</b> has ' + a.status.toLowerCase() + ' the ' + esc(a.title) + ' quote but not signed', go: 'agreements' });
+    });
+    var waiting = S.orders.filter(function (o) { return o.stage === 0; }).length;
+    if (waiting) todos.push({ kind: 'ok', text: waiting + ' new order' + (waiting > 1 ? 's' : '') + ' will route to suppliers automatically', go: 'shop' });
+
+    return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Evergrove',
+      'Everything that needs you, in one place: consultations, intake paperwork, orders on their way and quotes waiting on a signature.') +
+      '<div class="grid g4" data-tour="stats">' +
+      stat(active, 'Coaching clients', '+3 this month') +
+      stat(upcoming.length, 'Sessions in the next 7 days', '') +
+      stat(money(rev, false), 'Revenue, last 8 weeks', '+' + Math.round((last - prev) / prev * 100) + '% vs last week') +
+      stat(subs, 'Auto-ship subscribers', '85% retention') +
+      '</div>' +
+      '<div class="split" style="margin-top:1rem">' +
+      '<div class="card" data-tour="todo"><h3 class="h3">Needs attention</h3><div>' +
+      todos.map(function (x) { return '<div class="todo"><span class="dotmark ' + x.kind + '"></span><span class="grow">' + x.text + '</span><button class="btn ghost small" data-go="' + x.go + '">Open</button></div>'; }).join('') +
+      '</div></div>' +
+      '<div class="card chart"><h3 class="h3">Weekly revenue</h3><p class="small muted" style="margin:0 0 .6rem">Coaching, products and workshops combined</p>' + revenueChart() + '</div>' +
+      '</div>' +
+      '<h2 class="h2">Today</h2><div class="card"><div class="list">' +
+      (todays.length ? todays.map(function (b) {
+        var sv = service(b.service);
+        return '<div class="li"><span class="pill honey num">' + fmtTime(b.time) + '</span><div class="grow"><div class="title">' + esc(b.name || sv.label) + '</div><div class="meta">' +
+          esc(b.guests.map(function (g) { return client(g).name; }).join(', ')) + ' &middot; ' + esc(b.where) + '</div></div>' +
+          '<button class="btn ghost small" data-go="schedule">Roster</button></div>';
+      }).join('') : '<p class="muted" style="margin:0">Nothing booked today.</p>') +
+      '</div></div>';
+  };
+  function stat(v, label, delta) {
+    return '<div class="card stat"><b>' + v + '</b><span>' + label + '</span>' + (delta ? '<i>' + delta + '</i>' : '<i>&nbsp;</i>') + '</div>';
+  }
+  function revenueChart() {
+    var data = S.revenue, W = 460, H = 190, pl = 40, pb = 24, pt = 10, max = 6000;
+    var bw = (W - pl - 10) / data.length;
+    var y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
+    var out = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Weekly revenue, last 8 weeks">';
+    [0, 2000, 4000, 6000].forEach(function (v) {
+      out += '<line x1="' + pl + '" x2="' + (W - 6) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)" stroke-width="1"/>' +
+        '<text x="' + (pl - 6) + '" y="' + (y(v) + 3) + '" text-anchor="end">$' + (v / 1000) + 'k</text>';
+    });
+    data.forEach(function (v, i) {
+      var x = pl + i * bw + bw * 0.18, w = bw * 0.64, isLast = i === data.length - 1;
+      out += '<rect x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (y(0) - y(v)) + '" rx="3" fill="' + (isLast ? 'var(--honey)' : 'var(--sage)') + '" opacity="' + (isLast ? 1 : .55) + '"/>' +
+        '<text x="' + (x + w / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + (isLast ? 'This wk' : 'W' + (i + 1)) + '</text>';
+      if (isLast) out += '<text x="' + (x + w / 2) + '" y="' + (y(v) - 5) + '" text-anchor="middle" style="fill:var(--ink);font-weight:600">' + money(v, false) + '</text>';
+    });
+    return out + '</svg>';
+  }
+
+  /* Messages (crossover of "Send an email") ------------------------------ */
+  var KINDS = [
+    { id: 'intake', label: 'Intake link: consent + wellness questionnaire' },
+    { id: 'reminder', label: 'Intake reminder' },
+    { id: 'plan', label: 'Personalised plan + product picks' },
+    { id: 'refill', label: 'Refill reminder' },
+    { id: 'review', label: 'Review request after a session' }
+  ];
+  function template(kind, name, svc, date) {
+    var n = first(name) || 'there';
+    var when = date ? ' on ' + fmtDate(date, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+    var sv = service(svc).label;
+    switch (kind) {
+      case 'reminder': return { subject: 'A quick reminder before your ' + sv, body: 'Hi ' + n + ',\n\nWe are looking forward to your ' + sv + when + '. Your intake questionnaire is still open. It takes about four minutes and lets Maya prepare a plan before you arrive.\n\n[Finish my intake]\n\nWarmly,\nThe Evergrove team' };
+      case 'plan': return { subject: 'Your personalised wellness plan', body: 'Hi ' + n + ',\n\nThank you for sharing your goals with us. Based on your intake, here is the plan Maya put together, with the three products and videos we think will help most.\n\n[See my plan]\n\nSubscribe and save 15% on refills, delivered every 30 days.\n\nWarmly,\nMaya' };
+      case 'refill': return { subject: 'Running low? Your refill ships in 5 days', body: 'Hi ' + n + ',\n\nYour next auto-ship leaves our partner warehouse in 5 days. Need to skip, swap or pause? One tap below.\n\n[Manage my refill]\n\nThe Evergrove team' };
+      case 'review': return { subject: 'How did your session feel?', body: 'Hi ' + n + ',\n\nThank you for joining us for ' + sv + '. If it helped, a short review means a lot to a small studio like ours.\n\n[Leave a review]\n\nWith gratitude,\nMaya' };
+      default: return { subject: 'Before your ' + sv + ' with Maya', body: 'Hi ' + n + ',\n\nWe are so glad you booked your ' + sv + when + '. Before we meet, please complete two quick steps:\n\n1. Sign the wellness consent\n2. Tell us about your goals (about 4 minutes)\n\n[Start my intake]\n\nYour answers shape the personalised supplement and video plan you will receive afterwards.\n\nWarmly,\nMaya Lindqvist\nEvergrove Wellness' };
+    }
+  }
+  VIEWS.messages = function () {
+    var t = template('intake', '', 'initial', '');
+    return head('Client messaging', 'Send a message',
+      'Pick what to send and who it is for. The wording fills itself in from the template and the booking, and you can change anything before it goes.') +
+      pitch('proven', 'This is the same composer the current app uses every day to send waivers, questionnaires, reminders and review requests. Here it is retemplated for consultations, plans and refills.') +
+      '<div class="split">' +
+      '<div class="card"><div class="fields">' +
+      '<div class="wide"><label for="mKind">What to send</label><select id="mKind">' + KINDS.map(function (k) { return '<option value="' + k.id + '">' + esc(k.label) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="mTo">To</label><input id="mTo" type="text" list="mList" placeholder="Start typing a client"><datalist id="mList">' + S.clients.map(function (c) { return '<option value="' + esc(c.name) + '">'; }).join('') + '</datalist></div>' +
+      '<div><label for="mSvc">Service</label><select id="mSvc">' + EG.SERVICES.map(function (s) { return '<option value="' + s.id + '">' + esc(s.label) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="mDate">Date</label><input id="mDate" type="date" value="' + EG.iso(3) + '"></div>' +
+      '<div><label for="mWho">Address</label><input id="mWho" type="email" placeholder="filled in for you" readonly></div>' +
+      '<div class="wide"><label for="mSubject">Subject</label><input id="mSubject" type="text" value="' + esc(t.subject) + '"></div>' +
+      '<div class="wide"><label for="mBody">Message</label><textarea id="mBody" rows="12">' + esc(t.body) + '</textarea></div>' +
+      '</div><div class="row" style="margin-top:1rem"><button class="btn" id="mSend">Send it</button><button class="btn ghost" id="mSelf">Send to myself</button><span class="small muted">Showcase: nothing leaves this browser.</span></div></div>' +
+      '<div><p class="label">Preview</p><div id="mPreview"></div></div>' +
+      '</div>' +
+      '<h2 class="h2">Recently sent</h2><div class="card"><div class="list" id="mSent">' + sentList(6) + '</div></div>';
+  };
+  function sentList(n) {
+    return S.emails.slice(0, n).map(function (e) {
+      var c = client(e.to);
+      return '<div class="li"><div class="av">' + initials(c ? c.name : '?') + '</div><div class="grow"><div class="title">' + esc(e.subject) + '</div><div class="meta">' + esc(c ? c.name : e.to) + ' &middot; ' + fmtDate(e.at) + '</div></div><span class="pill">' + esc(e.kind) + '</span><span class="pill ok">Delivered</span></div>';
+    }).join('');
+  }
+  function mailPreview(from, to, subject, body) {
+    var html = esc(body).replace(/\[([^\]]+)\]/g, '<a class="cta" href="#intake">$1</a>').replace(/\n/g, '<br>');
+    return '<div class="mail"><div class="hd"><span><b>From</b> Maya at Evergrove &lt;' + esc(from) + '&gt;</span><span><b>To</b> ' + esc(to || 'client@example.com') + '</span><span><b>Subject</b> ' + esc(subject) + '</span></div>' +
+      '<div class="bd"><h3>Evergrove Wellness</h3>' + html + '</div></div>';
+  }
+  function bindMessages() {
+    var kind = $('#mKind'), to = $('#mTo'), svc = $('#mSvc'), date = $('#mDate'), who = $('#mWho'), subj = $('#mSubject'), body = $('#mBody');
+    function who_() { for (var i = 0; i < S.clients.length; i++) if (S.clients[i].name.toLowerCase() === to.value.trim().toLowerCase()) return S.clients[i]; return null; }
+    function refill() {
+      var c = who_();
+      var t = template(kind.value, c ? c.name : to.value, svc.value, date.value);
+      subj.value = t.subject; body.value = t.body; who.value = c ? c.email : '';
+      paint();
+    }
+    function paint() { $('#mPreview').innerHTML = mailPreview(EG.BRAND.email, who.value || to.value, subj.value, body.value); }
+    [kind, svc, date].forEach(function (el) { el.addEventListener('change', refill); });
+    to.addEventListener('input', function () { if (who_()) refill(); else paint(); });
+    subj.addEventListener('input', paint); body.addEventListener('input', paint);
+    $('#mSend').addEventListener('click', function () {
+      var c = who_();
+      if (!c) { toast('Choose a client from the list first.'); to.focus(); return; }
+      S.emails.unshift({ at: today(), to: c.id, kind: KINDS.filter(function (k) { return k.id === kind.value; })[0].label.split(':')[0], subject: subj.value });
+      save(); $('#mSent').innerHTML = sentList(6);
+      toast('Sent to ' + c.name + ' (simulated)');
+    });
+    $('#mSelf').addEventListener('click', function () { toast('Preview sent to ' + EG.BRAND.email + ' (simulated)'); });
+    paint();
+  }
+
+  /* Guest intake form --------------------------------------------------- */
+  VIEWS.intake = function () {
+    if (ui.intakeDone) return intakeResult(ui.intakeDone);
+    return head('What your client sees', 'Wellness intake',
+      'Consent, health screening and goals in one short form that works on a phone, even offline. The moment it is submitted, the client gets a personalised plan.') +
+      pitch('proven', 'The current app runs this flow for every guest: signed consent with a drawn signature, a tailored questionnaire, a PDF copy, and offline saving for weak signal. The personalised plan at the end is the new part.') +
+      '<div class="guestframe"><div class="guestbar"><span>Guest link</span><code>evergrove.example/intake?consult=initial</code><span class="pill ok">Works offline</span></div>' +
+      '<form class="guest" id="iForm" novalidate>' +
+      '<p class="eyebrow">Before your consultation</p><h2 class="h1">Let&rsquo;s get to know you</h2><p class="muted" style="margin:0 0 1.2rem">About four minutes. Your answers are private and only seen by your practitioner.</p>' +
+      '<div class="steps" id="iSteps"><span class="is-on"></span><span></span><span></span><span></span></div>' +
+      '<section class="block"><h3 class="h3">About you</h3><div class="fields">' +
+      '<div><label for="iName">Full name</label><input id="iName" type="text" autocomplete="off"></div>' +
+      '<div><label for="iEmail">Email</label><input id="iEmail" type="email" autocomplete="off"></div>' +
+      '<div><label for="iPhone">Phone</label><input id="iPhone" type="tel" autocomplete="off"></div>' +
+      '<div><label for="iDob">Date of birth</label><input id="iDob" type="text" placeholder="MM/DD/YYYY" autocomplete="off"></div>' +
+      '</div></section>' +
+      '<section class="block"><h3 class="h3">What would you like help with?</h3><p class="small muted" style="margin:-.2rem 0 .7rem">Choose up to three.</p><div class="chips" id="iGoals">' +
+      EG.GOALS.map(function (g) { return '<button type="button" class="chip" data-goal="' + g.id + '">' + esc(g.label) + '</button>'; }).join('') + '</div></section>' +
+      '<section class="block"><h3 class="h3">Lifestyle</h3><div class="fields">' +
+      '<div><label for="iDiet">How do you eat?</label><select id="iDiet"><option value="omnivore">Everything</option><option value="pescatarian">Pescatarian</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option></select></div>' +
+      '<div><label for="iSleep">Hours of sleep, most nights</label><select id="iSleep"><option>Under 5</option><option>5-6</option><option selected>6-7</option><option>7-8</option><option>8+</option></select></div>' +
+      '<div class="wide"><label>Allergies</label><div class="chips" id="iAllergy">' + ['fish', 'shellfish', 'soy', 'gluten', 'dairy'].map(function (a) { return '<button type="button" class="chip" data-allergy="' + a + '">' + a[0].toUpperCase() + a.slice(1) + '</button>'; }).join('') + '</div></div>' +
+      '</div></section>' +
+      '<section class="block"><h3 class="h3">Health screening</h3><div class="grid" style="gap:.55rem">' +
+      '<label class="check"><input type="checkbox" id="iPreg"> I am pregnant, breastfeeding or trying to conceive</label>' +
+      '<label class="check"><input type="checkbox" id="iBlood"> I take a blood thinner (for example warfarin)</label>' +
+      '<label class="check"><input type="checkbox" id="iThy"> I have a thyroid condition or take thyroid medication</label>' +
+      '</div></section>' +
+      '<section class="block"><h3 class="h3">Consent</h3><div class="consent">Evergrove Wellness provides education, coaching and dietary supplements. Our guidance does not replace care from your physician. You agree to tell your practitioner about medications and conditions, and to stop any supplement and contact your doctor if you notice an adverse reaction. Your information is stored securely and never sold. You may request a copy or deletion at any time. Sessions cancelled with less than 24 hours notice may be charged at 50%.</div>' +
+      '<label class="check" style="margin-bottom:.8rem"><input type="checkbox" id="iAgree"> I have read and agree to the wellness consent</label>' +
+      '<div class="row" style="justify-content:space-between"><span class="label" style="margin:0">Sign here</span><button type="button" class="linkish" id="iClear">Clear</button></div>' +
+      '<canvas class="sig" id="iSig"></canvas>' +
+      '</section>' +
+      '<p class="small" id="iErr" style="color:var(--bad);min-height:1.2em"></p>' +
+      '<button class="btn" id="iSubmit" type="submit" style="width:100%;padding:.9rem">Submit and see my plan</button>' +
+      '</form></div>';
+  };
+  function bindIntake() {
+    if (ui.intakeDone) {
+      $$('[data-open-client]').forEach(function (b) { b.addEventListener('click', function () { openClient(b.getAttribute('data-open-client')); }); });
+      var again = $('#iAgain'); if (again) again.addEventListener('click', function () { ui.intakeDone = null; render(); });
+      return;
+    }
+    var goals = [], allergies = [], signed = false;
+    $$('#iGoals .chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var g = b.getAttribute('data-goal'), i = goals.indexOf(g);
+        if (i >= 0) goals.splice(i, 1); else if (goals.length < 3) goals.push(g); else { toast('Choose up to three goals.'); return; }
+        b.classList.toggle('is-on', goals.indexOf(g) >= 0); progress();
+      });
+    });
+    $$('#iAllergy .chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var a = b.getAttribute('data-allergy'), i = allergies.indexOf(a);
+        if (i >= 0) allergies.splice(i, 1); else allergies.push(a);
+        b.classList.toggle('is-on', i < 0);
+      });
+    });
+    function progress() {
+      var n = 0;
+      if ($('#iName').value && $('#iEmail').value) n++;
+      if (goals.length) n++;
+      if ($('#iAgree').checked) n++;
+      if (signed) n++;
+      $$('#iSteps span').forEach(function (s, i) { s.classList.toggle('is-on', i <= Math.max(0, n - 1) || (i === 0)); });
+    }
+    ['#iName', '#iEmail'].forEach(function (s) { $(s).addEventListener('input', progress); });
+    $('#iAgree').addEventListener('change', progress);
+
+    var cv = $('#iSig'), ctx = setupCanvas(cv);
+    var drawing = false;
+    function pos(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    cv.addEventListener('pointerdown', function (e) { drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p[0], p[1]); cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', function (e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p[0], p[1]); ctx.stroke(); signed = true; });
+    cv.addEventListener('pointerup', function () { drawing = false; progress(); });
+    cv.addEventListener('sig', function () { signed = true; progress(); });
+    $('#iClear').addEventListener('click', function () { ctx.clearRect(0, 0, cv.width, cv.height); signed = false; progress(); });
+
+    $('#iForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('#iErr');
+      var name = $('#iName').value.trim(), email = $('#iEmail').value.trim();
+      if (!name || !email) { err.textContent = 'Please add your name and email so we can send your plan.'; return; }
+      if (!goals.length) { err.textContent = 'Choose at least one goal.'; return; }
+      if (!$('#iAgree').checked || !signed) { err.textContent = 'Please tick the consent box and sign.'; return; }
+      err.textContent = '';
+      var c = {
+        id: 'c' + (S.nextClient++), name: name, email: email, phone: $('#iPhone').value.trim(), goals: goals.slice(),
+        diet: $('#iDiet').value, plan: 'newsletter', joined: today(), ltv: 0, autoship: false, allergies: allergies.slice(),
+        pregnant: $('#iPreg').checked, bloodthinner: $('#iBlood').checked, thyroid: $('#iThy').checked,
+        consent: true, intake: true, videos: {}, notes: [], fresh: true
+      };
+      var r = EG.recommend(c);
+      c.plan_items = r.picks.map(function (x) { return x.product.sku; });
+      r.videos.forEach(function (v) { c.videos[v.id] = 0; });
+      S.clients.unshift(c);
+      S.emails.unshift({ at: today(), to: c.id, kind: 'Recommendations', subject: 'Your personalised wellness plan' });
+      save();
+      ui.intakeDone = c.id;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+  function setupCanvas(cv) {
+    var r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+    var ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#233027';
+    return ctx;
+  }
+  function planHtml(c, r) {
+    return '<div class="plan" data-tour="picks">' + r.picks.map(function (x) {
+      var p = x.product;
+      return '<div class="pick"><div class="bottle" style="--h:' + p.hue + '"></div><div class="grow"><div class="title">' + esc(p.name) + ' <span class="muted small">' + esc(p.dose) + '</span></div><div class="why">' + esc(x.why.join(' · ')) + '</div>' +
+        (x.review ? '<span class="pill warn" style="margin-top:.3rem">Practitioner reviews first</span>' : '') + '</div><span class="price">' + money(p.price) + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function intakeResult(id) {
+    var c = client(id), r = EG.recommend(c);
+    return '<div class="guestframe"><div class="guestbar"><span>Guest view</span><code>evergrove.example/plan/' + esc(c.id) + '</code></div>' +
+      '<div class="guest" data-tour="result"><div class="result-hero"><div class="check-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div>' +
+      '<div><p class="eyebrow" style="margin:0">All set, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">Your personalised plan</h2></div></div>' +
+      '<p class="muted">Built from your goals: ' + c.goals.map(function (g) { return esc(EG.goalLabel(g).toLowerCase()); }).join(', ') + '. ' + (r.needsReview ? 'Because of your health screening, Maya will review these picks before anything ships.' : 'Everything below is safe to start today.') + '</p>' +
+      '<h3 class="h2" style="margin-top:1.2rem">Supplements</h3>' + planHtml(c, r) +
+      '<div class="row" style="justify-content:space-between;margin:1rem 0 0;padding:.9rem 1rem;background:var(--ok-soft);border-radius:10px"><span><b>Subscribe &amp; save 15%</b><br><span class="small muted">Ships every 30 days direct from our partner labs</span></span><span class="price num">' + money(r.subscribePrice) + '/mo <s class="muted small">' + money(r.monthly) + '</s></span></div>' +
+      '<h3 class="h2">Videos picked for you</h3><div class="grid g3">' + r.videos.map(function (v) {
+        return '<div class="vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div><span class="title">' + esc(v.title) + '</span></div>';
+      }).join('') + '</div>' +
+      '<h3 class="h2">Recommended next step</h3><div class="pick"><div class="grow"><div class="title">' + esc(r.service.label) + '</div><div class="why">' + r.service.mins + ' minutes with Maya &middot; ' + (r.service.price ? money(r.service.price, false) : 'included') + '</div></div><button type="button" class="btn small">Book a time</button></div>' +
+      '</div></div>' +
+      '<h2 class="h2">Behind the scenes, automatically</h2><div class="card" data-tour="behind"><div class="list">' +
+      [['ok', 'Client record created and added to Clients'], ['ok', 'Signed consent saved as a PDF with time, IP and signature'], ['ok', 'Plan email queued: "Your personalised wellness plan"'],
+        ['ok', 'Added to newsletter segments: ' + c.goals.map(EG.goalLabel).join(', ')], [r.needsReview ? 'warn' : 'ok', r.needsReview ? 'Practitioner alert raised: review before shipping' : 'No screening flags, plan approved automatically']]
+        .map(function (x) { return '<div class="todo"><span class="dotmark ' + x[0] + '"></span><span class="grow">' + esc(x[1]) + '</span></div>'; }).join('') +
+      '</div><div class="row" style="margin-top:1rem"><button class="btn" data-open-client="' + c.id + '" id="iOpen">Open client record</button><button class="btn ghost" id="iAgain">Start another intake</button></div></div>';
+  }
+
+  /* Clients (crossover of Records) -------------------------------------- */
+  VIEWS.clients = function () {
+    return head('Records', 'Clients',
+      'Every client with their goals, paperwork, plan, orders and video progress. Search by name, email or goal.') +
+      pitch('proven', 'Today this is the Records page: every signed waiver, questionnaire and sent email, searchable on a phone. Here each record also carries the plan, orders and videos.') +
+      '<div class="row" style="margin-bottom:1rem"><div class="tabs" style="margin:0">' +
+      [['clients', 'Clients'], ['consents', 'Consents & intakes'], ['emails', 'Sent emails']].map(function (t) { return '<button class="tab' + (ui.recordsTab === t[0] ? ' is-on' : '') + '" data-rtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
+      '</div><input type="search" id="rQ" placeholder="Search clients" style="flex:1;min-width:10rem" value="' + esc(ui.q) + '"></div>' +
+      '<div class="card" id="rBody">' + recordsBody() + '</div>';
+  };
+  function recordsBody() {
+    var q = ui.q.trim().toLowerCase();
+    var list = S.clients.filter(function (c) {
+      if (!q) return true;
+      return (c.name + ' ' + c.email + ' ' + c.goals.map(EG.goalLabel).join(' ') + ' ' + EG.PLANS[c.plan]).toLowerCase().indexOf(q) >= 0;
+    });
+    if (ui.recordsTab === 'emails') {
+      return '<div class="list">' + sentList(50) + '</div>';
+    }
+    if (ui.recordsTab === 'consents') {
+      return '<div class="tablewrap"><table><thead><tr><th>Client</th><th>Consent</th><th>Intake</th><th>Screening</th><th>Signed</th></tr></thead><tbody>' +
+        list.map(function (c) {
+          var r = EG.recommend(c);
+          return '<tr class="clickable" data-client="' + c.id + '"><td><b>' + esc(c.name) + '</b></td><td>' + (c.consent ? '<span class="pill ok">Signed PDF</span>' : '<span class="pill bad">Missing</span>') + '</td><td>' + (c.intake ? '<span class="pill ok">Complete</span>' : '<span class="pill warn">Not started</span>') + '</td><td>' + (r.flags.length ? '<span class="pill warn">Review</span>' : '<span class="pill">Clear</span>') + '</td><td class="num">' + (c.consent ? fmtDate(c.joined) : '&mdash;') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+    return '<div class="tablewrap"><table><thead><tr><th>Client</th><th>Plan</th><th>Goals</th><th>Paperwork</th><th class="r">Lifetime value</th></tr></thead><tbody>' +
+      (list.length ? list.map(function (c) {
+        return '<tr class="clickable" data-client="' + c.id + '"><td><div class="row" style="flex-wrap:nowrap"><span class="av">' + initials(c.name) + '</span><span><b>' + esc(c.name) + '</b>' + (c.fresh ? ' <span class="pill honey">New</span>' : '') + '<br><span class="small muted">' + esc(c.email) + '</span></span></div></td><td>' + esc(EG.PLANS[c.plan]) + (c.autoship ? '<br><span class="small muted">Auto-ship on</span>' : '') + '</td><td>' + goalPills(c.goals) + '</td><td>' + intakePill(c) + '</td><td class="r">' + money(c.ltv, false) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="muted">No client matches &ldquo;' + esc(ui.q) + '&rdquo;.</td></tr>') + '</tbody></table></div>';
+  }
+  function bindClients() {
+    $$('[data-rtab]').forEach(function (b) { b.addEventListener('click', function () { ui.recordsTab = b.getAttribute('data-rtab'); render(); }); });
+    var q = $('#rQ');
+    q.addEventListener('input', function () { ui.q = q.value; $('#rBody').innerHTML = recordsBody(); bindRows(); });
+    bindRows();
+  }
+  function bindRows() { $$('[data-client]').forEach(function (r) { r.addEventListener('click', function () { openClient(r.getAttribute('data-client')); }); }); }
+
+  function openClient(id) { ui.drawer = id; renderDrawer(); }
+  function renderDrawer() {
+    var root = $('#drawerRoot');
+    if (!ui.drawer) { root.innerHTML = ''; return; }
+    var c = client(ui.drawer); if (!c) { ui.drawer = null; root.innerHTML = ''; return; }
+    var r = EG.recommend(c);
+    var orders = S.orders.filter(function (o) { return o.client === c.id; });
+    var books = S.bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    root.innerHTML = '<div class="drawer-bg" id="dBg"></div><aside class="drawer" role="dialog" aria-label="Client record" data-tour="drawer">' +
+      '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><span class="eyebrow" style="margin:0">Client record</span><button class="btn ghost small" id="dClose">Close</button></div>' +
+      '<div class="row" style="flex-wrap:nowrap;margin-bottom:1rem"><span class="av" style="width:3rem;height:3rem;font-size:.9rem">' + initials(c.name) + '</span><div><h2 class="h1" style="font-size:1.6rem;margin:0">' + esc(c.name) + '</h2><span class="small muted">' + esc(c.email) + ' &middot; ' + esc(c.phone || 'no phone') + '</span></div></div>' +
+      '<div class="pills" style="margin-bottom:1rem"><span class="pill honey">' + esc(EG.PLANS[c.plan]) + '</span>' + intakePill(c) + (c.autoship ? '<span class="pill ok">Auto-ship</span>' : '') + '<span class="pill">' + esc(c.diet) + '</span>' + c.allergies.map(function (a) { return '<span class="pill bad">Allergy: ' + esc(a) + '</span>'; }).join('') + '</div>' +
+      '<div class="card" style="margin-bottom:1rem"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">Personalised plan</h3>' + (r.needsReview ? '<span class="pill warn">Needs review</span>' : '<span class="pill ok">Approved</span>') + '</div><p class="small muted">Goals: ' + c.goals.map(EG.goalLabel).join(', ') + '</p>' + planHtml(c, r) +
+      '<div class="row" style="margin-top:.8rem"><button class="btn small" id="dSend">Email this plan</button><button class="btn ghost small" id="dShip">' + (c.autoship ? 'Ship refill now' : 'Start auto-ship') + '</button></div></div>' +
+      '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Videos</h3>' + Object.keys(c.videos).map(function (vid) {
+        var v = EG.video(vid); var pct = c.videos[vid];
+        return '<div style="margin-bottom:.6rem"><div class="row" style="justify-content:space-between"><span class="small">' + esc(v.title) + '</span><span class="small muted num">' + pct + '%</span></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+      }).join('') + '</div>' +
+      '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Sessions</h3><div class="list">' + (books.length ? books.map(function (b) { return '<div class="li"><div class="grow"><div class="title">' + esc(b.name || service(b.service).label) + '</div><div class="meta">' + fmtDate(b.date) + ' at ' + fmtTime(b.time) + '</div></div><span class="pill' + (b.date >= today() ? ' honey">Upcoming' : '">Done') + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No sessions yet.</p>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Orders</h3><div class="list">' + (orders.length ? orders.map(function (o) { return '<div class="li"><div class="grow"><div class="title">' + o.id + '</div><div class="meta">' + fmtDate(o.at) + ' &middot; ' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + '</div></div><span class="pill">' + EG.STAGES[o.stage] + '</span><span class="price">' + money(orderTotal(o)) + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No orders yet.</p>') + '</div></div>' +
+      '<div class="card"><h3 class="h3">Practitioner notes</h3>' + c.notes.map(function (n) { return '<p class="small" style="margin:0 0 .6rem"><span class="muted">' + fmtDate(n.at) + '</span><br>' + esc(n.text) + '</p>'; }).join('') +
+      '<div class="row"><input type="text" id="dNote" placeholder="Add a private note" style="flex:1;min-width:8rem"><button class="btn small" id="dAdd">Save</button></div></div>' +
+      '</aside>';
+    $('#dBg').addEventListener('click', closeDrawer);
+    $('#dClose').addEventListener('click', closeDrawer);
+    $('#dSend').addEventListener('click', function () {
+      S.emails.unshift({ at: today(), to: c.id, kind: 'Recommendations', subject: 'Your personalised wellness plan' }); save();
+      toast('Plan emailed to ' + c.name + ' (simulated)');
+    });
+    $('#dShip').addEventListener('click', function () {
+      if (!c.autoship) { c.autoship = true; save(); renderDrawer(); toast('Auto-ship started: every 30 days'); return; }
+      placeOrder(c); toast('Refill order created and routed to suppliers');
+    });
+    $('#dAdd').addEventListener('click', function () {
+      var v = $('#dNote').value.trim(); if (!v) return;
+      c.notes.unshift({ at: today(), text: v }); save(); renderDrawer();
+    });
+  }
+  function closeDrawer() { ui.drawer = null; renderDrawer(); }
+
+  /* Schedule (crossover of Upcoming Events + Calendar) ------------------- */
+  VIEWS.schedule = function () {
+    return head('Upcoming', 'Schedule',
+      'Every consultation and workshop with who is coming and whether their paperwork is done. Chase anyone missing in one tap.') +
+      pitch('proven', 'Upcoming Events and the Calendar are the pages the current team leaves open all day, with group rosters, missing-paperwork alerts and offline reading.') +
+      '<div class="row" style="margin-bottom:1rem;justify-content:space-between"><div class="tabs" style="margin:0"><button class="tab' + (ui.schedTab === 'list' ? ' is-on' : '') + '" data-stab="list">Upcoming</button><button class="tab' + (ui.schedTab === 'cal' ? ' is-on' : '') + '" data-stab="cal" id="sCalTab">Calendar</button></div>' +
+      '<button class="btn ghost small" id="sNewBtn">+ New booking</button></div>' +
+      '<div class="card" id="sNew" hidden style="margin-bottom:1rem"><div class="fields">' +
+      '<div><label for="nSvc">Service</label><select id="nSvc">' + EG.SERVICES.map(function (s) { return '<option value="' + s.id + '">' + esc(s.label) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="nClient">Client</label><select id="nClient">' + S.clients.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="nDate">Date</label><input id="nDate" type="date" value="' + EG.iso(5) + '"></div>' +
+      '<div><label for="nTime">Time</label><select id="nTime">' + ['09:00', '10:30', '12:00', '13:30', '15:00', '16:30', '18:00'].map(function (t) { return '<option value="' + t + '">' + fmtTime(t) + '</option>'; }).join('') + '</select></div>' +
+      '</div><label class="check" style="margin-top:.9rem"><input type="checkbox" id="nSendIntake" checked> Email the intake link now</label><div class="row" style="margin-top:.8rem"><button class="btn" id="nAdd">Create booking</button></div></div>' +
+      (ui.schedTab === 'cal' ? calendar() : bookingList());
+  };
+  function bookingList() {
+    var t = today();
+    var list = S.bookings.filter(function (b) { return b.date >= t; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+    return '<div class="grid" style="gap:.8rem" data-tour="bookings">' + list.map(function (b) {
+      var sv = service(b.service), dt = d(b.date);
+      var missing = b.guests.filter(function (g) { var c = client(g); return c && !(c.consent && c.intake); }).length;
+      return '<div class="card booking" data-booking="' + b.id + '"><div class="when"><span>' + dt.toLocaleDateString('en-US', { month: 'short' }) + '</span><b>' + dt.getDate() + '</b><span>' + dt.toLocaleDateString('en-US', { weekday: 'short' }) + '</span></div>' +
+        '<div style="min-width:0"><div class="row" style="justify-content:space-between"><div><div class="h3" style="margin:0">' + esc(b.name || sv.label) + '</div><div class="small muted">' + fmtTime(b.time) + ' &middot; ' + sv.mins + ' min &middot; ' + esc(b.where) + '</div></div>' +
+        (missing ? '<span class="pill warn">' + missing + ' missing paperwork</span>' : '<span class="pill ok">All paperwork in</span>') + '</div>' +
+        '<div class="roster">' + b.guests.map(function (g) {
+          var c = client(g); if (!c) return '';
+          var done = c.consent && c.intake;
+          return '<div class="p"><span class="av" style="width:1.7rem;height:1.7rem;font-size:.62rem">' + initials(c.name) + '</span><span class="grow">' + esc(c.name) + '</span>' + intakePill(c) +
+            (done ? '' : '<button class="btn ghost small" data-remind="' + c.id + '" data-bk="' + b.id + '">Send reminder</button>') + '</div>';
+        }).join('') + '</div></div></div>';
+    }).join('') + '</div>';
+  }
+  function calendar() {
+    var base = ui.calMonth || today().slice(0, 7);
+    var y = +base.slice(0, 4), m = +base.slice(5, 7) - 1;
+    var firstDay = new Date(y, m, 1), start = new Date(y, m, 1 - firstDay.getDay());
+    var label = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    var out = '<div class="row" style="margin-bottom:.8rem"><button class="btn ghost small" data-cal="-1">&larr;</button><h3 class="h3" style="margin:0;min-width:10rem;text-align:center">' + label + '</h3><button class="btn ghost small" data-cal="1">&rarr;</button></div><div class="cal" data-tour="calendar">';
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(function (w) { out += '<div class="dow">' + w + '</div>'; });
+    for (var i = 0; i < 42; i++) {
+      var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var key = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
+      var evs = S.bookings.filter(function (b) { return b.date === key; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+      out += '<div class="day' + (day.getMonth() !== m ? ' out' : '') + (key === today() ? ' today' : '') + '"><div class="d">' + day.getDate() + '</div>' +
+        evs.map(function (b) { var sv = service(b.service); return '<div class="ev' + (b.guests.length > 1 ? ' group' : '') + '" title="' + esc(sv.label) + '">' + fmtTime(b.time) + ' ' + esc(b.name || sv.label) + '</div>'; }).join('') + '</div>';
+      if (i === 34 && day.getMonth() !== m) break;
+    }
+    return out + '</div>';
+  }
+  function bindSchedule() {
+    $$('[data-stab]').forEach(function (b) { b.addEventListener('click', function () { ui.schedTab = b.getAttribute('data-stab'); render(); }); });
+    $$('[data-cal]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var base = ui.calMonth || today().slice(0, 7);
+        var dt = new Date(+base.slice(0, 4), +base.slice(5, 7) - 1 + (+b.getAttribute('data-cal')), 1);
+        ui.calMonth = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); render();
+      });
+    });
+    $$('[data-remind]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = client(b.getAttribute('data-remind'));
+        S.emails.unshift({ at: today(), to: c.id, kind: 'Intake reminder', subject: 'A quick reminder before your session' }); save();
+        b.outerHTML = '<span class="pill ok">Reminder sent</span>';
+        toast('Reminder sent to ' + c.name + ' (simulated)');
+      });
+    });
+    $('#sNewBtn').addEventListener('click', function () { var n = $('#sNew'); n.hidden = !n.hidden; });
+    $('#nAdd').addEventListener('click', function () {
+      var b = { id: 'b' + Date.now(), service: $('#nSvc').value, date: $('#nDate').value, time: $('#nTime').value, guests: [$('#nClient').value], where: 'Studio' };
+      if (!b.date) { toast('Pick a date.'); return; }
+      S.bookings.push(b);
+      if ($('#nSendIntake').checked) S.emails.unshift({ at: today(), to: b.guests[0], kind: 'Intake link', subject: 'Before your ' + service(b.service).label });
+      save(); render(); toast('Booked ' + client(b.guests[0]).name + ' for ' + fmtDate(b.date));
+    });
+  }
+
+  /* Newsletter ------------------------------------------------------------ */
+  var SEGMENTS = [
+    { id: 'all', label: 'All subscribers', count: 1248, test: function () { return true; } },
+    { id: 'sleep', label: 'Goal: better sleep', count: 312, test: function (c) { return c.goals.indexOf('sleep') >= 0; } },
+    { id: 'stress', label: 'Goal: less stress', count: 287, test: function (c) { return c.goals.indexOf('stress') >= 0; } },
+    { id: 'coaching', label: 'Coaching clients', count: 64, test: function (c) { return c.plan !== 'newsletter'; } },
+    { id: 'lapsed', label: 'Bought once, not in 60 days', count: 90, test: function (c) { return !c.autoship && c.ltv > 0; } }
+  ];
+  VIEWS.newsletter = function () {
+    var body = 'Hi {first_name},\n\nShorter days can throw off your sleep. This week we put together three small evening habits that make a real difference, plus a new 18-minute wind-down class.\n\nBased on your goals, we think you will love {top_pick}.\n\n[Watch the class]\n\nRest well,\nMaya';
+    return head('Grow', 'Newsletter',
+      'Write once, and every reader gets a version that knows their name, their goals and the product most likely to help them.') +
+      pitch('new', 'Builds on the existing email engine. New: audience segments from intake answers, a personal product pick per reader, scheduling and revenue tracking per campaign.') +
+      '<div class="split"><div class="card"><div class="fields">' +
+      '<div class="wide"><label for="nlSeg">Audience</label><select id="nlSeg">' + SEGMENTS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.label) + ' (' + s.count.toLocaleString() + ')</option>'; }).join('') + '</select></div>' +
+      '<div class="wide"><label for="nlSubj">Subject</label><input id="nlSubj" type="text" value="Three evening habits for deeper sleep"></div>' +
+      '<div class="wide"><label for="nlBody">Message</label><textarea id="nlBody" rows="11">' + esc(body) + '</textarea><p class="small muted" style="margin:.4rem 0 0">Personal fields: <span class="token">{first_name}</span> <span class="token">{top_pick}</span> <span class="token">{goal}</span></p></div>' +
+      '<div><label for="nlWhen">Send</label><select id="nlWhen"><option value="now">Now</option><option value="am" selected>Tomorrow, 7:00am</option><option value="best">Each reader&rsquo;s best open time</option></select></div>' +
+      '</div><div class="row" style="margin-top:1rem"><button class="btn" id="nlSend">Schedule campaign</button><span class="small muted" id="nlCount"></span></div></div>' +
+      '<div><p class="label">Preview as</p><div class="recips" id="nlRecips"></div><div id="nlPreview"></div></div></div>' +
+      '<h2 class="h2">Past campaigns</h2><div class="card"><div class="tablewrap"><table data-tour="campaigns"><thead><tr><th>Campaign</th><th>Sent</th><th class="r">Recipients</th><th class="r">Opened</th><th class="r">Clicked</th><th class="r">Revenue</th></tr></thead><tbody id="nlPast">' + pastCampaigns() + '</tbody></table></div></div>';
+  };
+  function pastCampaigns() {
+    return S.campaigns.map(function (c) {
+      return '<tr><td><b>' + esc(c.subject) + '</b>' + (c.scheduled ? ' <span class="pill honey">Scheduled</span>' : '') + '</td><td class="num">' + fmtDate(c.sent) + '</td><td class="r">' + c.recipients.toLocaleString() + '</td><td class="r">' + (c.scheduled ? '&mdash;' : Math.round(c.opens * 100) + '%') + '</td><td class="r">' + (c.scheduled ? '&mdash;' : (c.clicks * 100).toFixed(1) + '%') + '</td><td class="r">' + (c.scheduled ? '&mdash;' : money(c.revenue, false)) + '</td></tr>';
+    }).join('');
+  }
+  function bindNewsletter() {
+    var seg = $('#nlSeg'), subj = $('#nlSubj'), body = $('#nlBody'), who = null;
+    function readers() {
+      var s = SEGMENTS.filter(function (x) { return x.id === seg.value; })[0];
+      return S.clients.filter(s.test).slice(0, 3);
+    }
+    function paintRecips() {
+      var rs = readers(); if (!who || rs.indexOf(who) < 0) who = rs[0];
+      $('#nlRecips').innerHTML = rs.map(function (c, i) { return '<button class="chip' + (c === who ? ' is-on' : '') + '" data-reader="' + i + '">' + esc(c.name) + '</button>'; }).join('');
+      $$('[data-reader]').forEach(function (b) { b.addEventListener('click', function () { who = rs[+b.getAttribute('data-reader')]; paintRecips(); }); });
+      var s = SEGMENTS.filter(function (x) { return x.id === seg.value; })[0];
+      $('#nlCount').textContent = s.count.toLocaleString() + ' readers, each with their own pick';
+      paint();
+    }
+    function paint() {
+      if (!who) { $('#nlPreview').innerHTML = ''; return; }
+      var r = EG.recommend(who), top = r.picks[0] ? r.picks[0].product : null;
+      var fill = function (s) {
+        return s.replace(/\{first_name\}/g, first(who.name)).replace(/\{top_pick\}/g, top ? top.name : 'our new collection').replace(/\{goal\}/g, EG.goalLabel(who.goals[0]).toLowerCase());
+      };
+      var html = mailPreview(EG.BRAND.email, who.email, fill(subj.value), fill(body.value));
+      if (top) html = html.replace('</div></div>', '<div class="pick" style="margin-top:.8rem"><div class="bottle" style="--h:' + top.hue + '"></div><div class="grow"><div class="title">' + esc(top.name) + '</div><div class="why">Picked for ' + esc(first(who.name)) + ' from their intake goals</div></div><span class="price">' + money(top.price) + '</span></div></div></div>');
+      $('#nlPreview').innerHTML = html;
+    }
+    seg.addEventListener('change', paintRecips); subj.addEventListener('input', paint); body.addEventListener('input', paint);
+    $('#nlSend').addEventListener('click', function () {
+      var s = SEGMENTS.filter(function (x) { return x.id === seg.value; })[0];
+      S.campaigns.unshift({ id: 'n' + Date.now(), subject: subj.value, segment: s.id, sent: EG.iso(1), recipients: s.count, scheduled: true });
+      save(); $('#nlPast').innerHTML = pastCampaigns();
+      toast('Scheduled for ' + s.count.toLocaleString() + ' readers (simulated)');
+    });
+    paintRecips();
+  }
+
+  /* Shop & fulfilment ----------------------------------------------------- */
+  VIEWS.shop = function () {
+    var month = S.orders.reduce(function (t, o) { return t + orderTotal(o); }, 0);
+    var cost = S.orders.reduce(function (t, o) { return t + orderCost(o); }, 0);
+    return head('Grow', 'Shop & fulfilment',
+      'Orders route themselves to the right supplier, tracking numbers come back automatically, and clients get updates without anyone typing an email.') +
+      pitch('new', 'Proposed drop-ship automation: no inventory on your shelves. Each order line goes to the partner lab with stock and the best landed cost, and refills repeat on their own.') +
+      '<div class="grid g4" style="margin-bottom:1rem">' + stat(S.orders.length, 'Orders this week', '') + stat(money(month, false), 'Product revenue', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('1.8 days', 'Average time to ship', 'no packing by you') + '</div>' +
+      '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' + [['pipeline', 'Live orders'], ['products', 'Catalogue'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<button class="btn honey" id="shSim"' + (ui.simulating ? ' disabled' : '') + '>Simulate a new order</button></div>' +
+      (ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'rules' ? rules() : pipeline());
+  };
+  function pipeline() {
+    return '<div class="pipe" data-tour="pipeline">' + EG.STAGES.map(function (st, i) {
+      var os = S.orders.filter(function (o) { return o.stage === i; }).slice().reverse();
+      return '<div class="lane"><h4><span>' + st + '</span><span>' + os.length + '</span></h4>' + os.map(function (o) {
+        var c = client(o.client);
+        var sup = EG.SUPPLIERS[EG.routeLine(o.items[0][0], +o.id.slice(-1)).supplier].name.split(' ')[0];
+        return '<div class="ticket" id="t-' + o.id + '"><b>' + o.id + ' &middot; ' + money(orderTotal(o)) + '</b>' + esc(c ? c.name : '') + '<br><span class="muted">' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + (i >= 1 ? ' &middot; ' + sup : '') + (o.sub ? ' &middot; refill' : '') + '</span>' + (o.tracking && i >= 3 ? '<br><span class="muted num">' + o.tracking + '</span>' : '') + '</div>';
+      }).join('') + '</div>';
+    }).join('') + '</div><h2 class="h2">Automation log</h2><div class="log" id="shLog">' + (ui.log.length ? ui.log.join('') : '<div><time>--:--</time><span class="muted">Press "Simulate a new order" to watch an order go from checkout to doorstep.</span></div>') + '</div>';
+  }
+  function productsTable() {
+    return '<div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>SKU</th><th class="r">Price</th><th class="r">Supplier cost</th><th class="r">Margin</th><th>Ships from</th><th>Backup</th></tr></thead><tbody>' +
+      EG.PRODUCTS.map(function (p) {
+        return '<tr><td><div class="row" style="flex-wrap:nowrap"><span class="bottle" style="--h:' + p.hue + ';width:1.4rem;height:1.9rem"></span><span><b>' + esc(p.name) + '</b><br><span class="small muted">' + esc(p.dose) + (p.tags.indexOf('vegan') >= 0 ? ' &middot; vegan' : '') + '</span></span></div></td><td class="num small">' + p.sku + '</td><td class="r">' + money(p.price) + '</td><td class="r">' + money(p.cost) + '</td><td class="r">' + Math.round((1 - p.cost / p.price) * 100) + '%</td><td>' + esc(EG.SUPPLIERS[p.supplier].name) + '</td><td>' + (p.alt ? esc(EG.SUPPLIERS[p.alt].name) : '<span class="muted">&mdash;</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div></div>';
+  }
+  var RULES = [
+    ['Route each line to the supplier with stock and the lowest landed cost', 'Falls back to the backup lab automatically when stock runs low.'],
+    ['Email tracking the moment the supplier ships', 'Branded as Evergrove. The client never sees the supplier.'],
+    ['Auto-ship refills every 30 days', 'Charged and routed on schedule; skip or pause from one link.'],
+    ['Refill reminder 5 days before each shipment', 'Gives subscribers time to swap or pause.'],
+    ['Hold orders that need practitioner review', 'Screening flags from the intake stop the order until approved.'],
+    ['Alert when margin on an order drops under 45%', 'Catches supplier price changes before they cost you.']
+  ];
+  function rules() {
+    return '<div class="card"><div>' + RULES.map(function (r, i) {
+      return '<div class="rule"><button class="toggle" data-rule="' + i + '" aria-label="Toggle rule"></button><div class="grow"><b>' + esc(r[0]) + '</b><br><span class="small muted">' + esc(r[1]) + '</span></div></div>';
+    }).join('') + '</div></div>';
+  }
+  function bindShop() {
+    $$('[data-shtab]').forEach(function (b) { b.addEventListener('click', function () { ui.shopTab = b.getAttribute('data-shtab'); render(); }); });
+    $$('[data-rule]').forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('off'); }); });
+    $('#shSim').addEventListener('click', function () { simulateOrder(); });
+  }
+  function stamp() { var n = new Date(); return String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') + ':' + String(n.getSeconds()).padStart(2, '0'); }
+  function logLine(text, ok) {
+    ui.log.unshift('<div><time>' + stamp() + '</time><span' + (ok ? ' class="ok"' : '') + '>' + text + '</span></div>');
+    ui.log = ui.log.slice(0, 40);
+    var l = $('#shLog'); if (l) l.innerHTML = ui.log.join('');
+  }
+  function placeOrder(c) {
+    var items = (c.plan_items && c.plan_items.length ? c.plan_items : ['EG-MAG-200']).slice(0, 3).map(function (s) { return [s, 1]; });
+    var o = { id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: items, stage: 0, sub: !!c.autoship };
+    S.orders.push(o); save(); return o;
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function simulateOrder() {
+    if (ui.simulating) return Promise.resolve();
+    ui.simulating = true; ui.shopTab = 'pipeline'; render();
+    var pool = S.clients.filter(function (c) { return c.plan_items && c.plan_items.length && !EG.recommend(c).needsReview; });
+    var c = pool[Math.floor(Math.random() * pool.length)] || S.clients[0];
+    var o = placeOrder(c);
+    var steps = [
+      function () { logLine('Checkout: <b>' + o.id + '</b> from ' + esc(c.name) + ', ' + o.items.length + ' items, ' + money(orderTotal(o))); logLine('Payment captured. Screening check passed.', true); },
+      function () {
+        o.items.forEach(function (it, k) {
+          var r = EG.routeLine(it[0], k + o.items.length);
+          logLine(esc(EG.product(it[0]).name) + ' &rarr; ' + esc(EG.SUPPLIERS[r.supplier].name) + ' <span class="muted">(' + esc(r.reason) + ')</span>');
+        });
+      },
+      function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); logLine('Email to ' + esc(c.email) + ': "We have your order"'); },
+      function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('Tracking received: ' + o.tracking, true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
+      function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); }
+    ];
+    var chain = Promise.resolve();
+    steps.forEach(function (fn, i) {
+      chain = chain.then(function () {
+        o.stage = i; fn(); save();
+        if (ui.view === 'shop' && ui.shopTab === 'pipeline') {
+          var pipe = $('.pipe');
+          if (pipe) { var tmp = document.createElement('div'); tmp.innerHTML = pipeline(); pipe.replaceWith(tmp.firstChild); }
+          var t = $('#t-' + o.id); if (t) t.classList.add('flash');
+        }
+        return wait(1500);
+      });
+    });
+    return chain.then(function () { ui.simulating = false; var b = $('#shSim'); if (b) b.disabled = false; toast(o.id + ' delivered without anyone touching it'); });
+  }
+
+  /* Videos ----------------------------------------------------------------- */
+  VIEWS.videos = function () {
+    var total = EG.VIDEOS.reduce(function (t, v) { return t + v.views; }, 0);
+    return head('Grow', 'Video library',
+      'Classes and explainers that the intake assigns automatically. See who is watching and what is helping.') +
+      pitch('new', 'Proposed: a members&rsquo; video library tied to each client&rsquo;s goals, with watch progress on the client record and videos recommended in plans and newsletters.') +
+      '<div class="grid g4" style="margin-bottom:1rem">' + stat(total.toLocaleString(), 'Views, last 90 days', '+22%') + stat('71%', 'Average completion', '') + stat(EG.VIDEOS.length, 'Videos published', '') + stat('3.4', 'Videos per client plan', '') + '</div>' +
+      '<div class="grid g3" data-tour="videos">' + EG.VIDEOS.map(function (v) {
+        var assigned = S.clients.filter(function (c) { return v.id in c.videos; }).length;
+        return '<div class="card vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div>' +
+          '<span class="title">' + esc(v.title) + '</span>' + goalPills(v.goals) +
+          '<div class="row" style="justify-content:space-between"><span class="small muted num">' + v.views.toLocaleString() + ' views &middot; in ' + assigned + ' plans</span><button class="btn ghost small" data-assign="' + v.id + '">Assign</button></div></div>';
+      }).join('') + '</div>';
+  }
+  function bindVideos() {
+    $$('[data-assign]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var v = EG.video(b.getAttribute('data-assign'));
+        var n = 0;
+        S.clients.forEach(function (c) { if (!(v.id in c.videos) && c.goals.some(function (g) { return v.goals.indexOf(g) >= 0; })) { c.videos[v.id] = 0; n++; } });
+        save(); render();
+        toast(n ? 'Added to ' + n + ' client plans with matching goals' : 'Already in every matching plan');
+      });
+    });
+  }
+
+  /* Agreements & quotes (crossover of Contracts + Quotes) ------------------- */
+  VIEWS.agreements = function () {
+    var a = S.agreements.filter(function (x) { return x.id === ui.quoteId; })[0] || S.agreements[0];
+    return head('Paperwork', 'Agreements & quotes',
+      'Write a quote once. Every line total and the grand total are worked out for you, and the client signs online.') +
+      pitch('proven', 'The current app already builds quotes and contracts with itemised, auto-calculated invoices and e-signatures. Here it is set up for corporate wellness programmes.') +
+      '<div class="tabs">' + S.agreements.map(function (x) { return '<button class="tab' + (x.id === a.id ? ' is-on' : '') + '" data-q="' + x.id + '">' + esc(x.client) + ' <span class="pill ' + (x.status === 'Signed' ? 'ok' : 'warn') + '" style="margin-left:.3rem">' + x.status + '</span></button>'; }).join('') + '</div>' +
+      '<div class="split"><div class="card"><div class="fields">' +
+      '<div class="wide"><label for="qTitle">Title</label><input id="qTitle" type="text" value="' + esc(a.title) + '"></div>' +
+      '<div><label for="qClient">Client</label><input id="qClient" type="text" value="' + esc(a.client) + '"></div>' +
+      '<div><label for="qContact">Contact</label><input id="qContact" type="text" value="' + esc(a.contact) + '"></div>' +
+      '</div><p class="label" style="margin-top:1rem">Line items</p><div class="lineedit small muted" style="margin-bottom:.2rem"><span>Description</span><span>Qty</span><span>Rate</span><span class="amt">Amount</span></div><div id="qLines">' + lineRows(a) + '</div>' +
+      '<button class="linkish" id="qAddLine" style="padding-left:0">+ Add a line</button>' +
+      '<div style="margin-top:.8rem"><label for="qTerms">Terms</label><textarea id="qTerms" rows="4">' + esc(a.terms) + '</textarea></div>' +
+      '<div class="row" style="margin-top:1rem"><button class="btn" id="qSend">' + (a.status === 'Signed' ? 'Send signed copy' : 'Send for signature') + '</button>' + (a.status !== 'Signed' ? '<button class="btn ghost" id="qSign">Simulate client signing</button>' : '<button class="btn ghost" id="qInv">Create invoice</button>') + '</div></div>' +
+      '<div id="qDoc">' + quoteDoc(a) + '</div></div>';
+  };
+  function lineRows(a) {
+    return a.lines.map(function (l, i) {
+      return '<div class="lineedit"><input type="text" data-l="' + i + '" data-f="0" value="' + esc(l[0]) + '" aria-label="Description"><input type="number" data-l="' + i + '" data-f="1" value="' + l[1] + '" aria-label="Quantity"><input type="number" data-l="' + i + '" data-f="2" value="' + l[2] + '" aria-label="Rate"><span class="amt" data-amt="' + i + '">' + money(lineTotal(l)) + '</span></div>';
+    }).join('');
+  }
+  function quoteDoc(a) {
+    var total = a.lines.reduce(function (t, l) { return t + lineTotal(l); }, 0);
+    return '<div class="doc" data-tour="quote"><div class="lh"><div><b>Evergrove Wellness</b><br><span class="small muted">' + esc(EG.BRAND.email) + '</span></div><div style="text-align:right"><span class="eyebrow">Quote</span><br><span class="small muted">Sent ' + fmtDate(a.sent) + '</span></div></div>' +
+      '<h3 class="h3" style="font-size:1.5rem">' + esc(a.title) + '</h3><p class="small muted" style="margin-top:0">Prepared for ' + esc(a.client) + ' &middot; ' + esc(a.contact) + '</p>' +
+      '<div class="tablewrap"><table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>' +
+      a.lines.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td class="r">' + (Number(l[1]) || 1) + '</td><td class="r">' + money(l[2]) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>'; }).join('') +
+      '<tr class="total"><td colspan="3">Total</td><td class="r" id="qTotal">' + money(total) + '</td></tr></tbody></table></div>' +
+      '<p class="small muted" style="margin-top:1rem">' + esc(a.terms) + '</p>' +
+      '<div class="sigline"><div>' + (a.status === 'Signed' ? '<div class="signed">' + esc(a.contact.split(',')[0].split('@')[0]) + '</div>' : '<div class="signed"></div>') + 'Client signature' + (a.status === 'Signed' ? ' &middot; signed online' : '') + '</div><div><div class="signed">Maya Lindqvist</div>Evergrove Wellness</div></div></div>';
+  }
+  function bindAgreements() {
+    var a = S.agreements.filter(function (x) { return x.id === ui.quoteId; })[0] || S.agreements[0];
+    $$('[data-q]').forEach(function (b) { b.addEventListener('click', function () { ui.quoteId = b.getAttribute('data-q'); render(); }); });
+    function repaint() { $('#qDoc').innerHTML = quoteDoc(a); save(); }
+    function bindLines() {
+      $$('[data-l]').forEach(function (inp) {
+        inp.addEventListener('input', function () {
+          var i = +inp.getAttribute('data-l'), f = +inp.getAttribute('data-f');
+          a.lines[i][f] = f === 0 ? inp.value : Number(inp.value);
+          var amt = $('[data-amt="' + i + '"]'); if (amt) amt.textContent = money(lineTotal(a.lines[i]));
+          repaint();
+        });
+      });
+    }
+    bindLines();
+    $('#qTitle').addEventListener('input', function (e) { a.title = e.target.value; repaint(); });
+    $('#qClient').addEventListener('input', function (e) { a.client = e.target.value; repaint(); });
+    $('#qContact').addEventListener('input', function (e) { a.contact = e.target.value; repaint(); });
+    $('#qTerms').addEventListener('input', function (e) { a.terms = e.target.value; repaint(); });
+    $('#qAddLine').addEventListener('click', function () { a.lines.push(['New item', 1, 0]); $('#qLines').innerHTML = lineRows(a); bindLines(); repaint(); });
+    $('#qSend').addEventListener('click', function () { if (a.status === 'Draft') a.status = 'Sent'; save(); toast('Signing link sent to ' + a.client + ' (simulated)'); });
+    var sign = $('#qSign'); if (sign) sign.addEventListener('click', function () { a.status = 'Signed'; save(); render(); toast(a.client + ' signed. Signed PDF saved to records.'); });
+    var inv = $('#qInv'); if (inv) inv.addEventListener('click', function () { toast('Invoice created from the signed quote: ' + money(a.lines.reduce(function (t, l) { return t + lineTotal(l); }, 0))); });
+  }
+
+  /* ---------------------------------------------------------------- router */
+  var BIND = { messages: bindMessages, intake: bindIntake, clients: bindClients, schedule: bindSchedule, newsletter: bindNewsletter, shop: bindShop, videos: bindVideos, agreements: bindAgreements };
+
+  function render() {
+    var v = VIEWS[ui.view] ? ui.view : 'dashboard';
+    $('#view').innerHTML = VIEWS[v]();
+    $$('.nav').forEach(function (n) { n.classList.toggle('is-on', n.getAttribute('data-view') === v); });
+    $$('#view [data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });
+    if (BIND[v]) BIND[v]();
+    renderDrawer();
+  }
+  function go(v) {
+    if (!VIEWS[v]) v = 'dashboard';
+    if (v !== 'intake') ui.intakeDone = null;
+    ui.view = v; ui.drawer = null;
+    try { if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v); } catch (e) { /* framed: ignore */ }
+    render();
+    window.scrollTo(0, 0);
+  }
+  function reset() {
+    S = EG.seed(); save();
+    ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'pipeline'; ui.calMonth = null; ui.quoteId = 'q1';
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    $$('.nav').forEach(function (n) { n.addEventListener('click', function () { go(n.getAttribute('data-view')); }); });
+    $('#resetBtn').addEventListener('click', function () { reset(); go('dashboard'); toast('Sample data restored'); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ui.drawer && !document.body.classList.contains('touring')) closeDrawer(); });
+    var h = location.hash.slice(1);
+    ui.view = VIEWS[h] ? h : 'dashboard';
+    render();
+  });
+
+  window.App = {
+    go: go, reset: reset, render: render, ui: ui, openClient: openClient, closeDrawer: closeDrawer,
+    simulateOrder: simulateOrder, state: function () { return S; }, toast: toast
+  };
+})();

@@ -1,0 +1,5 @@
+node_modules/
+.wrangler/
+*.webm
+dist-single-file.html
+.DS_Store
