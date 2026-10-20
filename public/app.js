@@ -8,17 +8,18 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v3';
+  var KEY = 'evergrove-showcase-v4';
   var S = load();
   var ui = {
-    view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
+    view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
+    store: { line: 'all', as: 'c1', cart: {} }, progTab: 'sales', enrollDone: null, progStudent: 'c1', confirming: null,
     calMonth: null, quoteId: 'q1', drawer: null, intakeDone: null, simulating: false, log: []
   };
 
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 3) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 4) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -62,7 +63,7 @@
     return '<span class="pill ok">Intake complete</span>';
   }
   function orderTotal(o) {
-    return o.items.reduce(function (t, it) { return t + EG.product(it[0]).price * it[1]; }, 0);
+    return o.items.reduce(function (t, it) { return t + EG.product(it[0]).price * it[1]; }, 0) * (1 - (o.discount || 0));
   }
   function orderCost(o) {
     return o.items.reduce(function (t, it) { return t + EG.product(it[0]).cost * it[1]; }, 0);
@@ -85,7 +86,7 @@
     var upcoming = S.bookings.filter(function (b) { return b.date >= t && b.date <= week; });
     var todays = S.bookings.filter(function (b) { return b.date === t; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
     var active = S.clients.filter(function (c) { return c.plan !== 'newsletter'; }).length;
-    var subs = S.clients.filter(function (c) { return c.autoship; }).length;
+    var members = S.enrollments.length;
     var rev = S.revenue.reduce(function (a, b) { return a + b; }, 0);
     var last = S.revenue[S.revenue.length - 1], prev = S.revenue[S.revenue.length - 2];
 
@@ -107,8 +108,8 @@
     S.agreements.forEach(function (a) {
       if (a.status !== 'Signed') todos.push({ kind: 'warn', text: '<b>' + esc(a.client) + '</b> has ' + a.status.toLowerCase() + ' the ' + esc(a.title) + ' quote but not signed', go: 'agreements' });
     });
-    var waiting = S.orders.filter(function (o) { return o.stage === 0; }).length;
-    if (waiting) todos.push({ kind: 'ok', text: waiting + ' new order' + (waiting > 1 ? 's' : '') + ' will route to suppliers automatically', go: 'shop' });
+    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held; }).length;
+    if (waiting) todos.unshift({ kind: 'bad', text: '<b>' + waiting + ' order' + (waiting > 1 ? 's' : '') + ' waiting for your approval.</b> Nothing goes to a supplier until someone approves it.', go: 'shop', tab: 'pipeline' });
 
     return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Evergrove',
       'Everything that needs you, in one place: consultations, intake paperwork, orders on their way and quotes waiting on a signature.') +
@@ -116,11 +117,11 @@
       stat(active, 'Coaching clients', '+3 this month') +
       stat(upcoming.length, 'Sessions in the next 7 days', '') +
       stat(money(rev, false), 'Revenue, last 8 weeks', '+' + Math.round((last - prev) / prev * 100) + '% vs last week') +
-      stat(subs, 'Auto-ship subscribers', '85% retention') +
+      stat(members, 'In the 3-Month Program', money(members * EG.PROGRAM.price, false) + ' enrolled') +
       '</div>' +
       '<div class="split" style="margin-top:1rem">' +
       '<div class="card" data-tour="todo"><h3 class="h3">Needs attention</h3><div>' +
-      todos.map(function (x) { return '<div class="todo"><span class="dotmark ' + x.kind + '"></span><span class="grow">' + x.text + '</span><button class="btn ghost small" data-go="' + x.go + '">Open</button></div>'; }).join('') +
+      todos.map(function (x) { return '<div class="todo"><span class="dotmark ' + x.kind + '"></span><span class="grow">' + x.text + '</span><button class="btn ghost small" data-go="' + x.go + '"' + (x.tab ? ' data-tab="' + x.tab + '"' : '') + '>Open</button></div>'; }).join('') +
       '</div></div>' +
       '<div class="card chart"><h3 class="h3">Weekly revenue</h3><p class="small muted" style="margin:0 0 .6rem">Coaching, products and workshops combined</p>' + revenueChart() + '</div>' +
       '</div>' +
@@ -343,9 +344,12 @@
   function planHtml(c, r) {
     return '<div class="plan" data-tour="picks">' + r.picks.map(function (x) {
       var p = x.product;
-      return '<div class="pick"><div class="bottle" style="--h:' + p.hue + '"></div><div class="grow"><div class="title">' + esc(p.name) + ' <span class="muted small">' + esc(p.dose) + '</span></div><div class="why">' + esc(x.why.join(' · ')) + '</div>' +
+      return '<div class="pick">' + bottle(p) + '<div class="grow"><div class="title">' + esc(p.name) + ' <span class="muted small">' + esc(EG.LINES[p.line].label) + ' &middot; ' + esc(p.dose) + '</span></div><div class="why">' + esc(x.why.join(' · ')) + (p.supplier === 'physica' ? ' · Physica Energetics' : '') + '</div>' +
         (x.review ? '<span class="pill warn" style="margin-top:.3rem">Practitioner reviews first</span>' : '') + '</div><span class="price">' + money(p.price) + '</span></div>';
     }).join('') + '</div>';
+  }
+  function bottle(p, small) {
+    return '<div class="bottle' + (p.line !== 'nutri' ? ' tincture' : '') + '" style="--h:' + p.hue + (small ? ';width:1.4rem;height:1.9rem' : '') + '"></div>';
   }
   function intakeResult(id) {
     var c = client(id), r = EG.recommend(c);
@@ -358,6 +362,7 @@
       '<h3 class="h2">Videos picked for you</h3><div class="grid g3">' + r.videos.map(function (v) {
         return '<div class="vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div><span class="title">' + esc(v.title) + '</span></div>';
       }).join('') + '</div>' +
+      '<div class="upsell"><div><p class="eyebrow" style="margin:0">Want the full picture?</p><b>' + EG.PROGRAM.name + ': ' + EG.PROGRAM.sub + '</b><br><span class="small muted">Energetics assessment, testing, a course built around you and weekly live Zoom. ' + money(EG.PROGRAM.price, false) + '</span></div><button type="button" class="btn honey small" data-go="program">See the program</button></div>' +
       '<h3 class="h2">Recommended next step</h3><div class="pick"><div class="grow"><div class="title">' + esc(r.service.label) + '</div><div class="why">' + r.service.mins + ' minutes with Maya &middot; ' + (r.service.price ? money(r.service.price, false) : 'included') + '</div></div><button type="button" class="btn small">Book a time</button></div>' +
       '</div></div>' +
       '<h2 class="h2">Behind the scenes, automatically</h2><div class="card" data-tour="behind"><div class="list">' +
@@ -417,7 +422,7 @@
     root.innerHTML = '<div class="drawer-bg" id="dBg"></div><aside class="drawer" role="dialog" aria-label="Client record" data-tour="drawer">' +
       '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><span class="eyebrow" style="margin:0">Client record</span><button class="btn ghost small" id="dClose">Close</button></div>' +
       '<div class="row" style="flex-wrap:nowrap;margin-bottom:1rem"><span class="av" style="width:3rem;height:3rem;font-size:.9rem">' + initials(c.name) + '</span><div><h2 class="h1" style="font-size:1.6rem;margin:0">' + esc(c.name) + '</h2><span class="small muted">' + esc(c.email) + ' &middot; ' + esc(c.phone || 'no phone') + '</span></div></div>' +
-      '<div class="pills" style="margin-bottom:1rem"><span class="pill honey">' + esc(EG.PLANS[c.plan]) + '</span>' + intakePill(c) + (c.autoship ? '<span class="pill ok">Auto-ship</span>' : '') + '<span class="pill">' + esc(c.diet) + '</span>' + c.allergies.map(function (a) { return '<span class="pill bad">Allergy: ' + esc(a) + '</span>'; }).join('') + '</div>' +
+      '<div class="pills" style="margin-bottom:1rem"><span class="pill honey">' + esc(EG.PLANS[c.plan]) + '</span>' + (c.member ? '<span class="pill ok">20% member pricing</span>' : '') + intakePill(c) + (c.autoship ? '<span class="pill ok">Auto-ship</span>' : '') + '<span class="pill">' + esc(c.diet) + '</span>' + c.allergies.map(function (a) { return '<span class="pill bad">Allergy: ' + esc(a) + '</span>'; }).join('') + '</div>' +
       '<div class="card" style="margin-bottom:1rem"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">Personalised plan</h3>' + (r.needsReview ? '<span class="pill warn">Needs review</span>' : '<span class="pill ok">Approved</span>') + '</div><p class="small muted">Goals: ' + c.goals.map(EG.goalLabel).join(', ') + '</p>' + planHtml(c, r) +
       '<div class="row" style="margin-top:.8rem"><button class="btn small" id="dSend">Email this plan</button><button class="btn ghost small" id="dShip">' + (c.autoship ? 'Ship refill now' : 'Start auto-ship') + '</button></div></div>' +
       '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Videos</h3>' + Object.keys(c.videos).map(function (vid) {
@@ -425,7 +430,7 @@
         return '<div style="margin-bottom:.6rem"><div class="row" style="justify-content:space-between"><span class="small">' + esc(v.title) + '</span><span class="small muted num">' + pct + '%</span></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>';
       }).join('') + '</div>' +
       '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Sessions</h3><div class="list">' + (books.length ? books.map(function (b) { return '<div class="li"><div class="grow"><div class="title">' + esc(b.name || service(b.service).label) + '</div><div class="meta">' + fmtDate(b.date) + ' at ' + fmtTime(b.time) + '</div></div><span class="pill' + (b.date >= today() ? ' honey">Upcoming' : '">Done') + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No sessions yet.</p>') + '</div></div>' +
-      '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Orders</h3><div class="list">' + (orders.length ? orders.map(function (o) { return '<div class="li"><div class="grow"><div class="title">' + o.id + '</div><div class="meta">' + fmtDate(o.at) + ' &middot; ' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + '</div></div><span class="pill">' + EG.STAGES[o.stage] + '</span><span class="price">' + money(orderTotal(o)) + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No orders yet.</p>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:1rem"><h3 class="h3">Orders</h3><div class="list">' + (orders.length ? orders.map(function (o) { return '<div class="li"><div class="grow"><div class="title">' + o.id + '</div><div class="meta">' + fmtDate(o.at) + ' &middot; ' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + '</div></div><span class="pill' + (o.stage === 0 ? ' warn' : '') + '">' + EG.STAGES[o.stage] + '</span><span class="price">' + money(orderTotal(o)) + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No orders yet.</p>') + '</div></div>' +
       '<div class="card"><h3 class="h3">Practitioner notes</h3>' + c.notes.map(function (n) { return '<p class="small" style="margin:0 0 .6rem"><span class="muted">' + fmtDate(n.at) + '</span><br>' + esc(n.text) + '</p>'; }).join('') +
       '<div class="row"><input type="text" id="dNote" placeholder="Add a private note" style="flex:1;min-width:8rem"><button class="btn small" id="dAdd">Save</button></div></div>' +
       '</aside>';
@@ -437,7 +442,7 @@
     });
     $('#dShip').addEventListener('click', function () {
       if (!c.autoship) { c.autoship = true; save(); renderDrawer(); toast('Auto-ship started: every 30 days'); return; }
-      placeOrder(c); toast('Refill order created and routed to suppliers');
+      placeOrder(c); toast('Refill order created. It is waiting for approval in Shop.');
     });
     $('#dAdd').addEventListener('click', function () {
       var v = $('#dNote').value.trim(); if (!v) return;
@@ -587,47 +592,148 @@
   VIEWS.shop = function () {
     var month = S.orders.reduce(function (t, o) { return t + orderTotal(o); }, 0);
     var cost = S.orders.reduce(function (t, o) { return t + orderCost(o); }, 0);
+    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held; }).length;
     return head('Grow', 'Shop & fulfilment',
-      'Orders route themselves to the right supplier, tracking numbers come back automatically, and clients get updates without anyone typing an email.') +
-      pitch('new', 'Proposed drop-ship automation: no inventory on your shelves. Each order line goes to the partner lab with stock and the best landed cost, and refills repeat on their own.') +
-      '<div class="grid g4" style="margin-bottom:1rem">' + stat(S.orders.length, 'Orders this week', '') + stat(money(month, false), 'Product revenue', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('1.8 days', 'Average time to ship', 'no packing by you') + '</div>' +
-      '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' + [['pipeline', 'Live orders'], ['products', 'Catalogue'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<button class="btn honey" id="shSim"' + (ui.simulating ? ' disabled' : '') + '>Simulate a new order</button></div>' +
-      (ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'rules' ? rules() : pipeline());
+      'A storefront for the Physica Energetics range and your other supplements. Orders drop-ship from the supplier, but only after a person on your team approves each one.') +
+      pitch('new', 'Proposed drop-ship automation with a human checkpoint: every order, including auto-ship refills, waits in an approval queue. Once approved, routing, tracking emails and refill reminders run on their own.') +
+      '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', 'no packing by you') + '</div>' +
+      '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' +
+      [['store', 'Storefront'], ['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['products', 'Catalogue'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      (ui.shopTab === 'pipeline' ? '<button class="btn ghost" id="shSim">Simulate an incoming order</button>' : '') + '</div>' +
+      (ui.shopTab === 'store' ? storefront() : ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'rules' ? rules() : approvalQueue() + pipeline());
   };
+
+  /* Storefront: what a client sees. Member pricing follows whoever is shopping. */
+  function storefront() {
+    var st = ui.store, shopper = client(st.as), member = shopper && shopper.member;
+    var list = EG.PRODUCTS.filter(function (p) { return st.line === 'all' || p.line === st.line; });
+    var cartSkus = Object.keys(st.cart);
+    var sub = cartSkus.reduce(function (t, k) { return t + EG.product(k).price * st.cart[k]; }, 0);
+    var disc = member ? sub * EG.PROGRAM.discount : 0;
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/shop</code>' +
+      '<label for="stAs" style="margin:0 0 0 auto">Shopping as</label><select id="stAs" style="width:auto">' + S.clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === st.as ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (program member)' : '') + '</option>'; }).join('') + '</select></div>' +
+      '<div class="store">' +
+      '<div class="storemain"><div class="storehead"><div><p class="eyebrow" style="margin:0">Evergrove apothecary</p><h2 class="h1" style="margin:0">Remedies &amp; supplements</h2><p class="small muted" style="margin:.2rem 0 0">Featuring the Physica Energetics range. Placeholder prices.</p></div>' +
+      (member ? '<span class="pill ok" id="stMember">Program member: 20% off everything</span>' : '<span class="pill">Join the 3-Month Program for 20% off</span>') + '</div>' +
+      '<div class="chips" style="margin:1rem 0">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['nutri', 'Nutritionals']].map(function (l) { return '<button class="chip' + (st.line === l[0] ? ' is-on' : '') + '" data-line="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="pgrid">' + list.map(function (p) {
+        var price = member ? p.price * (1 - EG.PROGRAM.discount) : p.price;
+        return '<div class="pcard">' + bottle(p) + '<div class="pname">' + esc(p.name) + '</div><div class="small muted">' + esc(EG.LINES[p.line].kind) + ' &middot; ' + esc(p.dose) + '</div>' +
+          '<div class="row" style="justify-content:space-between;margin-top:auto"><span class="price">' + money(price) + (member ? ' <s class="muted small">' + money(p.price) + '</s>' : '') + '</span><button class="btn small" data-add="' + p.sku + '">' + (st.cart[p.sku] ? 'Added (' + st.cart[p.sku] + ')' : 'Add') + '</button></div></div>';
+      }).join('') + '</div></div>' +
+      '<aside class="cart" data-tour="cart"><h3 class="h3">Your cart</h3>' +
+      (cartSkus.length ? cartSkus.map(function (k) { var p = EG.product(k); return '<div class="row small" style="justify-content:space-between;flex-wrap:nowrap;margin-bottom:.4rem"><span>' + st.cart[k] + ' &times; ' + esc(p.name) + '</span><span class="num">' + money(p.price * st.cart[k]) + '</span></div>'; }).join('') +
+        '<div class="carttot"><div class="row" style="justify-content:space-between"><span>Subtotal</span><span class="num">' + money(sub) + '</span></div>' +
+        (disc ? '<div class="row" style="justify-content:space-between;color:var(--ok)"><span>Member 20%</span><span class="num">&minus;' + money(disc) + '</span></div>' : '') +
+        '<div class="row" style="justify-content:space-between"><span>Shipping</span><span class="num">' + (sub - disc >= 75 ? 'Free' : '$6.95') + '</span></div>' +
+        '<div class="row" style="justify-content:space-between;font-weight:700"><span>Total</span><span class="num">' + money(sub - disc + (sub - disc >= 75 ? 0 : 6.95)) + '</span></div></div>' +
+        '<button class="btn" id="stCheckout" style="width:100%;margin-top:.8rem">Place order</button><p class="small muted" style="margin:.5rem 0 0">Showcase: no payment is taken.</p>'
+        : '<p class="small muted" style="margin:0">Your cart is empty. Add a remedy to get started.</p>') +
+      '</aside></div></div>';
+  }
+
+  function linesBySupplier(o) {
+    var by = {};
+    o.items.forEach(function (it) {
+      var p = EG.product(it[0]), sup = p.supplier;
+      (by[sup] = by[sup] || []).push({ p: p, n: it[1] });
+    });
+    return by;
+  }
+
+  /* The checkpoint. Nothing below this card reaches a supplier until a person
+     presses Approve and then confirms. */
+  function approvalQueue() {
+    var q = S.orders.filter(function (o) { return o.stage === 0; });
+    if (!q.length) return '<div class="card" style="margin-bottom:1rem" data-tour="approvals"><h3 class="h3" style="margin:0">Approval queue</h3><p class="small muted" style="margin:.3rem 0 0">Nothing waiting. New orders and refills will appear here first.</p></div>';
+    return '<div class="card" style="margin-bottom:1rem" data-tour="approvals"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">Approval queue</h3><span class="small muted">Orders wait here until a team member approves them</span></div>' +
+      q.map(function (o) {
+        var c = client(o.client), r = c ? EG.recommend(c) : { flags: [] };
+        var by = linesBySupplier(o), cost = orderCost(o), total = orderTotal(o);
+        var review = r.flags.length > 0;
+        var confirming = ui.confirming === o.id;
+        return '<div class="approve' + (o.held ? ' held' : '') + '" id="ap-' + o.id + '">' +
+          '<div class="row" style="justify-content:space-between"><div><b>' + o.id + '</b> &middot; ' + esc(c ? c.name : '') + ' &middot; ' + fmtDate(o.at) + (o.sub ? ' &middot; auto-ship refill' : '') + '</div>' +
+          (o.held ? '<span class="pill">On hold</span>' : review ? '<span class="pill warn">Screening flag</span>' : '<span class="pill warn">Needs approval</span>') + '</div>' +
+          '<div class="tablewrap"><table class="small" style="margin:.6rem 0"><thead><tr><th>Item</th><th>Supplier</th><th class="r">Qty</th><th class="r">Supplier cost</th></tr></thead><tbody>' +
+          Object.keys(by).map(function (sup) { return by[sup].map(function (x) { return '<tr><td>' + esc(x.p.name) + '</td><td>' + esc(EG.SUPPLIERS[sup].name) + '</td><td class="r">' + x.n + '</td><td class="r">' + money(x.p.cost * x.n) + '</td></tr>'; }).join(''); }).join('') +
+          '</tbody></table></div>' +
+          '<div class="row small" style="gap:1.2rem"><span>Client pays <b class="num">' + money(total) + '</b>' + (o.discount ? ' (member price)' : '') + '</span><span>Supplier cost <b class="num">' + money(cost) + '</b></span><span>Margin <b class="num">' + money(total - cost) + ' (' + Math.round((1 - cost / total) * 100) + '%)</b></span><span class="muted">Ship to ' + esc(c ? c.name : '') + ', Salt Lake City, UT</span></div>' +
+          (review ? '<label class="check" style="margin-top:.6rem"><input type="checkbox" data-reviewed="' + o.id + '"> I have reviewed ' + esc(first(c.name)) + '&rsquo;s screening (' + r.flags.map(function (f) { return { bloodthinner: 'blood thinner', pregnant: 'pregnancy', thyroid: 'thyroid' }[f]; }).join(', ') + ') and this order is appropriate</label>' : '') +
+          (confirming
+            ? '<div class="confirm"><span>Send ' + o.items.length + ' line' + (o.items.length > 1 ? 's' : '') + ' to ' + Object.keys(by).map(function (k) { return esc(EG.SUPPLIERS[k].name); }).join(' and ') + ' for ' + money(cost) + '? The supplier will ship within a day and this cannot be unsent.</span><div class="row"><button class="btn" data-confirm="' + o.id + '">Yes, send to supplier</button><button class="btn ghost" data-cancel="' + o.id + '">Cancel</button></div></div>'
+            : '<div class="row" style="margin-top:.7rem"><button class="btn" data-approve="' + o.id + '"' + (review || o.held ? ' disabled' : '') + '>Approve order</button><button class="btn ghost" data-hold="' + o.id + '">' + (o.held ? 'Release hold' : 'Hold') + '</button></div>') +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
   function pipeline() {
     return '<div class="pipe" data-tour="pipeline">' + EG.STAGES.map(function (st, i) {
       var os = S.orders.filter(function (o) { return o.stage === i; }).slice().reverse();
-      return '<div class="lane"><h4><span>' + st + '</span><span>' + os.length + '</span></h4>' + os.map(function (o) {
+      return '<div class="lane' + (i === 0 ? ' gate' : '') + '"><h4><span>' + st + '</span><span>' + os.length + '</span></h4>' + os.map(function (o) {
         var c = client(o.client);
-        var sup = EG.SUPPLIERS[EG.routeLine(o.items[0][0], +o.id.slice(-1)).supplier].name.split(' ')[0];
-        return '<div class="ticket" id="t-' + o.id + '"><b>' + o.id + ' &middot; ' + money(orderTotal(o)) + '</b>' + esc(c ? c.name : '') + '<br><span class="muted">' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + (i >= 1 ? ' &middot; ' + sup : '') + (o.sub ? ' &middot; refill' : '') + '</span>' + (o.tracking && i >= 3 ? '<br><span class="muted num">' + o.tracking + '</span>' : '') + '</div>';
+        var sups = Object.keys(linesBySupplier(o)).map(function (k) { return EG.SUPPLIERS[k].short; }).join(' + ');
+        return '<div class="ticket" id="t-' + o.id + '"><b>' + o.id + ' &middot; ' + money(orderTotal(o)) + '</b>' + esc(c ? c.name : '') + '<br><span class="muted">' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + ' &middot; ' + sups + (o.sub ? ' &middot; refill' : '') + '</span>' +
+          (o.approvedBy && i >= 1 ? '<br><span class="muted">Approved by ' + esc(first(o.approvedBy)) + '</span>' : '') + (o.tracking && i >= 3 ? '<br><span class="muted num">' + o.tracking + '</span>' : '') + '</div>';
       }).join('') + '</div>';
-    }).join('') + '</div><h2 class="h2">Automation log</h2><div class="log" id="shLog">' + (ui.log.length ? ui.log.join('') : '<div><time>--:--</time><span class="muted">Press "Simulate a new order" to watch an order go from checkout to doorstep.</span></div>') + '</div>';
+    }).join('') + '</div><h2 class="h2">Automation log</h2><div class="log" id="shLog">' + (ui.log.length ? ui.log.join('') : '<div><time>--:--</time><span class="muted">Approve an order above to watch it go from supplier to doorstep.</span></div>') + '</div>';
   }
   function productsTable() {
-    return '<div class="card"><div class="tablewrap"><table><thead><tr><th>Product</th><th>SKU</th><th class="r">Price</th><th class="r">Supplier cost</th><th class="r">Margin</th><th>Ships from</th><th>Backup</th></tr></thead><tbody>' +
+    return '<div class="card"><p class="small muted" style="margin-top:0">Product names from the Physica Energetics catalogue. Their pricing is practitioner-only, so prices and costs shown are placeholders until we load your price list.</p><div class="tablewrap"><table><thead><tr><th>Product</th><th>Line</th><th class="r">Price</th><th class="r">Member</th><th class="r">Supplier cost</th><th class="r">Margin</th><th>Supplier</th></tr></thead><tbody>' +
       EG.PRODUCTS.map(function (p) {
-        return '<tr><td><div class="row" style="flex-wrap:nowrap"><span class="bottle" style="--h:' + p.hue + ';width:1.4rem;height:1.9rem"></span><span><b>' + esc(p.name) + '</b><br><span class="small muted">' + esc(p.dose) + (p.tags.indexOf('vegan') >= 0 ? ' &middot; vegan' : '') + '</span></span></div></td><td class="num small">' + p.sku + '</td><td class="r">' + money(p.price) + '</td><td class="r">' + money(p.cost) + '</td><td class="r">' + Math.round((1 - p.cost / p.price) * 100) + '%</td><td>' + esc(EG.SUPPLIERS[p.supplier].name) + '</td><td>' + (p.alt ? esc(EG.SUPPLIERS[p.alt].name) : '<span class="muted">&mdash;</span>') + '</td></tr>';
+        return '<tr><td><div class="row" style="flex-wrap:nowrap">' + bottle(p, true) + '<span><b>' + esc(p.name) + '</b><br><span class="small muted">' + esc(p.dose) + '</span></span></div></td><td>' + esc(EG.LINES[p.line].label) + '<br><span class="small muted">' + esc(EG.LINES[p.line].kind) + '</span></td><td class="r">' + money(p.price) + '</td><td class="r">' + money(p.price * (1 - EG.PROGRAM.discount)) + '</td><td class="r">' + money(p.cost) + '</td><td class="r">' + Math.round((1 - p.cost / p.price) * 100) + '%</td><td>' + esc(EG.SUPPLIERS[p.supplier].name) + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
   }
   var RULES = [
-    ['Route each line to the supplier with stock and the lowest landed cost', 'Falls back to the backup lab automatically when stock runs low.'],
-    ['Email tracking the moment the supplier ships', 'Branded as Evergrove. The client never sees the supplier.'],
-    ['Auto-ship refills every 30 days', 'Charged and routed on schedule; skip or pause from one link.'],
-    ['Refill reminder 5 days before each shipment', 'Gives subscribers time to swap or pause.'],
-    ['Hold orders that need practitioner review', 'Screening flags from the intake stop the order until approved.'],
-    ['Alert when margin on an order drops under 45%', 'Catches supplier price changes before they cost you.']
+    ['Email the client the moment an order is approved', 'Branded as Evergrove, with what was ordered and when to expect it.'],
+    ['Route each approved line to the right supplier', 'Physica Energetics for the remedies, the backup lab for plain nutritionals.'],
+    ['Email tracking the moment the supplier ships', 'The client never sees the supplier.'],
+    ['Create auto-ship refills every 30 days', 'Each refill lands in the approval queue like any other order.'],
+    ['Apply 20% member pricing for program clients', 'Starts on enrolment and ends when the 3-month program does.'],
+    ['Alert when margin on an order drops under 35%', 'Catches supplier price changes before they cost you.']
   ];
   function rules() {
-    return '<div class="card"><div>' + RULES.map(function (r, i) {
-      return '<div class="rule"><button class="toggle" data-rule="' + i + '" aria-label="Toggle rule"></button><div class="grow"><b>' + esc(r[0]) + '</b><br><span class="small muted">' + esc(r[1]) + '</span></div></div>';
-    }).join('') + '</div></div>';
+    return '<div class="card"><div>' +
+      '<div class="rule"><span class="toggle locked" aria-label="Always on"></span><div class="grow"><b>A person approves every order before it reaches a supplier</b> <span class="pill">Always on</span><br><span class="small muted">This one cannot be switched off. Orders with a screening flag also need the reviewer to confirm they checked it.</span></div></div>' +
+      RULES.map(function (r, i) {
+        return '<div class="rule"><button class="toggle" data-rule="' + i + '" aria-label="Toggle rule"></button><div class="grow"><b>' + esc(r[0]) + '</b><br><span class="small muted">' + esc(r[1]) + '</span></div></div>';
+      }).join('') + '</div></div>';
   }
   function bindShop() {
     $$('[data-shtab]').forEach(function (b) { b.addEventListener('click', function () { ui.shopTab = b.getAttribute('data-shtab'); render(); }); });
     $$('[data-rule]').forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('off'); }); });
-    $('#shSim').addEventListener('click', function () { simulateOrder(); });
+    var sim = $('#shSim'); if (sim) sim.addEventListener('click', function () { simulateOrder(); });
+    /* storefront */
+    var as = $('#stAs'); if (as) as.addEventListener('change', function () { ui.store.as = as.value; render(); });
+    $$('[data-line]').forEach(function (b) { b.addEventListener('click', function () { ui.store.line = b.getAttribute('data-line'); render(); }); });
+    $$('[data-add]').forEach(function (b) {
+      b.addEventListener('click', function () { var k = b.getAttribute('data-add'); ui.store.cart[k] = (ui.store.cart[k] || 0) + 1; render(); });
+    });
+    var co = $('#stCheckout');
+    if (co) co.addEventListener('click', function () {
+      var c = client(ui.store.as);
+      var o = { id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: Object.keys(ui.store.cart).map(function (k) { return [k, ui.store.cart[k]]; }), stage: 0, sub: false, discount: c.member ? EG.PROGRAM.discount : 0 };
+      S.orders.push(o); save();
+      ui.store.cart = {}; ui.shopTab = 'pipeline';
+      logLine('Checkout: <b>' + o.id + '</b> from ' + esc(c.name) + ', ' + money(orderTotal(o)) + '. Payment authorised.');
+      logLine('Waiting for approval. Nothing is sent to a supplier until a team member approves.');
+      render();
+      var card = $('#ap-' + o.id); if (card) { card.classList.add('flash'); card.scrollIntoView({ block: 'center' }); }
+      toast('Order placed. It is now in your approval queue.');
+    });
+    /* approvals */
+    $$('[data-reviewed]').forEach(function (cb) {
+      cb.addEventListener('change', function () { var b = $('[data-approve="' + cb.getAttribute('data-reviewed') + '"]'); if (b) b.disabled = !cb.checked; });
+    });
+    $$('[data-approve]').forEach(function (b) { b.addEventListener('click', function () { ui.confirming = b.getAttribute('data-approve'); render(); }); });
+    $$('[data-cancel]').forEach(function (b) { b.addEventListener('click', function () { ui.confirming = null; render(); }); });
+    $$('[data-confirm]').forEach(function (b) { b.addEventListener('click', function () { approveOrder(b.getAttribute('data-confirm')); }); });
+    $$('[data-hold]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var o = S.orders.filter(function (x) { return x.id === b.getAttribute('data-hold'); })[0];
+        o.held = !o.held; save(); logLine(o.id + (o.held ? ' put on hold.' : ' released from hold.')); render();
+      });
+    });
   }
   function stamp() { var n = new Date(); return String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') + ':' + String(n.getSeconds()).padStart(2, '0'); }
   function logLine(text, ok) {
@@ -636,42 +742,56 @@
     var l = $('#shLog'); if (l) l.innerHTML = ui.log.join('');
   }
   function placeOrder(c) {
-    var items = (c.plan_items && c.plan_items.length ? c.plan_items : ['EG-MAG-200']).slice(0, 3).map(function (s) { return [s, 1]; });
-    var o = { id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: items, stage: 0, sub: !!c.autoship };
+    var items = (c.plan_items && c.plan_items.length ? c.plan_items : ['PE-ADM']).slice(0, 3).map(function (s) { return [s, 1]; });
+    var o = { id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: items, stage: 0, sub: !!c.autoship, discount: c.member ? EG.PROGRAM.discount : 0 };
     S.orders.push(o); save(); return o;
   }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* An order arrives and stops at the gate. */
   function simulateOrder() {
-    if (ui.simulating) return Promise.resolve();
-    ui.simulating = true; ui.shopTab = 'pipeline'; render();
     var pool = S.clients.filter(function (c) { return c.plan_items && c.plan_items.length && !EG.recommend(c).needsReview; });
     var c = pool[Math.floor(Math.random() * pool.length)] || S.clients[0];
     var o = placeOrder(c);
+    ui.shopTab = 'pipeline';
+    logLine('Checkout: <b>' + o.id + '</b> from ' + esc(c.name) + ', ' + money(orderTotal(o)) + '. Payment authorised.');
+    logLine('Waiting for approval. Nothing is sent to a supplier until a team member approves.');
+    if (ui.view === 'shop') render();
+    var card = $('#ap-' + o.id); if (card) card.classList.add('flash');
+    return o;
+  }
+
+  /* Only reachable through Approve, then "Yes, send to supplier". */
+  function approveOrder(id) {
+    var o = S.orders.filter(function (x) { return x.id === id; })[0];
+    if (!o || o.stage !== 0) return Promise.resolve();
+    var c = client(o.client);
+    ui.confirming = null; ui.simulating = true;
+    o.approvedBy = EG.BRAND.owner;
+    var by = linesBySupplier(o);
     var steps = [
-      function () { logLine('Checkout: <b>' + o.id + '</b> from ' + esc(c.name) + ', ' + o.items.length + ' items, ' + money(orderTotal(o))); logLine('Payment captured. Screening check passed.', true); },
       function () {
-        o.items.forEach(function (it, k) {
-          var r = EG.routeLine(it[0], k + o.items.length);
-          logLine(esc(EG.product(it[0]).name) + ' &rarr; ' + esc(EG.SUPPLIERS[r.supplier].name) + ' <span class="muted">(' + esc(r.reason) + ')</span>');
-        });
+        logLine('Approved by ' + esc(EG.BRAND.owner) + '.', true);
+        Object.keys(by).forEach(function (k) { logLine(by[k].map(function (x) { return esc(x.p.name); }).join(', ') + ' &rarr; ' + esc(EG.SUPPLIERS[k].name)); });
+        logLine('Email to ' + esc(c.email) + ': "Your order is confirmed"');
       },
-      function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); logLine('Email to ' + esc(c.email) + ': "We have your order"'); },
+      function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); },
       function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('Tracking received: ' + o.tracking, true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
       function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); }
     ];
     var chain = Promise.resolve();
     steps.forEach(function (fn, i) {
       chain = chain.then(function () {
-        o.stage = i; fn(); save();
+        o.stage = i + 1; fn(); save();
         if (ui.view === 'shop' && ui.shopTab === 'pipeline') {
-          var pipe = $('.pipe');
-          if (pipe) { var tmp = document.createElement('div'); tmp.innerHTML = pipeline(); pipe.replaceWith(tmp.firstChild); }
+          if (i === 0) render();
+          else { var pipe = $('.pipe'); if (pipe) { var tmp = document.createElement('div'); tmp.innerHTML = pipeline(); pipe.replaceWith(tmp.firstChild); } }
           var t = $('#t-' + o.id); if (t) t.classList.add('flash');
         }
         return wait(1500);
       });
     });
-    return chain.then(function () { ui.simulating = false; var b = $('#shSim'); if (b) b.disabled = false; toast(o.id + ' delivered without anyone touching it'); });
+    return chain.then(function () { ui.simulating = false; toast(o.id + ' delivered. One click from you, the rest was automatic.'); });
   }
 
   /* Videos ----------------------------------------------------------------- */
@@ -679,7 +799,7 @@
     var total = EG.VIDEOS.reduce(function (t, v) { return t + v.views; }, 0);
     return head('Grow', 'Video library',
       'Classes and explainers that the intake assigns automatically. See who is watching and what is helping.') +
-      pitch('new', 'Proposed: a members&rsquo; video library tied to each client&rsquo;s goals, with watch progress on the client record and videos recommended in plans and newsletters.') +
+      pitch('new', 'Proposed: free classes plus paid course videos that program members can stream or download. A members&rsquo; video library tied to each client&rsquo;s goals, with watch progress on the client record and videos recommended in plans and newsletters.') +
       '<div class="grid g4" style="margin-bottom:1rem">' + stat(total.toLocaleString(), 'Views, last 90 days', '+22%') + stat('71%', 'Average completion', '') + stat(EG.VIDEOS.length, 'Videos published', '') + stat('3.4', 'Videos per client plan', '') + '</div>' +
       '<div class="grid g3" data-tour="videos">' + EG.VIDEOS.map(function (v) {
         var assigned = S.clients.filter(function (c) { return v.id in c.videos; }).length;
@@ -757,20 +877,165 @@
     var inv = $('#qInv'); if (inv) inv.addEventListener('click', function () { toast('Invoice created from the signed quote: ' + money(a.lines.reduce(function (t, l) { return t + lineTotal(l); }, 0))); });
   }
 
+  /* 3-Month Program -------------------------------------------------------- */
+  function nextThursdays(n) {
+    var out = [], dt = new Date();
+    dt.setDate(dt.getDate() + ((4 - dt.getDay() + 7) % 7));
+    for (var i = 0; i < n; i++) {
+      var x = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 7 * i);
+      out.push(x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'));
+    }
+    return out;
+  }
+  function enrollment(id) { for (var i = 0; i < S.enrollments.length; i++) if (S.enrollments[i].client === id) return S.enrollments[i]; return null; }
+
+  VIEWS.program = function () {
+    var P = EG.PROGRAM, n = S.enrollments.length;
+    if (ui.enrollDone) return enrollResult(ui.enrollDone);
+    return head('Grow', P.name + ': ' + P.sub,
+      'Sell the all-inclusive program online, then deliver it: assessment and testing, a course customised to each client, weekly live Zoom and member pricing in the shop.') +
+      pitch('new', 'Proposed: paid course sales and delivery. Checkout and the signed program agreement reuse the proven e-signature engine. Customised modules, downloads, testing and Zoom scheduling are the new build.') +
+      '<div class="grid g4" style="margin-bottom:1rem">' + stat(n, 'Active members', '') + stat(money(n * P.price, false), 'Program revenue booked', '') + stat('92%', 'Weekly Zoom attendance', '') + stat('8.4', 'Modules downloaded per member', '') + '</div>' +
+      '<div class="tabs">' + [['sales', 'Sales page'], ['students', 'Members'], ['content', 'Course content'], ['live', 'Live Zoom']].map(function (t) { return '<button class="tab' + (ui.progTab === t[0] ? ' is-on' : '') + '" data-ptab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      (ui.progTab === 'students' ? programStudents() : ui.progTab === 'content' ? programContent() : ui.progTab === 'live' ? programLive() : programSales());
+  };
+
+  function programSales() {
+    var P = EG.PROGRAM;
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/restore</code></div>' +
+      '<div class="guest sales" data-tour="sales"><p class="eyebrow">' + esc(P.sub) + '</p><h2 class="h1" style="font-size:2.3rem">' + esc(P.name) + '</h2>' +
+      '<p class="muted" style="margin:0 0 1.2rem">Twelve weeks with our practitioners, built around your assessment, your test results and your goals.</p>' +
+      '<div class="pricebox"><div><b class="bigprice">' + money(P.price, false) + '</b><span class="small muted"> all inclusive</span><br><span class="small muted">or ' + P.plan.n + ' monthly payments of ' + money(P.plan.each, false) + '</span></div>' +
+      '<button type="button" class="btn honey" id="pEnroll">Enroll now</button></div>' +
+      '<div class="includes">' + P.includes.map(function (x) { return '<div class="inc"><span class="tick"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><div><b>' + esc(x[0]) + '</b><br><span class="small muted">' + esc(x[1]) + '</span></div></div>'; }).join('') + '</div>' +
+      '<p class="label" style="margin-top:1.2rem">Your practitioners</p><div class="row">' + EG.PRACTITIONERS.map(function (p) { return '<div class="row" style="flex-wrap:nowrap;gap:.5rem;margin-right:1rem"><span class="av">' + initials(p.name.replace('Dr. ', '')) + '</span><span class="small"><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.role) + '</span></span></div>'; }).join('') + '</div>' +
+      '<form id="pForm" class="checkout" hidden novalidate><h3 class="h3">Enroll in ' + esc(P.name) + '</h3><div class="fields">' +
+      '<div><label for="pName">Full name</label><input id="pName" type="text" autocomplete="off"></div>' +
+      '<div><label for="pEmail">Email</label><input id="pEmail" type="email" autocomplete="off"></div>' +
+      '<div class="wide"><label for="pPlan">Payment</label><select id="pPlan"><option value="full">Pay in full: ' + money(P.price, false) + '</option><option value="plan">' + P.plan.n + ' monthly payments of ' + money(P.plan.each, false) + '</option></select></div>' +
+      '<div class="wide"><label for="pCard">Card</label><input id="pCard" type="text" value="Showcase: no card needed" readonly></div>' +
+      '</div><label class="check" style="margin-top:.9rem"><input type="checkbox" id="pAgree"> I agree to the program agreement and consent (signed online, copy emailed to me)</label>' +
+      '<p class="small" id="pErr" style="color:var(--bad);min-height:1.2em"></p><button class="btn" id="pPay" type="submit" style="width:100%;padding:.85rem">Complete enrollment</button></form>' +
+      '</div></div>';
+  }
+
+  function enrollResult(id) {
+    var c = client(id), P = EG.PROGRAM, mods = EG.MODULES;
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/restore/welcome</code></div>' +
+      '<div class="guest" data-tour="welcome"><div class="result-hero"><div class="check-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div>' +
+      '<div><p class="eyebrow" style="margin:0">Welcome, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">You&rsquo;re enrolled</h2></div></div>' +
+      '<p class="muted">Your twelve weeks start now. Week 1 is unlocked, and your course will be shaped by your assessment and goals. Your track: <b>' + esc(EG.trackFor(c.goals)) + '</b>.</p>' +
+      '<div class="grid g2" style="margin-top:1rem"><div class="pick"><div class="grow"><div class="title">Book your energetics assessment</div><div class="why">75 minutes with Theo Marsh</div></div><button type="button" class="btn small">Pick a time</button></div>' +
+      '<div class="pick"><div class="grow"><div class="title">Week 1: ' + esc(mods[0].title) + '</div><div class="why">' + mods[0].vids + ' videos &middot; ' + mods[0].mins + ' min &middot; workbook</div></div><button type="button" class="btn ghost small">Watch</button></div></div>' +
+      '</div></div>' +
+      '<h2 class="h2">Behind the scenes, automatically</h2><div class="card" data-tour="enrollbehind"><div class="list">' +
+      [['ok', 'Payment recorded: ' + (c.payPlan ? P.plan.n + ' x ' + money(P.plan.each, false) + ', next charge in 30 days' : money(P.price, false) + ' paid in full')],
+        ['ok', 'Program agreement signed and saved as a PDF'], ['ok', 'Welcome email sent with the intake form and the assessment booking link'],
+        ['ok', 'Test kit requested from the lab'], ['ok', 'Starter remedy order at member price added to your approval queue'], ['ok', 'Added to the Thursday Zoom series (calendar invites sent)'],
+        ['ok', 'Week 1 unlocked. Later weeks unlock every 7 days'], ['ok', '20% member pricing switched on in the shop for 3 months']]
+        .map(function (x) { return '<div class="todo"><span class="dotmark ' + x[0] + '"></span><span class="grow">' + esc(x[1]) + '</span></div>'; }).join('') +
+      '</div><div class="row" style="margin-top:1rem"><button class="btn" id="pSeeMembers">See all members</button><button class="btn ghost" data-open-client="' + c.id + '">Open client record</button></div></div>';
+  }
+
+  function programStudents() {
+    return '<div class="card"><div class="tablewrap"><table data-tour="members"><thead><tr><th>Member</th><th>Progress</th><th>Energetics</th><th>Testing</th><th>Custom plan</th><th>Payment</th><th class="r">Zoom</th></tr></thead><tbody>' +
+      S.enrollments.map(function (e) {
+        var c = client(e.client);
+        var pill = function (v, good) { return '<span class="pill' + (good.indexOf(v) >= 0 ? ' ok' : ' warn') + '">' + esc(v) + '</span>'; };
+        return '<tr class="clickable" data-client="' + c.id + '"><td><div class="row" style="flex-wrap:nowrap"><span class="av">' + initials(c.name) + '</span><span><b>' + esc(c.name) + '</b><br><span class="small muted">' + esc(EG.trackFor(c.goals)) + '</span></span></div></td>' +
+          '<td style="min-width:8rem"><span class="small num">Week ' + e.week + ' of 12</span><div class="bar"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div></td>' +
+          '<td>' + pill(e.assess, ['Complete', 'Retest booked']) + '</td><td>' + pill(e.testing, ['Results reviewed', 'Results in']) + '</td><td>' + pill(e.plan, ['Delivered']) + '</td><td>' + pill(e.pay, ['Paid in full']) + '</td><td class="r num">' + e.zoom + '/' + Math.max(1, e.week - 1) + '</td></tr>';
+      }).join('') + '</tbody></table></div></div>';
+  }
+
+  function programContent() {
+    var e = enrollment(ui.progStudent) || S.enrollments[0], c = client(e.client);
+    return '<div class="row" style="margin-bottom:1rem"><label for="pStudent" style="margin:0">Viewing as</label><select id="pStudent" style="width:auto">' + S.enrollments.map(function (x) { var cc = client(x.client); return '<option value="' + cc.id + '"' + (cc.id === c.id ? ' selected' : '') + '>' + esc(cc.name) + ' (week ' + x.week + ')</option>'; }).join('') + '</select>' +
+      '<span class="small muted">Each member sees their own track, protocol and unlock dates.</span></div>' +
+      '<div class="card" style="margin-bottom:1rem"><div class="row" style="justify-content:space-between"><div><b>Custom energetics protocol for ' + esc(first(c.name)) + '</b><br><span class="small muted">Written by Theo Marsh after the assessment &middot; PDF, 6 pages</span></div><button class="btn small" data-dl="protocol">Download</button></div></div>' +
+      '<div class="card"><div class="list" data-tour="modules">' + EG.MODULES.map(function (m) {
+        var state = m.w < e.week ? 'done' : m.w === e.week ? 'now' : 'locked';
+        var unlock = fmtDate(EG.iso(7 * (m.w - e.week)), { month: 'short', day: 'numeric' });
+        var title = m.track ? EG.trackFor(c.goals) : m.title;
+        return '<div class="li module ' + state + '"><span class="wk num">W' + m.w + '</span><div class="grow"><div class="title">' + esc(title) + (m.track ? ' <span class="pill honey">Personalised</span>' : '') + '</div><div class="meta">' + m.vids + ' videos &middot; ' + m.mins + ' min &middot; workbook PDF</div></div>' +
+          (state === 'done' ? '<span class="pill ok">Completed</span><button class="btn ghost small" data-dl="' + m.w + '">Download</button>'
+            : state === 'now' ? '<span class="pill honey">This week</span><button class="btn small" data-dl="' + m.w + '">Download</button>'
+              : '<span class="pill">Unlocks ' + unlock + '</span><button class="btn ghost small" disabled>Locked</button>') + '</div>';
+      }).join('') + '</div></div>';
+  }
+
+  function programLive() {
+    var dates = nextThursdays(4), topics = ['Open Q&A and protocol check-ins', 'Drainage week: what to expect', 'Sleep, stress and the nervous system', 'Reading your retest results'];
+    return '<div class="grid g2"><div class="card"><h3 class="h3">Upcoming live sessions</h3><div class="list" data-tour="zoom">' + dates.map(function (d0, i) {
+      var pr = EG.PRACTITIONERS[i % 3];
+      return '<div class="li"><span class="pill honey num">' + fmtDate(d0, { month: 'short', day: 'numeric' }) + '</span><div class="grow"><div class="title">' + esc(topics[i]) + '</div><div class="meta">Thursdays 6:00pm MT &middot; with ' + esc(pr.name) + ' &middot; ' + (S.enrollments.length - (i ? 1 : 0)) + ' members invited</div></div><button class="btn ghost small" data-zoom="' + i + '">Copy Zoom link</button></div>';
+    }).join('') + '</div></div>' +
+      '<div class="card"><h3 class="h3">Recordings</h3><p class="small muted" style="margin-top:0">Each session is recorded and added to the course automatically, so members who miss a Thursday can catch up or download it.</p><div class="list">' +
+      [['Week 10 Q&A', 58], ['Understanding your test kit', 46], ['Emotional energetics live', 62]].map(function (r, i) { return '<div class="li"><div class="grow"><div class="title">' + r[0] + '</div><div class="meta">' + fmtDate(EG.iso(-7 * (i + 1) + 2)) + ' &middot; ' + r[1] + ' min</div></div><button class="btn ghost small" data-dl="rec">Download</button></div>'; }).join('') +
+      '</div></div></div>';
+  }
+
+  function bindProgram() {
+    $$('[data-ptab]').forEach(function (b) { b.addEventListener('click', function () { ui.progTab = b.getAttribute('data-ptab'); render(); }); });
+    $$('[data-client]').forEach(function (r) { r.addEventListener('click', function () { openClient(r.getAttribute('data-client')); }); });
+    $$('[data-open-client]').forEach(function (b) { b.addEventListener('click', function () { openClient(b.getAttribute('data-open-client')); }); });
+    var see = $('#pSeeMembers'); if (see) see.addEventListener('click', function () { ui.enrollDone = null; ui.progTab = 'students'; render(); });
+    var st = $('#pStudent'); if (st) st.addEventListener('change', function () { ui.progStudent = st.value; render(); });
+    $$('[data-dl]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = client(ui.progStudent) || client(S.enrollments[0].client);
+        toast('Download ready for ' + c.name + ': watermarked with their name, link expires in 72 hours (simulated)');
+      });
+    });
+    $$('[data-zoom]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var url = 'https://zoom.example/j/8015550' + (140 + (+b.getAttribute('data-zoom')));
+        try { navigator.clipboard.writeText(url).catch(function () {}); } catch (e) { /* not allowed here */ }
+        toast('Zoom link: ' + url);
+      });
+    });
+    var en = $('#pEnroll');
+    if (en) en.addEventListener('click', function () { var f = $('#pForm'); f.hidden = false; f.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    var form = $('#pForm');
+    if (form) form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = $('#pName').value.trim(), email = $('#pEmail').value.trim(), err = $('#pErr');
+      if (!name || !email) { err.textContent = 'Add your name and email to enroll.'; return; }
+      if (!$('#pAgree').checked) { err.textContent = 'Please agree to the program agreement.'; return; }
+      var c = null;
+      S.clients.forEach(function (x) { if (x.email.toLowerCase() === email.toLowerCase()) c = x; });
+      if (!c) {
+        c = { id: 'c' + (S.nextClient++), name: name, email: email, phone: '', goals: ['stress', 'sleep'], diet: 'omnivore', plan: 'program', joined: today(), ltv: 0, autoship: false, allergies: [], pregnant: false, bloodthinner: false, thyroid: false, consent: true, intake: false, videos: {}, notes: [], fresh: true };
+        c.plan_items = EG.recommend(c).picks.map(function (x) { return x.product.sku; });
+        S.clients.unshift(c);
+      }
+      c.plan = 'program'; c.member = true; c.consent = true; c.payPlan = $('#pPlan').value === 'plan';
+      c.ltv += c.payPlan ? EG.PROGRAM.plan.each : EG.PROGRAM.price;
+      if (!enrollment(c.id)) S.enrollments.unshift({ client: c.id, week: 1, assess: 'Booking sent', testing: 'Kit ordered', plan: 'After assessment', pay: c.payPlan ? '1 of 3 paid' : 'Paid in full', zoom: 0, start: today() });
+      S.orders.push({ id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: [['PE-DRN', 1]], stage: 0, sub: false, discount: EG.PROGRAM.discount });
+      S.emails.unshift({ at: today(), to: c.id, kind: 'Program welcome', subject: 'Welcome to Evergrove Restore' });
+      save();
+      ui.enrollDone = c.id; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
   /* ---------------------------------------------------------------- router */
-  var BIND = { messages: bindMessages, intake: bindIntake, clients: bindClients, schedule: bindSchedule, newsletter: bindNewsletter, shop: bindShop, videos: bindVideos, agreements: bindAgreements };
+  var BIND = { messages: bindMessages, intake: bindIntake, clients: bindClients, schedule: bindSchedule, newsletter: bindNewsletter, shop: bindShop, videos: bindVideos, agreements: bindAgreements, program: bindProgram };
 
   function render() {
     var v = VIEWS[ui.view] ? ui.view : 'dashboard';
     $('#view').innerHTML = VIEWS[v]();
     $$('.nav').forEach(function (n) { n.classList.toggle('is-on', n.getAttribute('data-view') === v); });
-    $$('#view [data-go]').forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });
+    $$('#view [data-go]').forEach(function (b) {
+      b.addEventListener('click', function () { if (b.getAttribute('data-tab')) ui.shopTab = b.getAttribute('data-tab'); go(b.getAttribute('data-go')); });
+    });
     if (BIND[v]) BIND[v]();
     renderDrawer();
   }
   function go(v) {
     if (!VIEWS[v]) v = 'dashboard';
     if (v !== 'intake') ui.intakeDone = null;
+    if (v !== 'program') ui.enrollDone = null;
     ui.view = v; ui.drawer = null;
     try { if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v); } catch (e) { /* framed: ignore */ }
     render();
@@ -778,7 +1043,8 @@
   }
   function reset() {
     S = EG.seed(); save();
-    ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'pipeline'; ui.calMonth = null; ui.quoteId = 'q1';
+    ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'store'; ui.calMonth = null; ui.quoteId = 'q1';
+    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false;
     render();
   }
 
@@ -793,6 +1059,6 @@
 
   window.App = {
     go: go, reset: reset, render: render, ui: ui, openClient: openClient, closeDrawer: closeDrawer,
-    simulateOrder: simulateOrder, state: function () { return S; }, toast: toast
+    simulateOrder: simulateOrder, approveOrder: approveOrder, state: function () { return S; }, toast: toast
   };
 })();

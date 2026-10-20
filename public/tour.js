@@ -2,7 +2,7 @@
  *
  * Drives the real console with a visible, obviously simulated cursor: it moves,
  * clicks, types and signs exactly as a person would, so every screen it shows
- * is the working app rather than a recording. About two and a half minutes.
+ * is the working app rather than a recording. About three minutes.
  *
  * Controls while playing: Space pauses, Right arrow skips a chapter, Esc stops.
  */
@@ -163,13 +163,10 @@
   var CHAPTERS = [
     { name: 'Dashboard', run: async function () {
       App.go('dashboard'); await sleep(500);
-      say('One screen for the whole day', 'Coaching clients, sessions, revenue and subscriptions at a glance, built from live records.');
-      await spot('[data-tour="stats"]', 3200);
-      say('It tells you what needs attention', 'Missing consent forms, plans waiting on practitioner review and unsigned quotes surface on their own.');
-      await spot('[data-tour="todo"]', 3800);
-      await point('.chart svg');
-      say('Revenue across every channel', 'Coaching, supplements and workshops in one weekly view.');
-      await sleep(2200);
+      say('One screen for the whole day', 'Program members, sessions, revenue and orders at a glance, built from live records.');
+      await spot('[data-tour="stats"]', 3000);
+      say('It tells you what needs attention', 'Orders waiting for approval, missing consent forms, plans needing practitioner review and unsigned quotes.');
+      await spot('[data-tour="todo"]', 4000);
     } },
     { name: 'Client messaging', run: async function () {
       App.go('messages'); await sleep(500);
@@ -179,8 +176,8 @@
       await choose('#mSvc', 'initial');
       say('A live preview of exactly what they receive', 'Every message is branded, personal and editable before it goes.');
       await point('#mPreview', null, 120);
-      await sleep(2200);
-      await click('#mSend', { after: 1500 });
+      await sleep(1800);
+      await click('#mSend', { after: 1300 });
     } },
     { name: 'Wellness intake', run: async function () {
       App.go('intake'); await sleep(500);
@@ -189,105 +186,128 @@
       await type('#iEmail', 'sofia.martinez@example.com', 28);
       await type('#iPhone', '(801) 555-0199', 35);
       await type('#iDob', '04/12/1988', 50);
-      say('Goals drive everything that follows', 'Sleep, stress and focus for Sofia. These answers shape her plan, her videos and her newsletter.');
+      say('Goals drive everything that follows', 'Sleep, stress and focus for Sofia. These answers shape her plan, her course track and her newsletter.');
       await click('[data-goal="sleep"]', { after: 250 });
       await click('[data-goal="stress"]', { after: 250 });
       await click('[data-goal="focus"]', { after: 350 });
       await choose('#iDiet', 'vegetarian');
-      say('Diet and allergies filter the products', 'She eats vegetarian and is allergic to fish, so fish oil and collagen are ruled out automatically.');
-      await click('[data-allergy="fish"]', { after: 2600 });
+      say('Diet and allergies filter the products', 'She eats vegetarian and is allergic to fish, so fish oil is ruled out automatically.');
+      await click('[data-allergy="fish"]', { after: 2200 });
       say('Signed consent, legally recorded', 'A drawn signature, saved as a PDF with the date, time and device.');
       await click('#iAgree', { after: 350 });
       await sign('#iSig');
       await click('#iSubmit', { after: 1100 });
-      say('An instant, personalised plan', 'The moment she submits, Sofia sees supplements matched to her goals, with the reason for each pick.');
-      await spot('[data-tour="picks"]', 4200);
-      say('Subscribe & save, videos and a next step', 'Each plan upsells refills, assigns videos and suggests the right consultation.');
-      await point('[data-tour="result"] .vcard');
-      await sleep(2400);
+      say('An instant, personalised plan', 'Remedies from the Physica Energetics range and supplements matched to her goals, with the reason for each.');
+      await spot('[data-tour="picks"]', 4000);
+      say('Every plan points to the 3-Month Program', 'Subscribe-and-save refills, videos picked for her, and the full program one click away.');
+      await spot('.upsell', 2600);
       say('And the busywork does itself', 'A client record, the consent PDF, the follow-up email and newsletter segments, all done automatically.');
-      await spot('[data-tour="behind"]', 3600);
+      await spot('[data-tour="behind"]', 3200);
       await click('#iOpen', { after: 900 });
       say('Everything about Sofia in one record', 'Her plan, video progress, sessions, orders and private practitioner notes.');
-      await sleep(1600);
+      await sleep(1400);
       var drawer = document.querySelector('.drawer');
-      for (var i = 0; i < 4 && drawer; i++) { guard(); drawer.scrollBy({ top: 260, behavior: reduce ? 'auto' : 'smooth' }); await sleep(900); }
+      for (var i = 0; i < 3 && drawer; i++) { guard(); drawer.scrollBy({ top: 280, behavior: reduce ? 'auto' : 'smooth' }); await sleep(850); }
       await click('#dClose', { after: 400 });
     } },
     { name: 'Clients', run: async function () {
       App.go('clients'); await sleep(500);
       say('Every client, searchable from a phone', 'Plans, goals, paperwork status and lifetime value in one list.');
-      await sleep(1500);
+      await sleep(1200);
       await type('#rQ', 'sleep', 90);
       say('Find people by what they need', 'Searching "sleep" finds every client working on sleep, ready for a targeted offer.');
-      await sleep(2200);
-      await click('[data-rtab="consents"]', { after: 900 });
-      say('Consent and screening, audited', 'Who has signed, who finished the intake, and who needs a practitioner to look first.');
-      await sleep(2600);
+      await sleep(2400);
     } },
     { name: 'Schedule', run: async function () {
       App.go('schedule'); await sleep(500);
       say('Sessions with their paperwork status', 'Each consultation and workshop shows who is coming and who still owes forms.');
-      await spot('[data-tour="bookings"] .card', 3000);
+      await spot('[data-tour="bookings"] .card', 2800);
       var btn = document.querySelector('[data-remind]');
       if (btn) {
         say('Chase missing forms in one tap', 'A branded reminder with their personal intake link goes straight out.');
-        await click(btn, { after: 1400 });
+        await click(btn, { after: 1300 });
       }
       await click('#sCalTab', { after: 900 });
       say('The month at a glance', 'One-to-one sessions in green, group workshops in gold.');
-      await spot('[data-tour="calendar"]', 3200);
+      await spot('[data-tour="calendar"]', 2800);
+    } },
+    { name: '3-Month Program', run: async function () {
+      App.go('program'); await sleep(500);
+      say('Sell the $2,995 all-inclusive program', 'Energetics work, testing, a customised course, weekly live Zoom and member pricing, sold from one page.');
+      await spot('[data-tour="sales"] .pricebox', 2600);
+      await point('.includes .inc:nth-child(3)');
+      await sleep(2200);
+      await click('#pEnroll', { after: 800 });
+      say('Enrollment and agreement in one step', 'Pay in full or in three payments. The program agreement is signed in the same form.');
+      await type('#pName', 'Jordan Okafor', 45);
+      await type('#pEmail', 'jordan.okafor@example.com', 25);
+      await choose('#pPlan', 'plan');
+      await click('#pAgree', { after: 300 });
+      await click('#pPay', { after: 1100 });
+      say('Then delivery runs itself', 'Payment, signed agreement, assessment booking, test kit, Zoom invites, week 1 unlocked and member pricing on.');
+      await spot('[data-tour="enrollbehind"]', 3800);
+      await click('#pSeeMembers', { after: 900 });
+      say('Every member at a glance', 'Course week, energetics assessment, testing, custom plan, payments and Zoom attendance.');
+      await spot('[data-tour="members"]', 3200);
+      await click('[data-ptab="content"]', { after: 900 });
+      say('A course customised to each member', 'Modules unlock weekly, week 5 is their personal track, and videos and protocols are downloadable.');
+      await spot('[data-tour="modules"]', 2400);
+      await click('[data-tour="modules"] .module.now [data-dl]', { after: 2000 });
+      await click('[data-ptab="live"]', { after: 900 });
+      say('Weekly live Zoom with practitioners', 'Sessions, invites and recordings are scheduled and added to the course automatically.');
+      await spot('[data-tour="zoom"]', 2800);
+    } },
+    { name: 'Shop & drop-ship', run: async function () {
+      App.ui.shopTab = 'store'; App.go('shop'); await sleep(500);
+      say('A storefront for the Physica Energetics range', 'Clients shop remedies and supplements. Program members see 20% off automatically.');
+      await spot('#stMember', 2000, 6);
+      await click('[data-line="milieu"]', { after: 700 });
+      await click('[data-add="PE-RLX"]', { after: 500 });
+      await click('[data-line="all"]', { after: 600 });
+      await click('[data-add="EG-MAG"]', { after: 700 });
+      say('Member pricing at checkout', 'The 20% discount is applied for program members, with no codes to remember.');
+      await spot('[data-tour="cart"]', 2200);
+      await click('#stCheckout', { after: 1200 });
+      var orders = App.state().orders, id = orders[orders.length - 1].id;
+      say('Nothing ships without a person', 'Every order, including refills, waits here with the supplier, cost and margin laid out. Flagged clients need a review tick too.');
+      await spot('[data-tour="approvals"]', 3600);
+      await click('#ap-' + id + ' [data-approve]', { after: 700 });
+      say('Approve, then confirm', 'A second step shows exactly what goes to which supplier, for how much, before anything is sent.');
+      await spot('#ap-' + id + ' .confirm', 3000);
+      await click('#ap-' + id + ' [data-confirm]', { after: 300 });
+      say('After approval, it runs on its own', 'Sent to Physica Energetics, confirmed, tracking emailed to the client, delivered, refill reminder set.');
+      await spot('[data-tour="pipeline"]', 1200, 6);
+      var waited = 0;
+      while (App.ui.simulating && waited < 9000) { await sleep(250); waited += 250; }
+      await point('#shLog', 40, 20);
+      await sleep(1400);
+      await click('[data-shtab="rules"]', { after: 900 });
+      say('The approval rule cannot be switched off', 'Routing, tracking emails, refills, member pricing and margin alerts run in the background.');
+      await spot('.rule', 2600);
     } },
     { name: 'Newsletter', run: async function () {
       App.go('newsletter'); await sleep(500);
       say('Newsletters that know each reader', 'Write once. Every subscriber gets their own name, goal and product pick.');
       await choose('#nlSeg', 'sleep');
       await point('#nlPreview', null, 160);
-      await sleep(2000);
+      await sleep(1600);
       var chips = document.querySelectorAll('[data-reader]');
       if (chips[1]) {
         say('Same email, a different pick per person', 'Switch readers and the recommended product changes with their intake answers.');
         await click(chips[1], { after: 1800 });
       }
-      if (chips[2]) await click(chips[2], { after: 1800 });
       await click('#nlSend', { after: 900 });
-      say('And you see what each campaign earned', 'Opens, clicks and revenue per send.');
-      await spot('[data-tour="campaigns"]', 3000);
-    } },
-    { name: 'Drop-ship automation', run: async function () {
-      App.go('shop'); await sleep(500);
-      say('Supplement sales without a warehouse', 'Orders route to partner labs automatically. You never pack a box.');
-      await sleep(1800);
-      await click('#shSim', { after: 200 });
-      say('Watch one order go from checkout to doorstep', 'Payment, routing to the best supplier, branded tracking emails and refill reminders, hands-free.');
-      await spot('[data-tour="pipeline"]', 1000, 6);
-      var waited = 0;
-      while (App.ui.simulating && waited < 12000) { await sleep(250); waited += 250; }
-      await point('#shLog', 40, 20);
-      await sleep(1800);
-      await click('[data-shtab="rules"]', { after: 900 });
-      say('Rules you switch on once', 'Routing, tracking emails, auto-ship refills and margin alerts run in the background.');
-      await sleep(3000);
-      await click('[data-shtab="products"]', { after: 900 });
-      say('Margins on every product', 'Supplier cost, backup supplier and margin for the whole catalogue.');
-      await sleep(2600);
-    } },
-    { name: 'Video library', run: async function () {
-      App.go('videos'); await sleep(500);
-      say('A video library tied to client goals', 'Classes are assigned by the intake and tracked on each client record.');
-      await spot('[data-tour="videos"]', 2600);
-      await click('[data-assign="v3"]', { after: 1600 });
     } },
     { name: 'Quotes & agreements', run: async function () {
       App.go('agreements'); await sleep(500);
       say('Quotes for corporate wellness', 'Every line and the total are calculated for you, so the numbers always agree.');
-      await sleep(1500);
+      await sleep(1300);
       await type('[data-l="0"][data-f="1"]', '12', 160);
       say('Change a number, the quote updates', 'Doubling the sessions updates the line and the total instantly.');
-      await spot('#qTotal', 2000, 10);
-      await click('#qSign', { after: 1200 });
+      await spot('#qTotal', 1800, 10);
+      await click('#qSign', { after: 1100 });
       say('Signed online, filed automatically', 'The client signs from their phone and the signed PDF lands in your records.');
-      await spot('.sigline', 2600);
+      await spot('.sigline', 2400);
     } }
   ];
 
@@ -341,7 +361,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Intake, personalised recommendations, scheduling, newsletters, drop-ship fulfilment and e-signed quotes, in one web app built for a wellness business.</p>', 4200);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Intake, personalised plans, a $2,995 three-month program with course delivery, a Physica Energetics storefront with approved drop-shipping, newsletters and e-signed quotes, in one web app.</p>', 4200);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     for (chapterIndex = 0; chapterIndex < CHAPTERS.length; chapterIndex++) {
@@ -370,7 +390,7 @@
     stopped = false;
     card('<p class="k">Showcase complete</p><h2>Built on a platform already in daily use</h2>' +
       '<p>The intake, records, scheduling, email and e-signature engine runs a real booking business today. The wellness pieces are what we would build for you on top of it.</p>' +
-      '<ul><li>Wellness intake &amp; consent</li><li>Personalised plans</li><li>Client records</li><li>Scheduling</li><li>Smart newsletters</li><li>Drop-ship automation</li><li>Video library</li><li>Quotes &amp; e-sign</li></ul>' +
+      '<ul><li>Wellness intake &amp; consent</li><li>Personalised plans</li><li>3-Month Program sales</li><li>Course videos &amp; downloads</li><li>Weekly live Zoom</li><li>Physica Energetics storefront</li><li>Approved drop-shipping</li><li>Client records</li><li>Scheduling</li><li>Smart newsletters</li><li>Quotes &amp; e-sign</li></ul>' +
       '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });
