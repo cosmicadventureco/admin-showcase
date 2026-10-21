@@ -48,9 +48,11 @@ any static server (`python3 -m http.server -d public 8080`).
 ## Presenting
 
 - **Play Showcase** (top right): restores the sample data, then plays 6 chapters
-  in about 3 minutes: Client app (free account), Client app (Premium member),
-  Work queue, Energetic scans, Premium Course, Shop & drop-ship.
-  - `Space` pause or resume, `→` next chapter, `Esc` exit.
+  in about 6 minutes at normal speed: Client app (free account), Client app
+  (Premium member), Work queue, Energetic scans, Premium Course, Shop & drop-ship.
+  - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
+    back the way it was and the tour replays to that point.
+  - **» 1×** (or F) speeds up: 1×, 2× (about 3 minutes), 4×.
 - Open `/?play` (or `/#play`) to start the tour on load. Handy for a kiosk
   screen or a screen recording.
 - The client app opens at `/app` (or `/#client`). The **Team console / Client app**
@@ -96,6 +98,42 @@ Built for the situation where one employee does all the admin and is leaving.
   hours are pitch estimates to confirm with the team.
 - **Activity log:** everything the system did on its own.
 - **Team & handoff:** who can do what, and a sample handoff checklist.
+
+### Suppliers and ordering (Shop > Suppliers, Clinic orders)
+
+Physica Energetics, Biotics Research and DesBio, from their public websites
+(checked October 2026) and the supplier handoff brief.
+
+| Supplier | Their store | How an approved order reaches them | Patient dispensary |
+|---|---|---|---|
+| Physica Energetics | BigCommerce | Browser extension fills the cart in the practitioner's logged-in tab | Patient Portal (to confirm) |
+| Biotics Research | Shopify | Cart link builds the whole cart in the logged-in account | eStoreRx, Fullscript |
+| DesBio | WooCommerce | Extension or add-to-cart links in the logged-in session | dbscript (US only) |
+
+- **Nothing logs in to a supplier with stored passwords.** Every path runs in a
+  session the practitioner opened; they click checkout. Suppliers without a
+  cart mechanism get an email purchase order or a manual queue task.
+- **Physica terms:** practitioner-only; drop-ship to patients allowed; $20 flat
+  shipping under $500 (US), free from $500; packing slips show no prices;
+  Canada 90-day supply. No public prices, no marketplaces or shopping feeds,
+  practitioner-patient relationship before purchase, minimum advertised price.
+- **Clinic orders:** stock collects per supplier, each unit earmarked for a
+  client, and goes out as one order (Physica: at $500 for free shipping). The
+  pick list says who each unit is for. Small drop-ship orders that lose money
+  after shipping can be moved into the clinic order.
+- **Policy check:** the Premium "20% off every supplement" benefit conflicts
+  with Physica's minimum advertised price and Biotics' suggested-retail rule.
+  Needs written approval from each, or a different benefit.
+- **Shopify:** orders from a members-only Shopify store land in the same
+  approval queue. These brands must stay behind customer login, unindexed and
+  out of Google, Shop app and social channels.
+- **Not verified from here:** the Biotics `products.json` and DesBio Store API
+  endpoints, the cart mechanisms on a logged-in session, and the DesBio
+  policies page. Search results also show an FDA warning letter to DesBio
+  dated October 1, 2026 about one product.
+- **HIPAA:** if the clinic is a covered entity, client names, remedies and
+  addresses are protected health information. Business associate agreements,
+  encryption, audit logs and access control then need to be scoped and priced.
 
 ### Energetic scans to client reports
 

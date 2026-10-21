@@ -16,7 +16,7 @@
   var JOBS = [
     ['Typing intake answers into a spreadsheet', 'Daily', 'auto', 3, 0, 'Clients fill in the questionnaire themselves.'],
     ['Choosing supplements for each new client', 'Daily', 'auto', 4, 0.5, 'Suggested from the answers. A practitioner only checks flagged clients.'],
-    ['Emailing orders to Physica Energetics', 'Daily', 'approve', 4, 0.5, 'One click to approve, one to confirm. Routing is automatic.'],
+    ['Ordering from suppliers one product at a time', 'Daily', 'approve', 4, 0.5, 'Approved orders fill the supplier cart in one go and you click checkout. Clinic stock goes out as one weekly order.'],
     ['Copying tracking numbers to clients', 'Daily', 'auto', 2, 0, 'Tracking emails go out the moment the supplier ships.'],
     ['Refill reminders and reorders', 'Weekly', 'approve', 2, 0.3, 'Reminders are automatic. Each refill order still gets approved.'],
     ['Selling short courses and sending access', 'Daily', 'auto', 1.5, 0, 'Checkout ($59 to $119) unlocks the course and sends a receipt.'],
@@ -31,7 +31,7 @@
 
   function tasks() {
     var D = S(), out = [];
-    D.orders.filter(function (o) { return o.stage === 0 && !o.held; }).forEach(function (o) {
+    D.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).forEach(function (o) {
       var c = U.client(o.client), flagged = c && EG.recommend(c).flags.length > 0;
       out.push({ kind: 'order', id: o.id, who: flagged ? 'Practitioner' : 'Assistant', o: o, c: c, flagged: flagged });
     });

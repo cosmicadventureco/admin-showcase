@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v7';
+  var KEY = 'evergrove-showcase-v9';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 7) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 9) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -32,6 +32,7 @@
   }
   function money(n, cents) {
     var v = Math.round(Number(n || 0) * 100) / 100;
+    if (v < 0) return '\u2212' + money(-v, cents);
     return '$' + v.toLocaleString('en-US', { minimumFractionDigits: cents === false ? 0 : 2, maximumFractionDigits: cents === false ? 0 : 2 });
   }
   function d(isoStr) { return new Date(isoStr + 'T12:00:00'); }
@@ -115,7 +116,7 @@
     S.agreements.forEach(function (a) {
       if (a.status !== 'Signed') todos.push({ kind: 'warn', text: '<b>' + esc(a.client) + '</b> has ' + a.status.toLowerCase() + ' the ' + esc(a.title) + ' quote but not signed', go: 'agreements' });
     });
-    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held; }).length;
+    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
     if (waiting) todos.unshift({ kind: 'bad', text: '<b>' + waiting + ' order' + (waiting > 1 ? 's' : '') + ' waiting for your approval.</b> Nothing goes to a supplier until someone approves it.', go: 'queue' });
 
     return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Evergrove',
@@ -599,15 +600,15 @@
   VIEWS.shop = function () {
     var month = S.orders.reduce(function (t, o) { return t + orderTotal(o); }, 0);
     var cost = S.orders.reduce(function (t, o) { return t + orderCost(o); }, 0);
-    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held; }).length;
+    var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
     return head('Grow', 'Shop & fulfilment',
       'A storefront for the Physica Energetics range and your other supplements. Orders drop-ship from the supplier, but only after a person on your team approves each one.') +
       pitch('new', 'Proposed drop-ship automation with a human checkpoint: every order, including auto-ship refills, waits in an approval queue. Once approved, routing, tracking emails and refill reminders run on their own.') +
       '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', 'no packing by you') + '</div>' +
       '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' +
-      [['store', 'Storefront'], ['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['products', 'Catalogue'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      [['store', 'Storefront'], ['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['clinic', 'Clinic orders'], ['products', 'Catalogue'], ['suppliers', 'Suppliers'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       (ui.shopTab === 'pipeline' ? '<button class="btn ghost" id="shSim">Simulate an incoming order</button>' : '') + '</div>' +
-      (ui.shopTab === 'store' ? storefront() : ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'rules' ? rules() : approvalQueue() + pipeline());
+      (ui.shopTab === 'store' ? storefront() : ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'suppliers' ? suppliersView() : ui.shopTab === 'clinic' ? clinicView() : ui.shopTab === 'rules' ? rules() : approvalQueue() + pipeline());
   };
 
   /* Storefront: what a client sees. Member pricing follows whoever is shopping. */
@@ -622,7 +623,7 @@
       '<div class="store">' +
       '<div class="storemain"><div class="storehead"><div><p class="eyebrow" style="margin:0">Evergrove apothecary</p><h2 class="h1" style="margin:0">Remedies &amp; supplements</h2><p class="small muted" style="margin:.2rem 0 0">Featuring the Physica Energetics range. Placeholder prices.</p></div>' +
       (member ? '<span class="pill ok" id="stMember">Premium member: 20% off and free shipping</span>' : '<span class="pill">Premium Course members get 20% off and free shipping</span>') + '</div>' +
-      '<div class="chips" style="margin:1rem 0">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['nutri', 'Nutritionals']].map(function (l) { return '<button class="chip' + (st.line === l[0] ? ' is-on' : '') + '" data-line="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="chips" style="margin:1rem 0">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['desbio', 'DesBio'], ['nutri', 'Nutritionals']].map(function (l) { return '<button class="chip' + (st.line === l[0] ? ' is-on' : '') + '" data-line="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>' +
       '<div class="pgrid">' + list.map(function (p) {
         var price = member ? p.price * (1 - EG.PROGRAM.discount) : p.price;
         return '<div class="pcard">' + bottle(p) + '<div class="pname">' + esc(p.name) + '</div><div class="small muted">' + esc(EG.LINES[p.line].kind) + ' &middot; ' + esc(p.dose) + '</div>' +
@@ -639,6 +640,16 @@
       '</aside></div></div>';
   }
 
+  /* What each supplier charges to ship this order. Physica: $20 flat on US
+     orders under $500, drop-ship to the client included; free from $500. */
+  function supplierShipping(o) {
+    var by = linesBySupplier(o), out = {};
+    Object.keys(by).forEach(function (k) {
+      var sup = EG.SUPPLIERS[k], cost = by[k].reduce(function (t, x) { return t + x.p.cost * x.n; }, 0);
+      out[k] = sup.flat && cost < sup.freeFrom ? sup.flat : 0;
+    });
+    return out;
+  }
   function linesBySupplier(o) {
     var by = {};
     o.items.forEach(function (it) {
@@ -651,25 +662,28 @@
   /* The checkpoint. Nothing below this card reaches a supplier until a person
      presses Approve and then confirms. */
   function approvalQueue() {
-    var q = S.orders.filter(function (o) { return o.stage === 0; });
+    var q = S.orders.filter(function (o) { return o.stage === 0 && !o.batched; });
     if (!q.length) return '<div class="card" style="margin-bottom:1rem" data-tour="approvals"><h3 class="h3" style="margin:0">Approval queue</h3><p class="small muted" style="margin:.3rem 0 0">Nothing waiting. New orders and refills will appear here first.</p></div>';
     return '<div class="card" style="margin-bottom:1rem" data-tour="approvals"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">Approval queue</h3><span class="small muted">Orders wait here until a team member approves them</span></div>' +
       q.map(function (o) {
         var c = client(o.client), r = c ? EG.recommend(c) : { flags: [] };
-        var by = linesBySupplier(o), cost = orderCost(o), total = orderTotal(o);
+        var by = linesBySupplier(o), ship = supplierShipping(o), shipTotal = Object.keys(ship).reduce(function (t, k) { return t + ship[k]; }, 0);
+        var cost = orderCost(o) + shipTotal, total = orderTotal(o);
         var review = r.flags.length > 0;
         var confirming = ui.confirming === o.id;
         return '<div class="approve' + (o.held ? ' held' : '') + '" id="ap-' + o.id + '">' +
-          '<div class="row" style="justify-content:space-between"><div><b>' + o.id + '</b> &middot; ' + esc(c ? c.name : '') + ' &middot; ' + fmtDate(o.at) + (o.sub ? ' &middot; auto-ship refill' : '') + '</div>' +
+          '<div class="row" style="justify-content:space-between"><div><b>' + o.id + '</b> &middot; ' + esc(c ? c.name : '') + ' &middot; ' + fmtDate(o.at) + (o.sub ? ' &middot; auto-ship refill' : '') + ' <span class="pill">' + esc(o.source || (o.sub ? 'Auto-ship' : 'Client app')) + '</span></div>' +
           (o.held ? '<span class="pill">On hold</span>' : review ? '<span class="pill warn">Screening flag</span>' : '<span class="pill warn">Needs approval</span>') + '</div>' +
           '<div class="tablewrap"><table class="small" style="margin:.6rem 0"><thead><tr><th>Item</th><th>Supplier</th><th class="r">Qty</th><th class="r">Supplier cost</th></tr></thead><tbody>' +
           Object.keys(by).map(function (sup) { return by[sup].map(function (x) { return '<tr><td>' + esc(x.p.name) + '</td><td>' + esc(EG.SUPPLIERS[sup].name) + '</td><td class="r">' + x.n + '</td><td class="r">' + money(x.p.cost * x.n) + '</td></tr>'; }).join(''); }).join('') +
+          Object.keys(ship).map(function (k) { return '<tr><td class="muted">Shipping, drop-ship to client</td><td>' + esc(EG.SUPPLIERS[k].name) + '</td><td></td><td class="r">' + (ship[k] ? money(ship[k]) : 'Free') + '</td></tr>'; }).join('') +
           '</tbody></table></div>' +
-          '<div class="row small" style="gap:1.2rem"><span>Client pays <b class="num">' + money(total) + '</b>' + (o.discount ? ' (member price)' : '') + '</span><span>Supplier cost <b class="num">' + money(cost) + '</b></span><span>Margin <b class="num">' + money(total - cost) + ' (' + Math.round((1 - cost / total) * 100) + '%)</b></span><span class="muted">Ship to ' + esc(c ? c.name : '') + ', Salt Lake City, UT</span></div>' +
+          '<div class="row small" style="gap:1.2rem"><span>Client pays <b class="num">' + money(total) + '</b>' + (o.discount ? ' (member price)' : '') + '</span><span>Supplier cost incl. shipping <b class="num">' + money(cost) + '</b></span><span>Margin <b class="num">' + money(total - cost) + ' (' + Math.round((1 - cost / total) * 100) + '%)</b></span><span class="muted">Ship to ' + esc(c ? c.name : '') + ', Salt Lake City, UT</span></div>' +
+          (total - cost < 0 ? '<div class="flagbar" style="margin-top:.6rem">This order loses ' + money(cost - total) + ' after Physica&rsquo;s $20 shipping on orders under $500. Consider a minimum order, a shipping charge, or holding it to combine with the client&rsquo;s next refill.</div>' : '') +
           (review ? '<label class="check" style="margin-top:.6rem"><input type="checkbox" data-reviewed="' + o.id + '"> I have reviewed ' + esc(first(c.name)) + '&rsquo;s screening (' + r.flags.map(function (f) { return { bloodthinner: 'blood thinner', pregnant: 'pregnancy', thyroid: 'thyroid' }[f]; }).join(', ') + ') and this order is appropriate</label>' : '') +
           (confirming
-            ? '<div class="confirm"><span>Send ' + o.items.length + ' line' + (o.items.length > 1 ? 's' : '') + ' to ' + Object.keys(by).map(function (k) { return esc(EG.SUPPLIERS[k].name); }).join(' and ') + ' for ' + money(cost) + '? The supplier will ship within a day and this cannot be unsent.</span><div class="row"><button class="btn" data-confirm="' + o.id + '">Yes, send to supplier</button><button class="btn ghost" data-cancel="' + o.id + '">Cancel</button></div></div>'
-            : '<div class="row" style="margin-top:.7rem"><button class="btn" data-approve="' + o.id + '"' + (review || o.held ? ' disabled' : '') + '>Approve order</button><button class="btn ghost" data-hold="' + o.id + '">' + (o.held ? 'Release hold' : 'Hold') + '</button></div>') +
+            ? '<div class="confirm"><span>' + Object.keys(by).map(function (k) { return '<b>' + esc(EG.SUPPLIERS[k].short) + ':</b> ' + esc(EG.SUPPLIERS[k].pathLabel) + ', ship-to ' + esc(c ? c.name : 'the client'); }).join('<br>') + '<br>Total ' + money(cost) + ' including shipping. You check out in your own supplier tab; the packing slip shows no prices.</span>' + '<div class="row"><button class="btn" data-confirm="' + o.id + '">Fill the cart, I&rsquo;ll check out</button><button class="btn ghost" data-cancel="' + o.id + '">Cancel</button></div></div>'
+            : '<div class="row" style="margin-top:.7rem"><button class="btn" data-approve="' + o.id + '"' + (review || o.held ? ' disabled' : '') + '>Approve order</button><button class="btn ghost" data-hold="' + o.id + '">' + (o.held ? 'Release hold' : 'Hold') + '</button>' + (total - cost < 0 ? '<button class="btn ghost" data-batch="' + o.id + '">Add to clinic order instead</button>' : '') + '</div>') +
           '</div>';
       }).join('') + '</div>';
   }
@@ -681,7 +695,7 @@
         var c = client(o.client);
         var sups = Object.keys(linesBySupplier(o)).map(function (k) { return EG.SUPPLIERS[k].short; }).join(' + ');
         return '<div class="ticket" id="t-' + o.id + '"><b>' + o.id + ' &middot; ' + money(orderTotal(o)) + '</b>' + esc(c ? c.name : '') + '<br><span class="muted">' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + ' &middot; ' + sups + (o.sub ? ' &middot; refill' : '') + '</span>' +
-          (o.approvedBy && i >= 1 ? '<br><span class="muted">Approved by ' + esc(first(o.approvedBy)) + '</span>' : '') + (o.tracking && i >= 3 ? '<br><span class="muted num">' + o.tracking + '</span>' : '') + '</div>';
+          (o.batched ? '<br><span class="pill">In clinic order</span>' : '') + (o.approvedBy && i >= 1 ? '<br><span class="muted">Approved by ' + esc(first(o.approvedBy)) + '</span>' : '') + (o.tracking && i >= 3 ? '<br><span class="muted num">' + o.tracking + '</span>' : '') + '</div>';
       }).join('') + '</div>';
     }).join('') + '</div><h2 class="h2">Automation log</h2><div class="log" id="shLog">' + (ui.log.length ? ui.log.join('') : '<div><time>--:--</time><span class="muted">Approve an order above to watch it go from supplier to doorstep.</span></div>') + '</div>';
   }
@@ -692,13 +706,62 @@
       }).join('') + '</tbody></table></div></div>';
   }
   var RULES = [
+    ['Take orders from your Shopify store', 'Orders from the members-only Shopify store land in the approval queue with the client and their plan attached.'],
     ['Email the client the moment an order is approved', 'Branded as Evergrove, with what was ordered and when to expect it.'],
-    ['Route each approved line to the right supplier', 'Physica Energetics for the remedies, the backup lab for plain nutritionals.'],
+    ['Fill the right supplier cart for each approved line', 'Physica, Biotics and DesBio carts are filled in your own logged-in session; you click checkout.'],
+    ['Gather clinic stock into one order per supplier', 'Orders when Physica reaches $500 for free shipping, or every Friday, whichever comes first.'],
     ['Email tracking the moment the supplier ships', 'The client never sees the supplier.'],
     ['Create auto-ship refills every 30 days', 'Each refill lands in the approval queue like any other order.'],
     ['Apply 20% member pricing for program clients', 'Starts on enrolment and ends when the 3-month program does.'],
     ['Alert when margin on an order drops under 35%', 'Catches supplier price changes before they cost you.']
   ];
+  /* What we know about each supplier, from their public websites (checked
+     October 2026). Physica's terms were read in full; the others in part. */
+  var SRC = {
+    physica: [['https://physicaenergetics.com/shipping-and-returns/', 'Shipping policy'], ['https://physicaenergetics.com/resale-policy/', 'Resale policy'], ['https://physicaenergetics.com/faqs/', 'FAQ'], ['https://physicaenergetics.com/pages/Legal-Statement.html', 'Legal statement']],
+    biotics: [['https://www.bioticsresearch.com/internet_resale_policy', 'Internet resale policy'], ['https://info.bioticsresearch.com/estorerx', 'eStoreRx'], ['https://fullscript.com/blog/biotics-now-available-on-fullscript', 'On Fullscript']],
+    desbio: [['https://dbscript.com/policies/', 'dbscript policies'], ['https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/desbiodeseret-biologicals-inc-735464-10012026', 'FDA warning letter']]
+  };
+  function flagPills(f) {
+    return '<span class="pills">' + (f.mapEnforced ? '<span class="pill warn">Minimum price enforced</span>' : '') + (!f.pricingPublic ? '<span class="pill">Prices hidden from public</span>' : '') +
+      (f.requiresPractitionerLink ? '<span class="pill">Client must be your patient</span>' : '') + '<span class="pill">International: ' + esc(f.shipsInternationally) + '</span></span>';
+  }
+  function suppliersView() {
+    var cards = ['physica', 'biotics', 'desbio'].map(function (k) {
+      var s = EG.SUPPLIERS[k], n = EG.PRODUCTS.filter(function (p) { return p.supplier === k; }).length;
+      var rows = [['Their store', s.platform + ' (practitioner login)'], ['How orders reach them', s.pathLabel], ['Patient dispensary', s.dispensary], ['Drop-ship', s.dropship], ['Shipping', s.ships], ['Member discounts', s.memberDiscount]];
+      return '<div class="card supcard"' + (k === 'physica' ? ' data-tour="supplier"' : '') + '><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + esc(s.name) + '</h3><span class="pill ok">' + esc(s.role) + '</span></div>' +
+        '<p class="small muted" style="margin:.3rem 0 .6rem">' + n + ' products in this showcase' + (k === 'physica' ? ' (legal entity: Aperture Energetics)' : '') + '.</p>' + flagPills(s.flags) +
+        '<table class="small" style="margin-top:.6rem"><tbody>' + rows.map(function (r) { return '<tr><th style="width:8rem;white-space:normal">' + r[0] + '</th><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table>' +
+        (s.note ? '<div class="flagbar">' + esc(s.note) + '</div>' : '') +
+        '<p class="small muted" style="margin:.6rem 0 0">Sources: ' + SRC[k].map(function (x) { return '<a href="' + x[0] + '" target="_blank" rel="noopener">' + x[1] + '</a>'; }).join(' &middot; ') + '</p></div>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:1rem" data-tour="paths"><h3 class="h3">How an approved order reaches a supplier</h3><p class="small muted" style="margin-top:0">None of the three offers an ordering API to practitioners. Each path below runs inside a session the practitioner opened themselves. Nothing logs in with a stored password, because that breaks their terms and risks the account.</p>' +
+      '<div class="paths">' + ['cart', 'link', 'email', 'manual'].map(function (k, i) { var t = EG.PATHS[k].split(': '); return '<div class="pathbox"><b>' + (i + 1) + '. ' + esc(t[0]) + '</b><span class="small muted">' + esc(t[1]) + '</span></div>'; }).join('') + '</div></div>' +
+      '<div class="policy card" style="margin-bottom:1rem"><h3 class="h3">Policy check: Premium &ldquo;20% off every supplement&rdquo;</h3><p class="small" style="margin:0">Physica enforces a minimum advertised price, and Biotics asks for online prices at or above suggested retail. A blanket 20% member discount on their products could break both policies, and the penalty is losing the account. Options: ask each supplier for written approval, give the Biotics discount as a private patient code, or swap the benefit for free shipping or store credit.</p></div>' +
+      '<div class="supgrid">' + cards + '</div>' +
+      '<div class="split" style="margin-top:1rem"><div class="card"><h3 class="h3">Sales channels</h3><div class="list"><div class="li"><div class="grow"><div class="title">Client app</div><div class="meta">Signed-in clients only, so prices stay private.</div></div><span class="pill ok">Connected</span></div>' +
+      '<div class="li"><div class="grow"><div class="title">Shopify store</div><div class="meta">Customer accounts required for these brands. Product pages not indexed; Google, Shop app and social channels off for them.</div></div><span class="pill ok">Connected</span></div></div></div>' +
+      '<div class="card"><h3 class="h3">Let the dispensaries ship</h3><p class="small" style="margin-top:0">Biotics&rsquo; eStoreRx and DesBio&rsquo;s dbscript already run patient stores and ship to patients. This platform keeps the one client record and the plan across all brands, then routes each order to whichever channel fits, rather than rebuilding what the suppliers provide.</p></div></div>';
+  }
+  /* Clinic stock, gathered per supplier and ordered in one go. */
+  function batchCost(k) { return (S.batches[k] || []).reduce(function (t, l) { return t + EG.product(l[0]).cost * l[1]; }, 0); }
+  function clinicView() {
+    return '<div class="card" style="margin-bottom:1rem"><p class="small" style="margin:0">Stock for the clinic collects here per supplier, each unit earmarked for the client it is for. One order goes out when it is worth it: Physica ships free from $500. One order a week instead of one per product is most of the time saved.</p></div>' +
+      '<div class="supgrid" data-tour="batches">' + ['physica', 'biotics', 'desbio'].map(function (k) {
+        var s = EG.SUPPLIERS[k], lines = S.batches[k] || [], cost = batchCost(k), pct = s.freeFrom ? Math.min(100, cost / s.freeFrom * 100) : 100;
+        return '<div class="card"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + esc(s.short) + '</h3><span class="price">' + money(cost) + '</span></div>' +
+          (s.freeFrom ? '<div class="bar" style="margin:.6rem 0 .3rem"><i style="width:' + pct + '%;background:' + (pct >= 100 ? 'var(--ok)' : 'var(--honey)') + '"></i></div><div class="small muted">' + (cost >= s.freeFrom ? 'Ships free' : money(s.freeFrom - cost) + ' to free shipping, or $' + s.flat + ' to ship now') + '</div>' : '<div class="small muted" style="margin-top:.4rem">' + esc(s.pathLabel) + '</div>') +
+          '<table class="small" style="margin-top:.6rem"><thead><tr><th>Product</th><th class="r">Qty</th><th>For</th></tr></thead><tbody>' +
+          (lines.length ? lines.map(function (l) { var c = client(l[2]); return '<tr><td>' + esc(EG.product(l[0]).name) + '</td><td class="r">' + l[1] + '</td><td>' + (c ? esc(c.name) : '<span class="muted">Clinic shelf</span>') + '</td></tr>'; }).join('') : '<tr><td colspan="3" class="muted">Nothing waiting.</td></tr>') + '</tbody></table>' +
+          (lines.length ? '<button class="btn small" data-po="' + k + '" style="margin-top:.7rem">Order now: fill the ' + esc(s.short) + ' cart</button>' : '') + '</div>';
+      }).join('') + '</div>' +
+      (S.pos.length ? '<h2 class="h2">Purchase orders and pick lists</h2>' + S.pos.map(function (po) {
+        return '<div class="card" style="margin-bottom:.8rem"><div class="row" style="justify-content:space-between"><b>' + po.id + ' &middot; ' + esc(EG.SUPPLIERS[po.supplier].name) + '</b><span class="small muted">' + fmtDate(po.at) + ' &middot; ' + money(po.total) + (po.ship ? ' + $' + po.ship + ' shipping' : ' &middot; free shipping') + '</span></div>' +
+          '<p class="small muted" style="margin:.3rem 0">When the box arrives, set each unit aside for its client.</p><table class="small"><thead><tr><th>Picked</th><th>Product</th><th class="r">Qty</th><th>Set aside for</th></tr></thead><tbody>' +
+          po.lines.map(function (l) { var c = client(l[2]); return '<tr><td><input type="checkbox" aria-label="Picked"></td><td>' + esc(EG.product(l[0]).name) + '</td><td class="r">' + l[1] + '</td><td>' + (c ? esc(c.name) : 'Clinic shelf') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      }).join('') : '');
+  }
   function rules() {
     return '<div class="card"><div>' +
       '<div class="rule"><span class="toggle locked" aria-label="Always on"></span><div class="grow"><b>A person approves every order before it reaches a supplier</b> <span class="pill">Always on</span><br><span class="small muted">This one cannot be switched off. Orders with a screening flag also need the reviewer to confirm they checked it.</span></div></div>' +
@@ -736,6 +799,25 @@
     $$('[data-approve]').forEach(function (b) { b.addEventListener('click', function () { ui.confirming = b.getAttribute('data-approve'); render(); }); });
     $$('[data-cancel]').forEach(function (b) { b.addEventListener('click', function () { ui.confirming = null; render(); }); });
     $$('[data-confirm]').forEach(function (b) { b.addEventListener('click', function () { approveOrder(b.getAttribute('data-confirm')); }); });
+    $$('[data-batch]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var o = S.orders.filter(function (x) { return x.id === b.getAttribute('data-batch'); })[0];
+        o.items.forEach(function (it) { var k = EG.product(it[0]).supplier; (S.batches[k] = S.batches[k] || []).push([it[0], it[1], o.client]); });
+        o.batched = true; save();
+        logLine(o.id + ' moved to the clinic order. It ships with the next batch and is set aside for ' + esc(client(o.client).name) + '.');
+        activity(o.id + ' moved to the clinic order to avoid a separate shipping charge.');
+        render(); toast('Added to the clinic order');
+      });
+    });
+    $$('[data-po]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-po'), s = EG.SUPPLIERS[k], cost = batchCost(k);
+        var po = { id: 'PO-' + (2040 + S.pos.length), supplier: k, at: today(), lines: S.batches[k].slice(), total: cost, ship: s.freeFrom && cost < s.freeFrom ? s.flat : 0 };
+        S.pos.unshift(po); S.batches[k] = [];
+        activity(po.id + ': ' + s.short + ' cart filled with ' + po.lines.length + ' lines for clinic stock and checked out by ' + EG.BRAND.owner + '. Pick list ready.');
+        save(); render(); toast(s.short + ' cart filled. Check out in your ' + s.short + ' tab.');
+      });
+    });
     $$('[data-hold]').forEach(function (b) {
       b.addEventListener('click', function () {
         var o = S.orders.filter(function (x) { return x.id === b.getAttribute('data-hold'); })[0];
@@ -780,12 +862,18 @@
     var steps = [
       function () {
         logLine('Approved by ' + esc(EG.BRAND.owner) + '.', true);
-        activity(o.id + ' approved by ' + EG.BRAND.owner + ' and sent to ' + Object.keys(by).map(function (k) { return EG.SUPPLIERS[k].name; }).join(' and ') + '. Client emailed.');
-        Object.keys(by).forEach(function (k) { logLine(by[k].map(function (x) { return esc(x.p.name); }).join(', ') + ' &rarr; ' + esc(EG.SUPPLIERS[k].name)); });
+        activity(o.id + ' approved by ' + EG.BRAND.owner + '. Supplier cart filled and checked out with ' + Object.keys(by).map(function (k) { return EG.SUPPLIERS[k].name; }).join(' and ') + '. Client emailed.');
+        Object.keys(by).forEach(function (k) {
+          var sup = EG.SUPPLIERS[k], n = by[k].length + ' line' + (by[k].length > 1 ? 's' : '');
+          if (sup.path === 'cart') logLine(esc(sup.short) + ': the Evergrove extension filled the cart in ' + esc(EG.BRAND.owner) + '&rsquo;s logged-in tab (' + n + ', ship-to ' + esc(c.name) + ').');
+          else if (sup.path === 'link') logLine(esc(sup.short) + ': cart link opened in ' + esc(EG.BRAND.owner) + '&rsquo;s account (' + n + ', ship-to ' + esc(c.name) + ').');
+          else logLine(esc(sup.short) + ': purchase order emailed (' + n + ', drop-ship to ' + esc(c.name) + ').');
+          if (sup.path !== 'email') logLine(esc(EG.BRAND.owner) + ' checked out on the ' + esc(sup.short) + ' site. Confirmation number saved to the order.', true);
+        });
         logLine('Email to ' + esc(c.email) + ': "Your order is confirmed"');
       },
       function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); },
-      function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('Tracking received: ' + o.tracking, true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
+      function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('UPS tracking ' + o.tracking + ' read from the supplier\u2019s shipping email.', true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
       function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); activity('Tracking ' + o.tracking + ' emailed to ' + c.name + '. Refill reminder set for day 25.'); }
     ];
     var chain = Promise.resolve();
@@ -1076,6 +1164,8 @@
   window.App = {
     go: go, reset: reset, render: render, ui: ui, openClient: openClient, closeDrawer: closeDrawer,
     simulateOrder: simulateOrder, approveOrder: approveOrder, state: function () { return S; }, toast: toast,
+    /* Put back a saved copy of the data. The tour uses it to rewind. */
+    restore: function (data) { S = data; save(); },
     /* For the screens that live in their own files (client.js, queue.js). */
     register: function (name, view, bind) { VIEWS[name] = view; if (bind) BIND[name] = bind; },
     util: {

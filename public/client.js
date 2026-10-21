@@ -164,7 +164,7 @@
   function shop(c) {
     var l = st().line;
     return '<h2 class="ca-title">Shop</h2>' + (c.member ? '<div class="ca-note ok">Member pricing: 20% off everything.</div>' : '') +
-      '<div class="chips" style="margin-bottom:.6rem">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['nutri', 'Nutritionals']].map(function (x) { return '<button class="chip' + (l === x[0] ? ' is-on' : '') + '" data-cline="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="chips" style="margin-bottom:.6rem">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['desbio', 'DesBio'], ['nutri', 'Nutritionals']].map(function (x) { return '<button class="chip' + (l === x[0] ? ' is-on' : '') + '" data-cline="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
       EG.PRODUCTS.filter(function (p) { return l === 'all' || p.line === l; }).map(function (p) {
         return '<div class="ca-mini">' + U.bottle(p, true) + '<span class="grow small"><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(EG.LINES[p.line].kind) + '</span></span>' + priceTag(p, c) + '<button class="btn ghost small" data-cadd="' + p.sku + '">' + (st().cart[p.sku] ? 'Added' : 'Add') + '</button></div>';
       }).join('');

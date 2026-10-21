@@ -32,18 +32,51 @@
     { id: 'focus', label: 'Focus' }
   ];
 
-  /* Physica Energetics is the main supplier. Bluewater Labs is a fictional
-     backup for plain nutritionals, there to show routing between suppliers. */
+  /* The client's three largest suppliers, from public websites (checked
+     October 2026), plus one invented backup lab. `path` is how an approved
+     order reaches each one; every path runs inside a session the
+     practitioner opened themselves, never a stored-password robot. The policy
+     flags are hard rules the platform enforces, not settings. */
   var SUPPLIERS = {
-    physica: { name: 'Physica Energetics', short: 'Physica', ships: '2-4 days', region: 'Primary supplier' },
-    bluewater: { name: 'Bluewater Labs (sample)', short: 'Bluewater', ships: '1-3 days', region: 'Backup, nutritionals' }
+    physica: { name: 'Physica Energetics', short: 'Physica', role: 'Primary supplier', platform: 'BigCommerce',
+      path: 'cart', pathLabel: 'Fills your Physica cart (browser extension)',
+      dispensary: 'Patient Portal with a practitioner ID (what it covers is still to confirm)',
+      dropship: 'Yes, practitioner-placed orders ship to the client. $20 flat under $500 (US), free from $500. Packing slip shows no prices.',
+      flags: { mapEnforced: true, pricingPublic: false, requiresPractitionerLink: true, shipsInternationally: 'Canada (90-day supply)' },
+      memberDiscount: 'Not without Physica’s written OK: selling below their minimum advertised price breaks the resale policy.',
+      freeFrom: 500, flat: 20, ships: 'Ships in 1-2 days, UPS 3-5 business days' },
+    biotics: { name: 'Biotics Research', short: 'Biotics', role: 'Nutritionals', platform: 'Shopify',
+      path: 'link', pathLabel: 'Opens a ready-made cart link in your Biotics account',
+      dispensary: 'eStoreRx (branded patient store, auto-ship, drop-ship). Also on Fullscript.',
+      dropship: 'Through eStoreRx or Fullscript. Wholesale orders ship to the clinic.',
+      flags: { mapEnforced: true, pricingPublic: false, requiresPractitionerLink: true, shipsInternationally: 'To confirm' },
+      memberDiscount: 'Only as a private code for your own patients, never shown on the site. Online prices at or above suggested retail.',
+      freeFrom: 0, flat: 0, ships: 'To confirm' },
+    desbio: { name: 'DesBio (Deseret Biologicals)', short: 'DesBio', role: 'Homeopathics and detox', platform: 'WooCommerce',
+      path: 'cart', pathLabel: 'Adds lines to your DesBio cart (extension or add-to-cart links)',
+      dispensary: 'dbscript (practitioner approves each purchase; ships in 24 hours on weekdays; US only)',
+      dropship: 'Through dbscript, US addresses only. International clients: order and forward it yourself.',
+      flags: { mapEnforced: false, pricingPublic: false, requiresPractitionerLink: true, shipsInternationally: 'No (dbscript)' },
+      memberDiscount: 'Policy not yet read. Treat as not allowed until it is.',
+      freeFrom: 0, flat: 0, ships: 'dbscript: within 24 hours on weekdays, UPS or USPS Priority', note: 'FDA warning letter dated Oct 1, 2026 about one DesBio product sold on desbio.com. Check any product before listing it.' },
+    bluewater: { name: 'Bluewater Labs (sample)', short: 'Bluewater', role: 'Invented backup', platform: 'Email',
+      path: 'email', pathLabel: 'Sends a purchase order by email', dispensary: 'None', dropship: 'Sample only',
+      flags: { mapEnforced: false, pricingPublic: true, requiresPractitionerLink: false, shipsInternationally: 'Sample' },
+      memberDiscount: 'Sample supplier.', freeFrom: 0, flat: 0, ships: '1-3 days' }
+  };
+  var PATHS = {
+    cart: 'Session cart: the extension fills the cart in your own logged-in tab; you click checkout',
+    link: 'Cart link: one link builds the whole cart in your logged-in account; you click checkout',
+    email: 'Email purchase order: a templated order goes out; the reply is matched back',
+    manual: 'Manual queue: a task with everything to type in, and a box for the confirmation number'
   };
 
   var LINES = {
     milieu: { label: 'Milieu', kind: 'Drainage tonifier' },
     code: { label: 'Code', kind: 'Sarcode' },
     tox: { label: 'Tox', kind: 'Detoxifier homaccord' },
-    nutri: { label: 'Nutritional', kind: 'Nutritional supplement' }
+    nutri: { label: 'Nutritional', kind: 'Nutritional supplement' },
+    desbio: { label: 'DesBio', kind: 'Homeopathic formula' }
   };
 
   /* Names are from Physica Energetics' public catalogue. Their prices sit behind
@@ -67,11 +100,14 @@
     { sku: 'PE-PNE', name: 'Pneuma-Tox', line: 'tox', dose: '30 mL tincture', price: 32, cost: 18.90, supplier: 'physica', goals: { immunity: 2, detox: 1 }, tags: ['vegan'], hue: 44 },
     { sku: 'PE-INF', name: 'Inflamma-Tox', line: 'tox', dose: '30 mL tincture', price: 32, cost: 18.90, supplier: 'physica', goals: { joints: 3 }, tags: ['vegan'], hue: 20 },
     { sku: 'PE-SIN', name: 'Sinus-Tox', line: 'tox', dose: '30 mL tincture', price: 32, cost: 18.90, supplier: 'physica', goals: { immunity: 1 }, tags: ['vegan'], hue: 52 },
-    { sku: 'EG-MAG', name: 'Magnesium Glycinate', line: 'nutri', dose: '120 capsules', price: 24, cost: 9.10, supplier: 'bluewater', goals: { sleep: 2, joints: 1, stress: 1 }, tags: ['vegan'], hue: 120 },
-    { sku: 'EG-D3K', name: 'Vitamin D3 + K2', line: 'nutri', dose: '2,000 IU, 60 softgels', price: 19, cost: 6.20, supplier: 'bluewater', goals: { immunity: 2, energy: 1 }, tags: [], caution: ['bloodthinner'], hue: 48 },
+    { sku: 'EG-MAG', name: 'Mg-Zyme', line: 'nutri', dose: 'Magnesium, tablets', price: 24, cost: 9.10, supplier: 'biotics', goals: { sleep: 2, joints: 1, stress: 1 }, tags: ['vegan'], hue: 120 },
+    { sku: 'EG-D3K', name: 'Bio-D-Mulsion Forte', line: 'nutri', dose: 'Vitamin D3 drops, 2,000 IU per drop', price: 19, cost: 6.20, supplier: 'biotics', goals: { immunity: 2, energy: 1 }, tags: [], caution: ['bloodthinner'], hue: 48 },
     { sku: 'EG-OM3', name: 'Omega-3 Fish Oil', line: 'nutri', dose: '1,000 mg, 90 softgels', price: 32, cost: 13.75, supplier: 'bluewater', goals: { focus: 2, joints: 2 }, tags: ['fish'], caution: ['bloodthinner'], hue: 205 },
     { sku: 'EG-PRO', name: 'Probiotic 30B CFU', line: 'nutri', dose: '30 capsules', price: 39, cost: 15.30, supplier: 'bluewater', goals: { digestion: 3, immunity: 1 }, tags: ['vegan'], hue: 110 },
-    { sku: 'EG-BCX', name: 'Methylated B-Complex', line: 'nutri', dose: '60 capsules', price: 22, cost: 7.80, supplier: 'bluewater', goals: { energy: 2, focus: 2 }, tags: ['vegan'], hue: 15 }
+    { sku: 'EG-BCX', name: 'Methylated B-Complex', line: 'nutri', dose: '60 capsules', price: 22, cost: 7.80, supplier: 'bluewater', goals: { energy: 2, focus: 2 }, tags: ['vegan'], hue: 15 },
+    { sku: 'DB-CDK', name: 'Comprehensive Detox Kit', line: 'desbio', dose: '6 homeopathic formulas', price: 159, cost: 92, supplier: 'desbio', goals: { detox: 2 }, tags: ['vegan'], hue: 205 },
+    { sku: 'DB-GID', name: 'GI Drainage', line: 'desbio', dose: 'Homeopathic liquid', price: 29, cost: 16.5, supplier: 'desbio', goals: { digestion: 2, detox: 1 }, tags: ['vegan'], hue: 195 },
+    { sku: 'DB-TXA', name: 'ToxAffix', line: 'desbio', dose: 'Charcoal and apple pectin capsules', price: 44, cost: 24, supplier: 'desbio', goals: { digestion: 1, detox: 1 }, tags: ['vegan'], hue: 215 }
   ];
 
   /* access: free with an account, or a paid short course ($59-$119 each,
@@ -301,11 +337,11 @@
       { id: 'EG-10482', client: 'c12', at: iso(-6), items: [['PE-RLX', 1], ['PE-ADM', 1], ['EG-MAG', 1]], stage: 4, tracking: '1Z84F2A10398', sub: true, discount: 0.2, approvedBy: 'Maya Lindqvist' },
       { id: 'EG-10483', client: 'c7', at: iso(-5), items: [['PE-DRN', 1], ['EG-PRO', 1]], stage: 4, tracking: '9400 1112 0274', sub: true, discount: 0.2, approvedBy: 'Maya Lindqvist' },
       { id: 'EG-10484', client: 'c2', at: iso(-4), items: [['PE-INF', 1], ['EG-OM3', 1]], stage: 3, tracking: '1Z84F2A10411', sub: true, approvedBy: 'Theo Marsh' },
-      { id: 'EG-10485', client: 'c4', at: iso(-3), items: [['PE-MET', 1]], stage: 3, tracking: '9400 1112 0298', sub: false, approvedBy: 'Maya Lindqvist' },
+      { id: 'EG-10485', client: 'c4', at: iso(-3), source: 'Shopify', items: [['PE-MET', 1]], stage: 3, tracking: '9400 1112 0298', sub: false, approvedBy: 'Maya Lindqvist' },
       { id: 'EG-10486', client: 'c14', at: iso(-2), items: [['PE-MTL', 1], ['EG-BCX', 1]], stage: 2, sub: true, discount: 0.2, approvedBy: 'Theo Marsh' },
-      { id: 'EG-10487', client: 'c6', at: iso(-1), items: [['PE-FLU', 2], ['EG-D3K', 1]], stage: 1, sub: true, approvedBy: 'Maya Lindqvist' },
+      { id: 'EG-10487', client: 'c6', at: iso(-1), source: 'Shopify', items: [['PE-FLU', 2], ['EG-D3K', 1]], stage: 1, sub: true, approvedBy: 'Maya Lindqvist' },
       { id: 'EG-10488', client: 'c8', at: iso(-1), items: [['PE-INF', 1], ['EG-D3K', 1]], stage: 0, sub: true },
-      { id: 'EG-10489', client: 'c10', at: iso(0), items: [['PE-THY', 1]], stage: 0, sub: false }
+      { id: 'EG-10489', client: 'c10', at: iso(0), source: 'Shopify', items: [['PE-THY', 1]], stage: 0, sub: false }
     ];
 
     /* Program members: where each one is in their twelve weeks. */
@@ -369,6 +405,15 @@
     ];
     scans.forEach(function (sc) { if (sc.status === 'published') sc.data = sampleScan(clients.filter(function (x) { return x.id === sc.client; })[0]); });
 
+    /* Stock for the clinic, gathered per supplier and ordered in one go once
+       it is worth it (Physica ships free from $500). Each line remembers
+       which client it is for, so the box reconciles when it arrives. */
+    var batches = {
+      physica: [['PE-ADM', 2, 'c12'], ['PE-RLX', 1, 'c1'], ['PE-DRN', 3, 'c7'], ['PE-LIV', 2, 'c3'], ['PE-PIN', 2, 'c1'], ['PE-MTL', 1, 'c14'], ['PE-SOL', 2, 'c12'], ['PE-FLU', 4, ''], ['PE-THY', 2, 'c6'], ['PE-INF', 2, 'c8']],
+      biotics: [['EG-D3K', 3, 'c6'], ['EG-MAG', 2, 'c12']],
+      desbio: [['DB-GID', 2, 'c3'], ['DB-CDK', 1, 'c7']]
+    };
+
     /* Questions clients sent from the app. Anyone on the team can answer. */
     var inbox = [
       { id: 'm1', from: 'c3', at: iso(0), text: 'Can I take Drainage Milieu with my morning coffee, or should I wait?', done: false },
@@ -392,8 +437,8 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 7, clients: clients, bookings: bookings, orders: orders, emails: emails,
-      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, nextOrder: 10490, nextClient: 15,
+      v: 9, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
   }
@@ -506,7 +551,7 @@
 
   window.EG = {
     BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
-    SUPPLIERS: SUPPLIERS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
+    SUPPLIERS: SUPPLIERS, PATHS: PATHS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
     SCAN_SLOTS: SCAN_SLOTS, SCAN_SECTIONS: SCAN_SECTIONS, sampleScan: sampleScan, comparePotency: comparePotency, claimWords: claimWords,
     SESSION: SESSION, CERTIFIED: CERTIFIED, sessionPrice: sessionPrice, videoAccess: videoAccess,

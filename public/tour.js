@@ -2,30 +2,48 @@
  *
  * Drives the real console with a visible, obviously simulated cursor: it moves,
  * clicks, types and signs exactly as a person would, so every screen it shows
- * is the working app rather than a recording. About two and a half minutes.
+ * is the working app rather than a recording. About six minutes at normal
+ * speed, three at 2x.
  *
- * Controls while playing: Space pauses, Right arrow skips a chapter, Esc stops.
+ * Controls while playing: Space pauses, Left arrow or the << button goes back
+ * about 10 seconds, F or the >> button speeds up (1x, 2x, 4x), Right arrow
+ * skips a chapter, Esc stops.
+ *
+ * Going back works by putting the app's data back the way it was when the
+ * chapter began, then replaying the chapter instantly, with no waits, up to
+ * the caption that was showing ten seconds ago.
  */
 (function () {
   'use strict';
 
   var playing = false, paused = false, stopped = false, skip = false;
+  /* Every wait, cursor move and keystroke runs on this clock. Normal speed is
+     half the original pace; the >> button steps through 2x and 4x. */
+  var SPEEDS = [0.5, 1, 2], speedIdx = 0;
+  function rate() { return SPEEDS[speedIdx]; }
   var cur = { x: 0, y: 0 };
   var els = {};
-  var STOP = { stop: true }, SKIP = { skip: true };
+  var STOP = { stop: true }, SKIP = { skip: true }, REWIND = { rewind: true };
+  /* Rewind bookkeeping: every caption shown, with when it appeared on the
+     play clock; a saved copy of the data at the start of each chapter. */
+  var marks = [], snaps = [], sayIdx = -1, instant = false, fastUntil = -1, rewindTo = null, replaying = false;
+  var clockStart = 0, pausedTotal = 0, pausedAt = 0;
+  function clock() { var n = performance.now(); return n - clockStart - pausedTotal - (paused ? n - pausedAt : 0); }
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function $(sel) { return document.querySelector(sel); }
-  function guard() { if (stopped) throw STOP; if (skip) throw SKIP; }
+  function guard() { if (stopped) throw STOP; if (rewindTo) throw REWIND; if (skip) throw SKIP; }
 
   function sleep(ms) {
     return new Promise(function (resolve, reject) {
       var left = ms, last = performance.now();
       (function tick() {
         if (stopped) return reject(STOP);
+        if (rewindTo) return reject(REWIND);
         if (skip) return reject(SKIP);
+        if (instant) return resolve();
         var now = performance.now();
-        if (!paused) left -= now - last;
+        if (!paused) left -= (now - last) * rate();
         last = now;
         if (left <= 0) return resolve();
         setTimeout(tick, Math.min(50, Math.max(10, left)));
@@ -40,21 +58,22 @@
     var sx = cur.x, sy = cur.y;
     var dist = Math.hypot(x - sx, y - sy);
     ms = ms || Math.min(1100, Math.max(380, dist * 1.1));
-    if (reduce) ms = 1;
+    if (reduce || instant) { cur.x = x; cur.y = y; place(); return Promise.resolve(); }
     return new Promise(function (resolve, reject) {
-      var t0 = performance.now(), pausedFor = 0, pauseAt = 0;
+      var done = 0, last = performance.now();
       (function frame(now) {
         if (stopped) return reject(STOP);
+        if (rewindTo) return reject(REWIND);
         if (skip) return reject(SKIP);
-        if (paused) { if (!pauseAt) pauseAt = now; return requestAnimationFrame(frame); }
-        if (pauseAt) { pausedFor += now - pauseAt; pauseAt = 0; }
-        var t = Math.min(1, (now - t0 - pausedFor) / ms), k = ease(t);
+        if (!paused) done += (now - last) * rate();
+        last = now;
+        var t = Math.min(1, done / ms), k = ease(t);
         /* A slight arc reads as a hand, a straight line reads as a robot. */
         var arc = Math.sin(Math.PI * t) * Math.min(40, dist * .08);
         cur.x = sx + (x - sx) * k; cur.y = sy + (y - sy) * k - arc;
         place();
         if (t < 1) requestAnimationFrame(frame); else resolve();
-      })(t0);
+      })(last);
     });
   }
 
@@ -68,7 +87,7 @@
   async function reveal(el) {
     var r = el.getBoundingClientRect();
     if (!inView(r)) {
-      el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: reduce || instant ? 'auto' : 'smooth', block: 'center' });
       await sleep(650);
     }
     return el.getBoundingClientRect();
@@ -88,7 +107,7 @@
   async function click(sel, opts) {
     var el = await point(sel, opts && opts.dx, opts && opts.dy);
     guard();
-    ripple();
+    if (!instant) ripple();
     await sleep(140);
     el.click();
     await sleep(opts && opts.after != null ? opts.after : 450);
@@ -156,8 +175,34 @@
   /* ------------------------------------------------------------ caption */
   var chapterIndex = 0;
   function say(title, text) {
+    sayIdx++;
+    if (instant && sayIdx >= fastUntil) {
+      /* Caught up with the moment we rewound to: play normally from here. */
+      instant = false; els.cursor.style.opacity = 1; els.cap.classList.remove('rewinding');
+    } else if (!instant) {
+      marks.push({ chapter: chapterIndex, idx: sayIdx, t: clock() });
+    }
     els.cTitle.textContent = title;
     els.cText.textContent = text;
+  }
+  /* Waits for something the app does on its own timer, in real time even
+     while replaying, because the app does not know the tour is replaying. */
+  function until(cond, max) {
+    return new Promise(function (resolve, reject) {
+      var t0 = performance.now();
+      (function tick() {
+        if (stopped) return reject(STOP);
+        if (rewindTo) return reject(REWIND);
+        if (cond() || performance.now() - t0 > max) return resolve();
+        setTimeout(tick, 100);
+      })();
+    });
+  }
+  function rewind() {
+    if (!playing || !marks.length || rewindTo) return;
+    var target = clock() - 10000, pick = marks[0];
+    marks.forEach(function (m) { if (m.t <= target) pick = m; });
+    rewindTo = pick;
   }
 
   /* ------------------------------------------------------------- script */
@@ -230,7 +275,7 @@
       say('Meanwhile, the team sees it all here', 'Sofia’s order, questions from clients and anything else that needs a person, in one shared list.');
       await spot('[data-tour="tasks"]', 4400);
       var orders = App.state().orders, id = orders[orders.length - 1].id;
-      say('Approve, confirm, done', 'Any teammate can do it. The system sends it to Physica Energetics and emails tracking on its own.');
+      say('Approve, then check out in one go', 'Any teammate can approve. The Physica cart fills in their own logged-in tab, they check out, and tracking follows on its own.');
       await click('#w-' + id + ' [data-wapprove]', { after: 800 });
       await click('#w-' + id + ' [data-wconfirm]', { after: 1400 });
       await click('[data-wtab="auto"]', { after: 700 });
@@ -251,8 +296,7 @@
       say('Add the four scan exports', 'Resonance, root cause, symptom support and imbalance. Each has its own slot and rules.');
       await click('#scAll', { after: 700 });
       await click('#scExtract', { after: 300 });
-      var waited = 0;
-      while (App.ui.sc.step !== 'review' && waited < 6000) { await sleep(200); waited += 200; }
+      await until(function () { return App.ui.sc.step === 'review'; }, 6000);
       await sleep(400);
       say('Readings and findings, pulled out and ranked', 'Organ dials, dilution notes and remedies in priority order. The practitioner can change anything.');
       await spot('[data-tour="organs"]', 2400);
@@ -290,14 +334,17 @@
     } },
     { name: 'Shop & drop-ship', run: async function () {
       App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(500);
-      say('After approval, orders run on their own', 'Sent to the supplier, confirmed, shipped with tracking emailed, refill reminder set.');
+      say('After checkout, the rest runs itself', 'Confirmation saved, tracking emailed to the client, refill reminder set. Nobody copies anything between systems.');
       await spot('[data-tour="pipeline"]', 2800, 6);
+      await click('[data-shtab="clinic"]', { after: 700 });
+      say('Clinic stock goes out as one order', 'Units collect per supplier, each earmarked for a client, until Physica\u2019s $500 free-shipping line. One order a week instead of one per product.');
+      await spot('[data-tour="batches"]', 3600);
       await click('[data-shtab="rules"]', { after: 700 });
       say('The approval rule cannot be switched off', 'Nothing reaches a supplier without a person. Everything around it is automatic.');
       await spot('.rule', 2600);
-      await click('[data-shtab="products"]', { after: 700 });
-      say('Built on the Physica Energetics catalogue', 'Member prices and margins for every product. Prices here are placeholders until we load your price list.');
-      await sleep(2800);
+      await click('[data-shtab="suppliers"]', { after: 700 });
+      say('Physica, Biotics and DesBio in one place', 'How orders reach each one, their patient dispensaries, drop-ship terms and the pricing rules the platform enforces.');
+      await spot('[data-tour="supplier"]', 3400);
     } }
   ];
 
@@ -309,10 +356,13 @@
     els.spot = document.createElement('div'); els.spot.className = 'spot'; els.spot.hidden = true;
     els.cap = document.createElement('div'); els.cap.className = 'caption'; els.cap.setAttribute('role', 'status'); els.cap.setAttribute('aria-live', 'polite');
     els.cap.innerHTML = '<div class="k"><span id="cChap"></span><span id="cCount"></span></div><h4 id="cTitle"></h4><p id="cText"></p>' +
-      '<div class="ctl"><button type="button" id="cPause">Pause</button><button type="button" id="cSkip">Next &rarr;</button><div class="prog"><i id="cProg"></i></div><button type="button" id="cStop">Exit</button></div>';
+      '<div class="ctl"><button type="button" id="cBack" class="ff" title="Back 10 seconds (Left arrow)" aria-label="Back 10 seconds">&laquo; 10s</button><button type="button" id="cPause">Pause</button><button type="button" id="cSkip">Next &rarr;</button><button type="button" id="cFF" class="ff" title="Speed up (F)" aria-label="Speed: normal. Click to speed up">&raquo; 1&times;</button><div class="prog"><i id="cProg"></i></div><button type="button" id="cStop">Exit</button></div>';
     [els.shield, els.spot, els.cursor, els.cap].forEach(function (e) { document.body.appendChild(e); });
     els.cTitle = $('#cTitle'); els.cText = $('#cText');
     $('#cPause').addEventListener('click', togglePause);
+    $('#cFF').addEventListener('click', fastForward);
+    $('#cBack').addEventListener('click', rewind);
+    paintSpeed();
     $('#cSkip').addEventListener('click', function () { skip = true; });
     $('#cStop').addEventListener('click', stop);
   }
@@ -321,15 +371,26 @@
     document.body.classList.remove('touring');
   }
   function togglePause() {
+    if (paused) pausedTotal += performance.now() - pausedAt; else pausedAt = performance.now();
     paused = !paused;
     var b = $('#cPause'); if (b) b.textContent = paused ? 'Resume' : 'Pause';
   }
   function stop() { stopped = true; }
+  function paintSpeed() {
+    var b = $('#cFF'); if (!b) return;
+    var x = rate() * 2;
+    b.innerHTML = '&raquo; ' + x + '&times;';
+    b.classList.toggle('on', x > 1);
+    b.setAttribute('aria-label', 'Speed: ' + (x === 1 ? 'normal' : x + ' times') + '. Click to change');
+  }
+  function fastForward() { speedIdx = (speedIdx + 1) % SPEEDS.length; paintSpeed(); }
   function onKey(e) {
     if (!playing) return;
     if (e.key === 'Escape') { e.preventDefault(); stop(); }
     else if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); skip = true; }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); rewind(); }
+    else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fastForward(); }
   }
 
   function card(html, ms) {
@@ -345,18 +406,25 @@
   async function play() {
     if (playing) return;
     playing = true; paused = false; stopped = false; skip = false;
+    marks = []; snaps = []; instant = false; fastUntil = -1; rewindTo = null;
     App.reset(); App.go('dashboard');
     document.body.classList.add('touring');
     build();
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, energetic scan reports, and drop-shipping that always waits for a person.</p>', 4200);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, energetic scan reports, and drop-shipping that always waits for a person.</p>', 2800);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
+    clockStart = performance.now(); pausedTotal = 0;
     for (chapterIndex = 0; chapterIndex < CHAPTERS.length; chapterIndex++) {
       var ch = CHAPTERS[chapterIndex];
-      skip = false;
+      skip = false; sayIdx = -1;
+      /* A replay that ended early (a step could not run) must not carry on
+         invisibly into the next chapter. */
+      if (instant && !replaying) { instant = false; els.cursor.style.opacity = 1; els.cap.classList.remove('rewinding'); }
+      replaying = false;
+      if (!snaps[chapterIndex]) snaps[chapterIndex] = { data: JSON.stringify(App.state()), ui: JSON.stringify(App.ui) };
       $('#cChap').textContent = ch.name;
       $('#cCount').textContent = (chapterIndex + 1) + ' of ' + CHAPTERS.length;
       $('#cProg').style.width = ((chapterIndex + 1) / CHAPTERS.length * 100) + '%';
@@ -364,6 +432,23 @@
       catch (e) {
         unspot();
         if (e === STOP) return finish(false);
+        if (e === REWIND) {
+          var to = rewindTo;
+          snaps.length = to.chapter + 1;
+          marks = marks.filter(function (m) { return m.chapter < to.chapter || (m.chapter === to.chapter && m.idx <= to.idx); });
+          /* The clock goes back to when that caption appeared. */
+          clockStart = performance.now() - pausedTotal - (paused ? performance.now() - pausedAt : 0) - to.t;
+          App.closeDrawer();
+          App.restore(JSON.parse(snaps[to.chapter].data));
+          var ui = JSON.parse(snaps[to.chapter].ui);
+          Object.keys(App.ui).forEach(function (k) { delete App.ui[k]; });
+          Object.keys(ui).forEach(function (k) { App.ui[k] = ui[k]; });
+          App.render(); window.scrollTo(0, 0);
+          instant = true; replaying = true; fastUntil = to.idx; rewindTo = null; skip = false;
+          els.cursor.style.opacity = 0; els.cap.classList.add('rewinding');
+          chapterIndex = to.chapter - 1;
+          continue;
+        }
         if (e !== SKIP) { console.warn('Showcase chapter failed:', e); }
       }
       unspot();
@@ -373,7 +458,7 @@
   }
 
   function finish(completed) {
-    playing = false; paused = false; skip = false;
+    playing = false; paused = false; skip = false; instant = false; rewindTo = null;
     teardown();
     window.scrollTo(0, 0);
     if (!completed) { stopped = false; return; }
