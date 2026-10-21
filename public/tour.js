@@ -2,8 +2,8 @@
  *
  * Drives the real console with a visible, obviously simulated cursor: it moves,
  * clicks, types and signs exactly as a person would, so every screen it shows
- * is the working app rather than a recording. About six minutes at normal
- * speed, three at 2x.
+ * is the working app rather than a recording. About five minutes at normal
+ * speed.
  *
  * Controls while playing: Space pauses, Left arrow or the << button goes back
  * about 10 seconds, F or the >> button speeds up (1x, 2x, 4x), Right arrow
@@ -207,106 +207,51 @@
 
   /* ------------------------------------------------------------- script */
   var CHAPTERS = [
-    { name: 'Client app: free account', run: async function () {
-      App.ui.ca = null; App.go('client'); await sleep(600);
-      say('A simple app for your clients', 'Separate from the team console. Clients get a free plan, order in one tap and watch classes.');
-      await spot('[data-tour="phone"]', 2600, 4);
-      await click('#caStart', { after: 600 });
-      say('A free plan from a short questionnaire', 'Three quick steps on any phone: goals, a little about them, and where to send the plan.');
-      await click('[data-cgoal="sleep"]', { after: 250 });
-      await click('[data-cgoal="stress"]', { after: 400 });
-      await click('#caNext', { after: 500 });
-      await choose('#caDiet', 'vegetarian');
-      await click('#caNext', { after: 500 });
-      await type('#caName', 'Sofia Martinez', 45);
-      await type('#caEmail', 'sofia.martinez@example.com', 25);
-      await click('#caConsent', { after: 250 });
-      await click('#caFinish', { after: 900 });
-      say('Suggestions she can act on', 'Physica Energetics remedies matched to her goals, each with the reason it was picked.');
-      await spot('[data-tour="ca-picks"]', 4200);
-      say('One tap to order the whole plan', 'She turns on auto-ship so she never runs out. Each refill earns credit toward a session or course, so supplement prices stay where the suppliers set them.');
-      await click('#caSub', { after: 400 });
-      await click('#caAddAll', { after: 2400 });
-      await click('#caPay', { after: 600 });
-      say('Clear about what happens next', 'Every order is checked by the team before it ships, and the client can track it in plain language.');
-      await sleep(3600);
-      await click('#caClose', { after: 400 });
-      await click('[data-ctab="videos"]', { after: 600 });
-      say('Free classes, plus short courses from $59 to $119', 'Free accounts watch the free classes and can buy any short course to keep.');
-      await spot('[data-tour="ca-picked"]', 3200);
-      var buys = document.querySelectorAll('[data-tour="ca-picked"] [data-cbuy]');
-      await click(buys[buys.length - 1], { after: 1200 });
-      await click('#caPayVideo', { after: 500 });
-      say('Bought and unlocked in seconds', 'Her first auto-ship credit came off the price. Access, receipt and download are handled automatically.');
-      await sleep(3200);
-      await click('#caClose', { after: 400 });
-      await click('[data-ctab="book"]', { after: 700 });
-      say('Book a Certified Practitioner', '$99 for 30 minutes, or add $49 for a full hour. Pick who, how long and when.');
-      await click('[data-cwho="p3"]', { after: 500 });
-      await click('[data-clong="1"]', { after: 900 });
-      await click('[data-cday="1"]', { after: 300 });
-      await click('[data-ctime="10:30"]', { after: 700 });
-      await spot('[data-tour="ca-booksum"]', 1800);
-      await click('#caBookPay', { after: 600 });
-      say('Booked and paid in one step', 'The calendar invite and Zoom link go out on their own, and the session appears on the team’s schedule.');
-      await sleep(3000);
-      await click('#caClose2', { after: 400 });
-      await click('[data-ctab="home"]', { after: 600 });
-      say('Premium Course: $2,995', 'The upgrade is always one tap away, with every benefit spelled out: product discounts, free shipping, every short course and more.');
-      await spot('[data-tour="ca-upsell"]', 2400);
-      await click('#caProgram', { after: 600 });
-      await sleep(3600);
-      await click('#caClose', { after: 400 });
+    { name: 'Home', run: async function () {
+      App.go('dashboard'); await sleep(600);
+      say('Four tools run the practice', 'Client Portal, Shop, Client reports and Protocols. Everything else can be added later, when it is needed.');
+      await spot('[data-tour="doors"]', 4200, 6);
+      say('What needs a person today', 'Orders to approve, reports to review, forms outstanding. One list, so nothing depends on one person remembering.');
+      await spot('[data-tour="today"]', 3600);
     } },
-    { name: 'Client app: Premium member', run: async function () {
-      App.ui.ca = null; App.go('client'); await sleep(300);
-      await choose('#caAs', 'c1');
-      say('Premium members use the same app', 'Their week of the course, Thursday’s live Zoom, 20% off and free shipping, on one screen.');
-      await spot('[data-tour="ca-week"]', 2400);
-      await spot('[data-tour="ca-zoom"]', 1800);
-      say('Reordering is one tap at member prices', 'Their plan is always on the home screen, with the discount already applied.');
-      await spot('[data-tour="ca-plan"]', 3200);
-      await click('[data-ctab="videos"]', { after: 600 });
-      say('Every short course included', 'Premium members can watch and download the whole library at no extra cost.');
-      await sleep(2400);
+    { name: 'Client Portal', run: async function () {
+      App.ui.cp = null; App.go('clients'); await sleep(600);
+      say('Client Portal: every client in one place', 'Search by name or email, and see each client’s tier at a glance.');
+      await spot('[data-tour="clientlist"]', 2600);
+      await click('[data-cp="c1"]', { after: 700 });
+      say('One page per client', 'Basic information first, with their practitioner, the app and their protocol one click away.');
+      await spot('[data-tour="clienthead"]', 2600);
+      await spot('[data-tour="clienttabs"]', 2200, 4);
+      await click('[data-cptab="bookings"]', { after: 700 });
+      say('Bookings and packages', 'Sessions booked, the Premium Course and what is left in each package.');
+      await sleep(2600);
+      await click('[data-cptab="billing"]', { after: 700 });
+      say('Billing and payments', 'Every charge, payment plan and refund, with a payment link one click away.');
+      await spot('[data-tour="billing"]', 3000);
+      await click('[data-cptab="protocols"]', { after: 800 });
+      say('Protocols', 'The polished PDF of what they take and when, ready to print or send.');
+      await spot('[data-tour="protodoc"]', 3200);
+      await click('[data-cptab="forms"]', { after: 700 });
+      say('Forms and waivers', 'Intake, consent and the program agreement, signed online. Anything missing can be sent in one click.');
+      await spot('[data-tour="forms"]', 3000);
+      await click('[data-cptab="docs"]', { after: 700 });
+      say('Documents', 'Scan reports, protocols and anything uploaded, kept together.');
+      await spot('[data-tour="docs"]', 2800);
     } },
-    { name: 'Work queue', run: async function () {
-      App.go('queue'); await sleep(600);
-      say('Meanwhile, the team sees it all here', 'Sofia’s order, questions from clients and anything else that needs a person, in one shared list.');
-      await spot('[data-tour="tasks"]', 4400);
-      var orders = App.state().orders, id = orders[orders.length - 1].id;
-      say('Approve, then check out in one go', 'Any teammate can approve. The Physica cart fills in their own logged-in tab, they check out, and tracking follows on its own.');
-      await click('#w-' + id + ' [data-wapprove]', { after: 800 });
-      await click('#w-' + id + ' [data-wconfirm]', { after: 1400 });
-      await click('[data-wtab="auto"]', { after: 700 });
-      say('Automations you can see and adjust', 'Each one has an on/off switch, its own settings and a log. Here: when clinic stock gets ordered.');
-      await spot('[data-tour="automations"]', 2400);
-      await click('[data-aupanel="batch"][data-p="settings"]', { after: 900 });
-      await spot('#au-batch', 2600);
-      await click('[data-aurun="tracking"]', { after: 900 });
-      say('Every run is logged', 'Run one by hand and it shows up in its log straight away, alongside what it did on its own.');
-      await spot('#au-tracking', 2800);
-      await click('[data-wtab="log"]', { after: 700 });
-      say('A record of everything it did', 'Including Sofia’s questionnaire, her order and her class purchase from a minute ago.');
-      await spot('[data-tour="activity"]', 4000);
-      await click('[data-wtab="team"]', { after: 700 });
-      say('Clear roles for whoever takes over', 'Owner, practitioners and assistants each see what they need, with a checklist for handing the work over.');
-      await spot('[data-tour="roles"]', 3600);
-    } },
-    { name: 'Energetic scans', run: async function () {
+    { name: 'Client reports', run: async function () {
       App.ui.sc = null; App.go('scans'); await sleep(600);
-      say('The in-house energetic scan, turned into a report', 'Scanner exports become a client report and a remedy plan the same day, without retyping anything.');
+      say('Client report creator', 'The in-house energetic scan becomes a finished client report the same day, without retyping.');
       await spot('[data-tour="scanlist"]', 2600);
       await click('[data-scopen="s2"]', { after: 600 });
-      say('Add the four scan exports', 'Resonance, root cause, symptom support and imbalance. Each has its own slot and rules.');
+      say('Add the four scan exports', 'Resonance, root cause, symptom support and imbalance, each in its own slot.');
       await click('#scAll', { after: 700 });
       await click('#scExtract', { after: 300 });
       await until(function () { return App.ui.sc.step === 'review'; }, 6000);
       await sleep(400);
-      say('Readings and findings, pulled out and ranked', 'Organ dials, dilution notes and remedies in priority order. The practitioner can change anything.');
+      say('Readings and findings, pulled out and ranked', 'Organ dials and remedies in priority order. The practitioner can change anything.');
       await spot('[data-tour="organs"]', 2400);
-      await spot('[data-tour="remedies"]', 2800);
-      say('Supplier wording is checked', 'Claim language like \u201celiminate\u201d is flagged so it gets reworded before a client ever sees it.');
+      await spot('[data-tour="remedies"]', 2600);
+      say('Supplier wording is checked', 'Claim language like “eliminate” is flagged so it gets reworded before a client sees it.');
       await click('[data-edit]', { after: 500 });
       await type('[data-desc]', 'Chosen to support a calmer inflammatory pattern.', 22);
       await click('#scBuild', { after: 900 });
@@ -314,54 +259,82 @@
       await spot('[data-tour="report"] .rr-banner', 2200);
       await click('#scSign', { after: 400 });
       await click('#scPublish', { after: 1400 });
-      await click('#scSeeApp', { after: 900 });
-      say('The client sees it in their app', 'Their report, with every recommended remedy one tap from the cart at member price.');
-      await sleep(2600);
-      await click('#caAddRem', { after: 2400 });
+      say('Straight on to the protocol', 'The report feeds the protocol creator, so nothing is copied across by hand.');
+      await click('#scProto', { after: 900 });
+    } },
+    { name: 'Protocols', run: async function () {
+      if (App.ui.view !== 'protocols') { App.ui.pc = { client: 'c7', draft: null }; App.go('protocols'); await sleep(600); }
+      say('Protocol creator', 'Suggestions come from Aiko’s report first, then from her goals. The practitioner decides what goes in.');
+      await spot('[data-tour="suggestions"]', 3000);
+      var adds = document.querySelectorAll('[data-padd]');
+      for (var i = 0; i < Math.min(2, adds.length); i++) await click(document.querySelectorAll('[data-padd]')[0], { after: 600 });
+      say('What, how much and when', 'Dose, how long, and the times of day. The client gets a daily schedule with reminders.');
+      await spot('[data-tour="builder"]', 2400);
+      var chip = document.querySelector('[data-tour="builder"] [data-pt="bedtime"]:not(.is-on)');
+      if (chip) await click(chip, { after: 600 });
+      say('A protocol document they will actually read', 'Day by day, with every remedy explained. It is saved to her documents as a PDF.');
+      await spot('[data-tour="protodoc"]', 3200);
+      await click('#pcPublish', { after: 1200 });
+      say('Publish, then order in one click', 'The remedies go to the Shop as one order, sized for the length of the protocol. A person still approves it.');
+      await click('#pcOrder', { after: 1400 });
+    } },
+    { name: 'What the client sees', run: async function () {
+      App.ui.ca = null; App.go('client'); await sleep(400);
+      await choose('#caAs', 'c7');
+      say('Aiko’s app shows today’s protocol', 'What to take at each time of day. She ticks things off as she goes.');
+      await spot('[data-tour="ca-today"]', 2600);
+      var t = document.querySelector('[data-ctake]');
+      if (t) await click(t, { after: 600 });
+      await click('[data-ctab="protocol"]', { after: 700 });
+      say('Her full protocol, and reordering', 'The whole schedule and the PDF, with one button to order her remedies again.');
+      await spot('[data-tour="ca-protocol"]', 3200);
+    } },
+    { name: 'Free accounts', run: async function () {
+      App.ui.ca = null; App.go('client'); await sleep(600);
+      say('Anyone can start free', 'A short questionnaire gives a wellness snapshot, free classes, short courses and session booking.');
+      await click('#caStart', { after: 600 });
+      await click('[data-cgoal="sleep"]', { after: 250 });
+      await click('[data-cgoal="stress"]', { after: 400 });
+      await click('#caNext', { after: 500 });
+      await click('#caNext', { after: 500 });
+      await type('#caName', 'Sofia Martinez', 45);
+      await type('#caEmail', 'sofia.martinez@example.com', 25);
+      await click('#caConsent', { after: 250 });
+      await click('#caFinish', { after: 900 });
+      say('A snapshot, not product picks', 'Remedy recommendations are what the Premium Course is for, so free accounts get guidance and classes instead.');
+      await spot('[data-tour="ca-snapshot"]', 3400);
+      await spot('[data-tour="ca-picked"]', 2400);
+      say('The Premium Course: $6,995', 'A personal protocol built with a practitioner, the energetic scan, the course and weekly Zoom.');
+      await spot('[data-tour="ca-upsell"]', 2600);
+      await click('#caProgram', { after: 700 });
+      await sleep(3200);
       await click('#caClose', { after: 400 });
     } },
-    { name: 'Premium Course', run: async function () {
-      App.ui.progTab = 'sales'; App.go('program'); await sleep(500);
-      say('Sell the $2,995 Premium Course', 'Energetics work, testing, a customised course, weekly live Zoom, 20% off products and free shipping, sold from one page.');
-      await spot('[data-tour="sales"] .pricebox', 2400);
-      await click('#pEnroll', { after: 700 });
-      say('Enrollment and agreement in one step', 'Pay in full or in three payments. The program agreement is signed in the same form.');
-      await type('#pName', 'Jordan Okafor', 40);
-      await type('#pEmail', 'jordan.okafor@example.com', 22);
-      await choose('#pPlan', 'plan');
-      await click('#pAgree', { after: 250 });
-      await click('#pPay', { after: 1000 });
-      say('Then delivery runs itself', 'Payment plan, signed agreement, assessment booking, test kit, Zoom invites, week 1 and member pricing.');
-      await spot('[data-tour="enrollbehind"]', 3400);
-      await click('#pSeeMembers', { after: 800 });
-      say('Every member at a glance', 'Course week, energetics assessment, testing, custom plan, payments and Zoom attendance.');
-      await spot('[data-tour="members"]', 3000);
-    } },
-    { name: 'Shop & drop-ship', run: async function () {
-      App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(500);
-      say('After checkout, the rest runs itself', 'Confirmation saved, tracking emailed to the client, refill reminder set. Nobody copies anything between systems.');
-      await spot('[data-tour="pipeline"]', 2800, 6);
-      await click('[data-shtab="clinic"]', { after: 700 });
-      say('Clinic stock goes out as one order', 'Units collect per supplier, each earmarked for a client, until Physica\u2019s $500 free-shipping line. One order a week instead of one per product.');
-      await spot('[data-tour="batches"]', 3600);
-      await click('[data-shtab="rules"]', { after: 700 });
-      say('The approval rule cannot be switched off', 'Nothing reaches a supplier without a person. Everything around it is automatic.');
-      await spot('.rule', 2600);
+    { name: 'Shop', run: async function () {
+      App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(600);
+      say('Shop: every order waits for a person', 'Aiko’s protocol order is here. Nothing reaches a supplier without approval.');
+      await spot('[data-tour="approvals"]', 2800);
+      var mine = App.state().orders.filter(function (o) { return o.source === 'Protocol'; }).pop();
+      var b = mine && document.querySelector('[data-approve="' + mine.id + '"]:not([disabled])');
+      if (b) {
+        var id = b.getAttribute('data-approve');
+        await click(b, { after: 800 });
+        say('Approve, then check out in one go', 'The Physica cart fills in the practitioner’s own logged-in tab. They check out, and tracking follows.');
+        await click('[data-confirm="' + id + '"]', { after: 1600 });
+      }
+      await spot('[data-tour="pipeline"]', 2600, 6);
       await click('[data-shtab="suppliers"]', { after: 700 });
-      say('Physica, Biotics and DesBio in one place', 'How orders reach each one, their patient dispensaries, drop-ship terms and the pricing rules the platform enforces.');
+      say('Physica, Biotics and DesBio', 'How orders reach each one and the pricing rules the platform keeps to. Physica prices stay behind login.');
       await spot('[data-tour="supplier"]', 3400);
     } },
     { name: 'Outcome', run: async function () {
       App.go('outcome'); await sleep(600);
-      say('What it all adds up to', 'Sell more with less effort, deliver the Premium Course, stay safe with suppliers, and hand off the admin.');
+      say('Four tools as the backbone', 'Enough to run the practice day to day, without the admin resting on one person.');
       await spot('[data-tour="purposes"]', 3200);
-      say('Time back, job by job', 'About 28 hours a week of manual admin becomes about 4. These are estimates to confirm with the team.');
+      say('Time back, job by job', 'About 18 hours a week of admin becomes about 2. Estimates to confirm with the team.');
       await spot('[data-tour="jobs"]', 3600);
-      say('The client journey it runs', 'From a free questionnaire to the Premium Course and refills, with what runs itself and where a person steps in.');
-      await spot('[data-tour="journey"]', 3600);
-      say('Growth that fits the supplier rules', 'Advertise the free questionnaire and classes, never product prices. Then a calculator to try your own numbers.');
-      await spot('[data-tour="ads"]', 3000);
-      await spot('[data-tour="calc"]', 3000);
+      say('The rest, when you want it', 'Newsletters, a video library, a Shopify store and more are already sketched, and switched off for now.');
+      await spot('[data-tour="later"]', 3200);
     } }
   ];
 
@@ -430,7 +403,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, energetic scan reports, and drop-shipping that always waits for a person.</p>', 2800);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Four tools that carry the practice: a Client Portal, a Shop, a client report creator and a protocol creator. Plus a simple app for clients and the $6,995 Premium Course.</p>', 2800);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     clockStart = performance.now(); pausedTotal = 0;
@@ -480,9 +453,9 @@
     window.scrollTo(0, 0);
     if (!completed) { stopped = false; return; }
     stopped = false;
-    card('<p class="k">Showcase complete</p><h2>Sales that run, admin that does not depend on one person</h2>' +
-      '<p>The intake, records, scheduling, email and e-signature engine already runs a real business every day. The client app, program, shop and work queue are what we would build for you on top of it.</p>' +
-      '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>Short courses $59 to $119</li><li>Practitioner booking</li><li>$2,995 Premium Course</li><li>Energetic scan reports</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
+    card('<p class="k">Showcase complete</p><h2>The backbone of the practice</h2>' +
+      '<p>Four tools to start with. Everything else is added when the business needs it.</p>' +
+      '<ul><li>Client Portal</li><li>Shop with approved drop-shipping</li><li>Client report creator</li><li>Protocol creator &amp; schedules</li><li>Client app</li><li>$6,995 Premium Course</li></ul>' +
       '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endOutcome">See the outcome</button><button class="btn ghost" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });

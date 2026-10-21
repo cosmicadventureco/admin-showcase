@@ -21,8 +21,8 @@
     </a>
     <span class="sample" title="Every name, order and number here is invented">Showcase &middot; sample data</span>
     <div class="modes" role="group" aria-label="Interface">
-      <button type="button" class="mode is-on" data-mode="admin">Team console</button>
-      <button type="button" class="mode" data-mode="client" id="modeClient">Client app</button>
+      <button type="button" class="mode is-on" data-mode="admin">Practice</button>
+      <button type="button" class="mode" data-mode="client" id="modeClient">Client view</button>
     </div>
     <span class="grow"></span>
     <span class="tools"><button class="linkish" id="resetBtn" type="button">Reset sample data</button></span>
@@ -33,22 +33,12 @@
   </header>
   <div class="shell">
     <nav class="rail" aria-label="Sections">
-      <div class="group">Run the practice</div>
-      <button class="nav" data-view="dashboard" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
-      <button class="nav" data-view="queue" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2.2"/></svg>Work queue<span class="new">NEW</span></button>
-      <button class="nav" data-view="schedule" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</button>
-      <button class="nav" data-view="clients" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/></svg>Clients</button>
-      <button class="nav" data-view="messages" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>Client messaging</button>
-      <div class="group">Paperwork</div>
-      <button class="nav" data-view="intake" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></svg>Wellness intake</button>
-      <button class="nav" data-view="agreements" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 17c1-1.2 2-1.2 3 0s2 1.2 3 0"/></svg>Quotes &amp; agreements</button>
-      <div class="group">Grow</div>
-      <button class="nav" data-view="program" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5 12 3l8 3.5-8 3.5z"/><path d="M7 8v5c0 1.7 2.2 3 5 3s5-1.3 5-3V8M20 6.5V12"/></svg>Premium Course<span class="new">NEW</span></button>
-      <button class="nav" data-view="scans" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/></svg>Energetic scans<span class="new">NEW</span></button>
-      <button class="nav" data-view="shop" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18l-1.5 12a2 2 0 0 1-2 1.8h-11a2 2 0 0 1-2-1.8z"/><path d="M8.5 7a3.5 3.5 0 0 1 7 0"/></svg>Shop &amp; fulfilment<span class="new">NEW</span></button>
-      <button class="nav" data-view="newsletter" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg>Newsletter<span class="new">NEW</span></button>
-      <button class="nav" data-view="videos" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/></svg>Video library<span class="new">NEW</span></button>
-      <div class="group">Results</div>
+      <button class="nav" data-view="dashboard" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Home</button>
+      <button class="nav" data-view="clients" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/></svg>Client Portal</button>
+      <button class="nav" data-view="shop" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18l-1.5 12a2 2 0 0 1-2 1.8h-11a2 2 0 0 1-2-1.8z"/><path d="M8.5 7a3.5 3.5 0 0 1 7 0"/></svg>Shop</button>
+      <button class="nav" data-view="scans" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/></svg>Client reports</button>
+      <button class="nav" data-view="protocols" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Protocols</button>
+      <div class="group">The pitch</div>
       <button class="nav" data-view="outcome" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Outcome</button>
     </nav>
     <main class="main"><div class="view" id="view"></div></main>
@@ -62,6 +52,8 @@
 <script src="/queue.js"></script>
 <script src="/scans.js"></script>
 <script src="/outcome.js"></script>
+<script src="/protocols.js"></script>
+<script src="/portal.js"></script>
 <script src="/tour.js"></script><!--/SCRIPTS-->
 </body>
 </html>

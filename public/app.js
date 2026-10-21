@@ -8,10 +8,10 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v11';
+  var KEY = 'evergrove-showcase-v12';
   var S = load();
   var ui = {
-    view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
+    view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
     store: { line: 'all', as: 'c1', cart: {} }, progTab: 'sales', enrollDone: null, progStudent: 'c1', confirming: null,
     calMonth: null, quoteId: 'q1', drawer: null, intakeDone: null, simulating: false, log: []
   };
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 11) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 12) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -419,7 +419,7 @@
   }
   function bindRows() { $$('[data-client]').forEach(function (r) { r.addEventListener('click', function () { openClient(r.getAttribute('data-client')); }); }); }
 
-  function openClient(id) { ui.drawer = id; renderDrawer(); }
+  function openClient(id) { if (window.EGPortal) EGPortal.open(id, 'info'); }
   function renderDrawer() {
     var root = $('#drawerRoot');
     if (!ui.drawer) { root.innerHTML = ''; return; }
@@ -606,7 +606,7 @@
       pitch('new', 'Proposed drop-ship automation with a human checkpoint: every order, including auto-ship refills, waits in an approval queue. Once approved, routing, tracking emails and refill reminders run on their own.') +
       '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', 'no packing by you') + '</div>' +
       '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' +
-      [['store', 'Storefront'], ['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['clinic', 'Clinic orders'], ['products', 'Catalogue'], ['suppliers', 'Suppliers'], ['rules', 'Automations']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      [['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['products', 'Products'], ['suppliers', 'Suppliers']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       (ui.shopTab === 'pipeline' ? '<button class="btn ghost" id="shSim">Simulate an incoming order</button>' : '') + '</div>' +
       (ui.shopTab === 'store' ? storefront() : ui.shopTab === 'products' ? productsTable() : ui.shopTab === 'suppliers' ? suppliersView() : ui.shopTab === 'clinic' ? clinicView() : ui.shopTab === 'rules' ? rules() : approvalQueue() + pipeline());
   };
@@ -1133,8 +1133,8 @@
   }
   function reset() {
     S = EG.seed(); save();
-    ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'store'; ui.calMonth = null; ui.quoteId = 'q1';
-    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null; ui.sc = null; ui.au = null; ui.oc = null;
+    ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'pipeline'; ui.calMonth = null; ui.quoteId = 'q1';
+    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null; ui.sc = null; ui.au = null; ui.oc = null; ui.cp = null; ui.pc = null;
     render();
   }
 

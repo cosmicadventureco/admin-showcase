@@ -158,11 +158,12 @@
   var PROGRAM = {
     name: 'Evergrove Restore',
     sub: 'Premium 3-Month Course',
-    price: 2995,
-    plan: { n: 3, each: 1035 },
+    price: 6995,
+    plan: { n: 3, each: 2395 },
     weeks: 12,
     discount: 0.2,
     includes: [
+      ['Your personal protocol', 'The remedies and supplements chosen for you, with a daily schedule and reminders in your app. Product recommendations are part of the course.'],
       ['Custom energetics assessment & work', 'A one-to-one energetic assessment at the start and a retest at week 11, with a protocol built from your results.'],
       ['Additional testing', 'At-home test kits chosen by your practitioner, with results reviewed with you live.'],
       ['A 12-week course built around you', 'Weekly video modules unlocked one at a time, with a track chosen from your intake. Watch online or download.'],
@@ -390,7 +391,17 @@
     ];
 
     enrollments.forEach(function (e) { var c = clients.filter(function (x) { return x.id === e.client; })[0]; c.plan = 'program'; c.member = true; });
-    clients.forEach(function (c) { c.videosOwned = []; });
+    clients.forEach(function (c, i) {
+      c.videosOwned = [];
+      c.dob = String(1 + (i * 5) % 12).padStart(2, '0') + '/' + String(3 + (i * 7) % 25).padStart(2, '0') + '/' + (1968 + (i * 3) % 30);
+      c.address = (120 + i * 37) + ' ' + ['Juniper Way', 'Canyon Rd', 'Sage Ave', 'Aspen Ct'][i % 4] + ', ' + ['Salt Lake City', 'Park City', 'Sandy', 'Provo'][i % 4] + ', UT';
+      c.practitioner = ['Theo Marsh', 'Dr. Ana Whitlock, ND', 'Lena Ortiz'][i % 3];
+      c.card = ['Visa', 'Mastercard', 'Amex'][i % 3] + ' \u2022\u2022\u2022\u2022 ' + (4242 + i * 111) % 10000;
+      c.packs = []; c.docs = [];
+    });
+    clients[1].packs = [{ name: '3 \u00d7 30-minute sessions', used: 1, total: 3, bought: iso(-40), paid: 279 }];
+    clients[10].packs = [{ name: '5 \u00d7 1-hour sessions', used: 3, total: 5, bought: iso(-70), paid: 695 }];
+    clients[0].docs = [{ name: 'Blood panel (from her doctor).pdf', at: iso(-50), kind: 'Upload' }];
     clients[4].videosOwned = ['v11'];
     /* Auto-ship credit already earned: $5 a refill, spent on sessions and courses. */
     clients.forEach(function (c, i) { if (c.autoship) c.credit = [15, 10, 5, 20][i % 4]; });
@@ -407,6 +418,14 @@
       { id: 's4', client: 'c14', date: iso(8), status: 'booked', data: null }
     ];
     scans.forEach(function (sc) { if (sc.status === 'published') sc.data = sampleScan(clients.filter(function (x) { return x.id === sc.client; })[0]); });
+
+    /* Protocols built from those reports: what to take, how much, and when. */
+    var protocols = scans.filter(function (sc) { return sc.status === 'published'; }).map(function (sc, i) {
+      var c = clients.filter(function (x) { return x.id === sc.client; })[0];
+      var items = protoSuggestions(c, sc).filter(function (x) { return x.from === 'report'; }).slice(0, 5).map(function (x) { return protoItem(x.sku, x.dose, x.weeks); });
+      return { id: 'p' + (i + 1), client: c.id, status: 'active', created: iso(-55 + i * 10), start: iso(-54 + i * 10), by: 'Theo Marsh', items: items,
+        note: 'Start with the morning remedies for the first three days, then add the evening ones. Drink plenty of water while the drainage remedies are working.' };
+    });
 
     /* Stock for the clinic, gathered per supplier and ordered in one go once
        it is worth it (Physica ships free from $500). Each line remembers
@@ -440,8 +459,8 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 11, clients: clients, bookings: bookings, orders: orders, emails: emails,
-      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
+      v: 12, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
   }
@@ -552,11 +571,46 @@
     return { organs: organs, items: items, limit: 8, ageEst: (21 + seed % 14) + '.0' };
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Protocols                                                           */
+  /* ------------------------------------------------------------------ */
+
+  var TIMES = [['morning', 'Morning', '7:30am'], ['midday', 'Midday', '12:30pm'], ['evening', 'Evening', '6:00pm'], ['bedtime', 'Bedtime', '9:30pm']];
+  var HOWS = ['Under the tongue, away from food', 'In a little water', 'With food', 'Away from food'];
+  /* A sensible first guess at when to take something; the practitioner changes it. */
+  function timesFor(p) {
+    var g = p.goals || {};
+    if (g.sleep >= 2) return ['evening', 'bedtime'];
+    if (g.energy >= 2 || g.stress >= 3) return ['morning', 'midday'];
+    if (p.line === 'nutri') return ['morning'];
+    return ['morning', 'evening'];
+  }
+  function protoItem(sku, dose, weeks) {
+    var p = product(sku);
+    return { sku: sku, dose: dose || (p.line === 'nutri' ? '1 capsule' : '8 drops'), times: timesFor(p), weeks: weeks || 4, how: p.line === 'nutri' ? 'With food' : 'Under the tongue, away from food' };
+  }
+  /* Suggestions for a protocol: the report's remedies first, then products for their goals. */
+  function protoSuggestions(c, scan) {
+    var out = [], seen = {};
+    if (scan && scan.data) {
+      scan.data.items.filter(function (x) { return x.section === 'Recommended Remedies' && x.include; })
+        .sort(function (a, b) { return a.rank - b.rank; }).slice(0, scan.data.limit).forEach(function (x) {
+          var p = PRODUCTS.filter(function (q) { return q.name === x.item; })[0];
+          if (p && !seen[p.sku]) { seen[p.sku] = 1; out.push({ sku: p.sku, from: 'report', why: x.doc + ' ' + x.dil + ' · ' + x.desc, dose: x.qty.replace('Drops', 'drops'), weeks: parseInt(x.dur, 10) || 4 }); }
+        });
+    }
+    recommend(c).picks.forEach(function (x) {
+      if (!seen[x.product.sku]) { seen[x.product.sku] = 1; out.push({ sku: x.product.sku, from: 'goals', why: x.why.join(' · ') }); }
+    });
+    return out;
+  }
+
   window.EG = {
     BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
     SUPPLIERS: SUPPLIERS, PATHS: PATHS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
     SCAN_SLOTS: SCAN_SLOTS, SCAN_SECTIONS: SCAN_SECTIONS, sampleScan: sampleScan, comparePotency: comparePotency, claimWords: claimWords,
+    TIMES: TIMES, HOWS: HOWS, protoItem: protoItem, protoSuggestions: protoSuggestions,
     SESSION: SESSION, CERTIFIED: CERTIFIED, sessionPrice: sessionPrice, videoAccess: videoAccess,
     recommend: recommend, goalLabel: goalLabel, product: product, video: video,
     seed: seed, iso: iso, routeLine: routeLine

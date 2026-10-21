@@ -120,7 +120,7 @@
   function finalView(sc) {
     var c = U.client(sc.client), s = st(), done = sc.status === 'published';
     return '<div class="card" style="margin-bottom:1rem"><p class="eyebrow">Step 3 of 3</p><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + (done ? 'Published to ' + esc(c.name) + '&rsquo;s app' : 'Report ready to publish') + '</h3>' + (done ? '<span class="pill ok">Signed off by ' + esc(sc.by) + '</span>' : '') + '</div>' +
-      (done ? '<p class="small muted">' + esc(U.first(c.name)) + ' was emailed, the report is in their app, and their remedies are one tap from the cart.</p><div class="row"><button class="btn" id="scSeeApp">See it in the client app</button><button class="btn ghost" id="scPdf">Download PDF</button><button class="btn ghost" id="scBack">Back to scans</button></div>'
+      (done ? '<p class="small muted">' + esc(U.first(c.name)) + ' was emailed, the report is in their app, and their remedies are one tap from the cart.</p><div class="row"><button class="btn" id="scProto">Next: build the protocol</button><button class="btn ghost" id="scSeeApp">See it in the client app</button><button class="btn ghost" id="scPdf">Download PDF</button><button class="btn ghost" id="scBack">Back to scans</button></div>'
         : '<label class="check" style="margin:.8rem 0" data-tour="signoff"><input type="checkbox" id="scSign"' + (s.signed ? ' checked' : '') + '> I have reviewed this report and it is ready for the client. <span class="muted">(Theo Marsh, Certified Energetics Practitioner)</span></label>' +
           '<div class="row"><button class="btn" id="scPublish"' + (s.signed ? '' : ' disabled') + '>Publish to client app</button><button class="btn ghost" id="scEdit">Back to edit</button><button class="btn ghost" id="scPdf">Download PDF</button></div>') + '</div>' +
       reportHtml(sc, false);
@@ -129,7 +129,7 @@
   function view() {
     var s = st(), sc = s.open ? scan(s.open) : null;
     var body = !sc ? listView() : s.step === 'upload' ? uploadView(sc) : s.step === 'review' ? reviewView(sc) : finalView(sc);
-    return U.head('Premium Course', 'Energetic scans', 'The in-house scan, turned into a client report and a remedy plan the same day, without retyping anything.') +
+    return U.head('Client report creator', 'Client reports', 'The in-house scan, turned into a finished client report the same day, without retyping anything.') +
       U.pitch('new', 'Your report builder already turns scan exports into a report on one computer. Here it is connected to everything else: the client record, a practitioner sign-off, the client app and the shop.') +
       (sc ? '<div class="row" style="margin-bottom:1rem"><button class="back" id="scList" style="margin:0">&larr; All scans</button><span class="small muted">' + esc(U.client(sc.client).name) + ' &middot; scan ' + U.fmtDate(sc.date) + '</span></div>' : '') + body;
   }
@@ -187,7 +187,8 @@
     $$('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { s.editing = b.getAttribute('data-edit'); keepScroll(); var t = $('[data-desc]'); if (t) t.focus(); }); });
     $$('[data-desc]').forEach(function (t) {
       t.addEventListener('input', function () { var x = item(t.getAttribute('data-desc')); x.desc = t.value; x.claims = EG.claimWords(t.value); U.save(); });
-      t.addEventListener('blur', function () { s.editing = null; keepScroll(); });
+      /* No redraw on blur: it would swallow a click on the next button. */
+      t.addEventListener('blur', function () { s.editing = null; });
     });
     var age = $('#scAge'); if (age) age.addEventListener('change', function () { d.ageEst = age.value; U.save(); });
     var build = $('#scBuild'); if (build) build.addEventListener('click', function () { go('final'); });
@@ -204,6 +205,7 @@
       U.save(); App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
     });
     var pdf = $('#scPdf'); if (pdf) pdf.addEventListener('click', function () { U.toast('PDF saved to ' + c.name + '’s record (simulated)'); });
+    var np = $('#scProto'); if (np) np.addEventListener('click', function () { App.ui.pc = { client: c.id, draft: null }; App.go('protocols'); });
     var see = $('#scSeeApp');
     if (see) see.addEventListener('click', function () { App.ui.ca = null; App.go('client'); App.ui.ca.as = c.id; App.ui.ca.tab = 'report'; App.render(); });
   }

@@ -2,7 +2,7 @@
 
 An interactive, clickable showcase of the Cosmic Intake platform, rebranded as a
 fictional wellness business. Use it to pitch the custom build: press
-**Play Showcase** and the app tours itself for about 2.5 minutes with a visible
+**Play Showcase** and the app tours itself for about 6 minutes with a visible
 demo cursor, or click around freely.
 
 Everything is sample data. "Evergrove Wellness", every client, order, practitioner
@@ -45,65 +45,58 @@ Cloudflare creates the DNS record for you. The live intake Worker is unaffected.
 **Local preview:** `npx wrangler dev`, or just open `public/index.html` through
 any static server (`python3 -m http.server -d public 8080`).
 
+## The structure
+
+The showcase is deliberately small: four tools that carry the practice day to
+day, plus the client app. Everything else that was prototyped (newsletters,
+video library, work queue, automation settings, clinic batching, Shopify,
+quotes) is still in the code but hidden, and listed on the Outcome page as
+"ready to add later".
+
+**Practice side** (Home shows four big buttons and a "Needs you today" list):
+
+1. **Client Portal:** the client list, and one page per client with tabs:
+   Basic information, Bookings & packages, Billing & payments, Protocols (the
+   PDF of their recommendations), Notes, Forms & waivers, Documents (scan
+   reports, protocols, uploads).
+2. **Shop:** Orders (the approval queue and the order pipeline), Products,
+   Suppliers. Nothing reaches a supplier until a person approves it.
+3. **Client reports:** the energetic scan exports become a reviewed,
+   practitioner-signed client report. "Next: build the protocol" hands over to
+   the protocol creator.
+4. **Protocols:** suggestions from the client's latest report first, then from
+   their goals. The practitioner sets dose, weeks, how to take it and the times
+   of day (morning, midday, evening, bedtime). Publishing puts the schedule and
+   reminders in the client's app and the PDF in their documents. "Order these
+   remedies" sends one order to the Shop, sized for the length of the protocol.
+
+**Client view** (`/app`):
+
+- **Free account:** a short questionnaire gives a wellness snapshot (no product
+  suggestions: those are what the Premium Course is for), free classes, short
+  courses from $59 to $119, and Certified Practitioner booking ($99 / 30 min,
+  +$49 for an hour). The shop opens after a consultation or with the course.
+- **Premium Course ($6,995, or 3 x $2,395):** today's protocol with tick-offs
+  and reminders, the full protocol and one-tap reorder, their scan report, the
+  course week and Thursday's live Zoom.
+
+Use "Preview as" beside the phone to switch between a new visitor, a free
+account and two Premium members.
+
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 6 chapters
-  in about 6 minutes at normal speed: Client app (free account), Client app
-  (Premium member), Work queue, Energetic scans, Premium Course, Shop & drop-ship.
+- **Play Showcase** (top right): restores the sample data, then plays 8
+  chapters in about 6 minutes at normal speed: Home, Client Portal, Client
+  reports, Protocols, What the client sees, Free accounts, Shop, Outcome.
   - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
   - **» 1×** (or F) speeds up: 1×, 2× (about 3 minutes), 4×.
-- Open `/?play` (or `/#play`) to start the tour on load. Handy for a kiosk
-  screen or a screen recording.
-- The client app opens at `/app` (or `/#client`). The **Team console / Client app**
-  switch at the top moves between the two.
-- Deep links to a section: `/#queue`, `/#dashboard`, `/#schedule`, `/#clients`, `/#messages`,
-  `/#intake`, `/#agreements`, `/#program` (Premium Course), `/#shop`, `/#newsletter`, `/#videos`.
+- Open `/?play` (or `/#play`) to start the tour on load.
+- Deep links: `/#dashboard`, `/#clients`, `/#shop`, `/#scans`, `/#protocols`,
+  `/#outcome`, `/#client`.
 - For recording, a 1440×900 browser window at 100% zoom looks best.
 
-## Two interfaces
-
-**Client app** (`/app`): what clients use, on a phone or computer.
-
-- **New visitor:** a short questionnaire (goals, diet, allergies, health screening,
-  consent) creates a **free account** with a personal supplement plan.
-- **Free account:** sees their plan, adds it all to the cart in one tap, can
-  turn on auto-ship (refills every 30 days; each refill adds $5 credit toward a
-  session or short course, never a product discount), watches free classes, and buys **short courses from
-  $59 to $119** (theirs to keep, with downloads). They can **book a Certified
-  Practitioner**: $99 for 30 minutes, or +$49 for a full hour, paid at booking.
-  They also track orders, skip or pause refills, and ask the team a question.
-- **Premium Course member ($2,995, or 3 x $1,035):** sees their course week,
-  Thursday's live Zoom and member pricing. Benefits shown to clients:
-  energetics assessment and work, additional testing, a 12-week course built
-  around them, weekly live Zoom, 20% off every supplement, free shipping, every
-  short course included, and 25% off one-to-one sessions.
-
-Use "Preview as" beside the phone to switch between a new visitor, a free
-account and a Premium member.
-
-**Team console**: the back office. Everything a client does in the app lands
-here. Orders go to the approval queue, questions go to a shared inbox, and
-purchases appear in the activity log.
-
-### Work queue: handing off the admin role
-
-Built for the situation where one employee does all the admin and is leaving.
-
-- **Needs a person:** one shared list of the only jobs left for people.
-  These are order approvals, client questions, a failed payment and test
-  results to review. Each is labelled with the role that handles it
-  (Assistant, Practitioner, Owner, Anyone).
-- **Automations:** twelve automations as working controls, each with an on/off
-  switch, its own settings, a log and "Run now". Order approval and the
-  scan-report sign-off cannot be switched off. Some settings drive the rest
-  of the showcase: the clinic order threshold, the margin warning, how many
-  remedies a scan report carries, and whether plan and tracking emails go
-  out. Shop > Automations shows the order-related ones.
-- **Activity log:** everything the system did on its own.
-- **Team & handoff:** who can do what, and a sample handoff checklist.
-
-### Suppliers and ordering (Shop > Suppliers, Clinic orders)
+### Suppliers and ordering (Shop > Suppliers)
 
 Physica Energetics, Biotics Research and DesBio, from their public websites
 (checked October 2026) and the supplier handoff brief.
@@ -121,11 +114,11 @@ Physica Energetics, Biotics Research and DesBio, from their public websites
   shipping under $500 (US), free from $500; packing slips show no prices;
   Canada 90-day supply. No public prices, no marketplaces or shopping feeds,
   practitioner-patient relationship before purchase, minimum advertised price.
-- **Clinic orders:** stock collects per supplier, each unit earmarked for a
+- **Clinic orders (hidden for now):** stock collects per supplier, each unit earmarked for a
   client, and goes out as one order (Physica: at $500 for free shipping). The
   pick list says who each unit is for. Small drop-ship orders that lose money
   after shipping can be moved into the clinic order.
-- **Policy check:** the Premium "20% off every supplement" benefit conflicts
+- **Policy check:** the Premium "20% off every supplement" benefit (still shown in the course benefits) conflicts
   with Physica's minimum advertised price and Biotics' suggested-retail rule.
   Needs written approval from each, or a different benefit.
 - **Shopify:** orders from a members-only Shopify store land in the same
@@ -164,65 +157,36 @@ PDF layout.
 
 ### Outcome (last page)
 
-The case for the build, kept off the working screens: what the dashboard is
-for, the admin hours it replaces (about 28.5 a week to 4, estimates), the
-client journey it runs with what is automatic and where a person steps in,
-advertising that stays inside the supplier rules, and a revenue calculator
-with illustrative inputs. The tour ends here.
-
-## What it shows, and what is "proven" versus "custom build"
-
-Each screen has a banner saying whether the feature already runs in production
-(the Cosmic Intake app) or is proposed new work for the wellness client.
-
-| Screen | Status | What it demonstrates |
-|---|---|---|
-| Client app | Custom | Free plan from a questionnaire, one-tap ordering, auto-ship with session credit, free classes and $59-$119 short courses, practitioner booking ($99 / 30 min, +$49 for an hour), Premium member home, order tracking, ask the team |
-| Energetic scans | Custom (builder exists) | Scan exports to a reviewed, signed-off report in the client app, with remedies linked to the shop |
-| Work queue | Custom | Shared to-do list with roles, the automation map of the admin job, activity log, roles and handoff checklist |
-| Dashboard | Proven | KPIs, needs-attention list, today's sessions, revenue chart |
-| Client messaging | Proven | Template composer with auto-filled wording and live preview |
-| Wellness intake | Proven + new | Consent with drawn signature and health screening (proven), then an instant personalised supplement and video plan (new) |
-| Clients | Proven | Searchable records, consent audit, sent-email log, client drawer |
-| Schedule | Proven | Upcoming sessions with paperwork status per guest, reminders, calendar |
-| Quotes & agreements | Proven | Line items with auto-calculated totals, e-signature |
-| Premium Course | Custom | $2,995 all-inclusive 3-month course (or 3 x $1,035): sales page, enrollment with signed agreement, energetics assessment and testing status, 12 weekly modules customised per member with downloads, weekly live Zoom with practitioners, 20% member pricing in the shop |
-| Shop & fulfilment | Custom | Client storefront for the Physica Energetics range plus nutritionals, member pricing, and drop-ship fulfilment behind an approval queue |
-| Newsletter | Custom | Goal-based segments, per-reader product pick, campaign revenue |
-| Video library | Custom | Goal-tagged classes assigned by the intake, watch progress |
+The case for the build, kept off the working screens: the four tools, the
+admin hours they replace (about 18 a week to 2, estimates to confirm with the
+team), and what can be added later. The tour ends here.
 
 ### Drop-shipping always needs a person
 
-Every order, including auto-ship refills and starter orders from program
-enrollment, stops in the **approval queue** on Shop > Orders. The card shows
-each line, which supplier it goes to, the supplier cost and the margin.
+Every order (protocol orders, client reorders, Shopify) stops in the approval
+queue on Shop > Orders, showing each line, its supplier, cost and margin. For a
+client with a screening flag (blood thinner, pregnancy, thyroid) the Approve
+button stays disabled until the reviewer confirms. Only then is the supplier
+cart filled in the practitioner's own logged-in tab.
 
-1. **Approve order**. For a client with a screening flag (blood thinner,
-   pregnancy, thyroid), the button stays disabled until the reviewer ticks
-   "I have reviewed ... this order is appropriate".
-2. **Yes, send to supplier** confirms what goes to which supplier and for how much.
-
-Only then does routing, tracking email and refill scheduling run. The rule
-"A person approves every order" is shown on Automations as always on and has
-no switch. Orders can also be put on hold.
-
-The recommendation rules (in `public/data.js`, `recommend()`) are demonstration
-logic only: they score products by goal overlap, drop anything the diet or an
-allergy rules out, and flag pregnancy, blood thinners and thyroid conditions for
-practitioner review. They are not medical advice.
+The suggestion rules in `public/data.js` (`protoSuggestions()`, `recommend()`)
+are demonstration logic only, not medical advice.
 
 ## Files
 
 ```
-wrangler.toml        separate Worker, static assets only, no bindings
-public/index.html    shell: top bar, nav, Play Showcase button
-public/app.css       styles (light and dark)
-public/data.js       sample data + recommendation engine
-public/app.js        the nine screens
-public/client.js     the client app
-public/queue.js      the Work queue
-public/scans.js      energetic scans and the client report
-public/tour.js       the Play Showcase player (cursor, captions, script)
+wrangler.toml          separate Worker, static assets only, no bindings
+public/index.html      shell: top bar, nav, Play Showcase button
+public/app.css         styles
+public/data.js         sample data, suppliers, suggestion rules
+public/app.js          core, Shop, and the hidden extra screens
+public/portal.js       Home and the Client Portal
+public/scans.js        client report creator
+public/protocols.js    protocol creator and the protocol document
+public/client.js       the client app
+public/outcome.js      the Outcome page
+public/queue.js, automations.js   hidden for now ("later" features)
+public/tour.js         the Play Showcase player (cursor, captions, script)
 ```
 
 To change the tour, edit `CHAPTERS` in `public/tour.js`. Each step is a plain
