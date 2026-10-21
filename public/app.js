@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v4';
+  var KEY = 'evergrove-showcase-v5';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 4) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 5) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -49,6 +49,13 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function today() { return EG.iso(0); }
+  /* Everything the system does on its own is written here, for the Work queue. */
+  function activity(text) {
+    var n = new Date();
+    S.activity.unshift({ at: today(), time: String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'), text: text });
+    S.activity = S.activity.slice(0, 80);
+    save();
+  }
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg; t.hidden = false;
@@ -109,7 +116,7 @@
       if (a.status !== 'Signed') todos.push({ kind: 'warn', text: '<b>' + esc(a.client) + '</b> has ' + a.status.toLowerCase() + ' the ' + esc(a.title) + ' quote but not signed', go: 'agreements' });
     });
     var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held; }).length;
-    if (waiting) todos.unshift({ kind: 'bad', text: '<b>' + waiting + ' order' + (waiting > 1 ? 's' : '') + ' waiting for your approval.</b> Nothing goes to a supplier until someone approves it.', go: 'shop', tab: 'pipeline' });
+    if (waiting) todos.unshift({ kind: 'bad', text: '<b>' + waiting + ' order' + (waiting > 1 ? 's' : '') + ' waiting for your approval.</b> Nothing goes to a supplier until someone approves it.', go: 'queue' });
 
     return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Evergrove',
       'Everything that needs you, in one place: consultations, intake paperwork, orders on their way and quotes waiting on a signature.') +
@@ -714,6 +721,7 @@
       var c = client(ui.store.as);
       var o = { id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: Object.keys(ui.store.cart).map(function (k) { return [k, ui.store.cart[k]]; }), stage: 0, sub: false, discount: c.member ? EG.PROGRAM.discount : 0 };
       S.orders.push(o); save();
+      activity(o.id + ' placed by ' + c.name + ' (' + money(orderTotal(o)) + '). Waiting for approval.');
       ui.store.cart = {}; ui.shopTab = 'pipeline';
       logLine('Checkout: <b>' + o.id + '</b> from ' + esc(c.name) + ', ' + money(orderTotal(o)) + '. Payment authorised.');
       logLine('Waiting for approval. Nothing is sent to a supplier until a team member approves.');
@@ -772,12 +780,13 @@
     var steps = [
       function () {
         logLine('Approved by ' + esc(EG.BRAND.owner) + '.', true);
+        activity(o.id + ' approved by ' + EG.BRAND.owner + ' and sent to ' + Object.keys(by).map(function (k) { return EG.SUPPLIERS[k].name; }).join(' and ') + '. Client emailed.');
         Object.keys(by).forEach(function (k) { logLine(by[k].map(function (x) { return esc(x.p.name); }).join(', ') + ' &rarr; ' + esc(EG.SUPPLIERS[k].name)); });
         logLine('Email to ' + esc(c.email) + ': "Your order is confirmed"');
       },
       function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); },
       function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('Tracking received: ' + o.tracking, true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
-      function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); }
+      function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); activity('Tracking ' + o.tracking + ' emailed to ' + c.name + '. Refill reminder set for day 25.'); }
     ];
     var chain = Promise.resolve();
     steps.forEach(function (fn, i) {
@@ -804,7 +813,7 @@
       '<div class="grid g3" data-tour="videos">' + EG.VIDEOS.map(function (v) {
         var assigned = S.clients.filter(function (c) { return v.id in c.videos; }).length;
         return '<div class="card vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div>' +
-          '<span class="title">' + esc(v.title) + '</span>' + goalPills(v.goals) +
+          '<span class="title">' + esc(v.title) + '</span><div class="pills">' + (v.access === 'paid' ? '<span class="pill honey">' + money(EG.VIDEO_PRICE, false) + ' or included in program</span>' : '<span class="pill ok">Free with an account</span>') + '</div>' + goalPills(v.goals) +
           '<div class="row" style="justify-content:space-between"><span class="small muted num">' + v.views.toLocaleString() + ' views &middot; in ' + assigned + ' plans</span><button class="btn ghost small" data-assign="' + v.id + '">Assign</button></div></div>';
       }).join('') + '</div>';
   }
@@ -1014,6 +1023,7 @@
       if (!enrollment(c.id)) S.enrollments.unshift({ client: c.id, week: 1, assess: 'Booking sent', testing: 'Kit ordered', plan: 'After assessment', pay: c.payPlan ? '1 of 3 paid' : 'Paid in full', zoom: 0, start: today() });
       S.orders.push({ id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: [['PE-DRN', 1]], stage: 0, sub: false, discount: EG.PROGRAM.discount });
       S.emails.unshift({ at: today(), to: c.id, kind: 'Program welcome', subject: 'Welcome to Evergrove Restore' });
+      activity(c.name + ' enrolled in Evergrove Restore. Welcome pack, Zoom invites and week 1 sent.');
       save();
       ui.enrollDone = c.id; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -1026,6 +1036,8 @@
     var v = VIEWS[ui.view] ? ui.view : 'dashboard';
     $('#view').innerHTML = VIEWS[v]();
     $$('.nav').forEach(function (n) { n.classList.toggle('is-on', n.getAttribute('data-view') === v); });
+    document.body.classList.toggle('clientmode', v === 'client');
+    $$('[data-mode]').forEach(function (b) { b.classList.toggle('is-on', (b.getAttribute('data-mode') === 'client') === (v === 'client')); });
     $$('#view [data-go]').forEach(function (b) {
       b.addEventListener('click', function () { if (b.getAttribute('data-tab')) ui.shopTab = b.getAttribute('data-tab'); go(b.getAttribute('data-go')); });
     });
@@ -1036,6 +1048,7 @@
     if (!VIEWS[v]) v = 'dashboard';
     if (v !== 'intake') ui.intakeDone = null;
     if (v !== 'program') ui.enrollDone = null;
+    if (v !== 'client') ui.lastAdmin = v;
     ui.view = v; ui.drawer = null;
     try { if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v); } catch (e) { /* framed: ignore */ }
     render();
@@ -1044,7 +1057,7 @@
   function reset() {
     S = EG.seed(); save();
     ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'store'; ui.calMonth = null; ui.quoteId = 'q1';
-    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false;
+    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null;
     render();
   }
 
@@ -1052,13 +1065,23 @@
     $$('.nav').forEach(function (n) { n.addEventListener('click', function () { go(n.getAttribute('data-view')); }); });
     $('#resetBtn').addEventListener('click', function () { reset(); go('dashboard'); toast('Sample data restored'); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ui.drawer && !document.body.classList.contains('touring')) closeDrawer(); });
+    $$('[data-mode]').forEach(function (b) {
+      b.addEventListener('click', function () { go(b.getAttribute('data-mode') === 'client' ? 'client' : (ui.lastAdmin || 'dashboard')); });
+    });
     var h = location.hash.slice(1);
-    ui.view = VIEWS[h] ? h : 'dashboard';
+    ui.view = VIEWS[h] ? h : (/^\/app\b/.test(location.pathname) ? 'client' : 'dashboard');
     render();
   });
 
   window.App = {
     go: go, reset: reset, render: render, ui: ui, openClient: openClient, closeDrawer: closeDrawer,
-    simulateOrder: simulateOrder, approveOrder: approveOrder, state: function () { return S; }, toast: toast
+    simulateOrder: simulateOrder, approveOrder: approveOrder, state: function () { return S; }, toast: toast,
+    /* For the screens that live in their own files (client.js, queue.js). */
+    register: function (name, view, bind) { VIEWS[name] = view; if (bind) BIND[name] = bind; },
+    util: {
+      esc: esc, money: money, fmtDate: fmtDate, fmtTime: fmtTime, first: first, initials: initials, client: client,
+      today: today, save: save, toast: toast, activity: activity, bottle: bottle, orderTotal: orderTotal, orderCost: orderCost,
+      head: head, pitch: pitch, stat: stat, enrollment: enrollment, $: $, $$: $$
+    }
   };
 })();

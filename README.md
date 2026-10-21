@@ -2,7 +2,7 @@
 
 An interactive, clickable showcase of the Cosmic Intake platform, rebranded as a
 fictional wellness business. Use it to pitch the custom build: press
-**Play Showcase** and the app tours itself for about 3 minutes with a visible
+**Play Showcase** and the app tours itself for about 2.5 minutes with a visible
 demo cursor, or click around freely.
 
 Everything is sample data. "Evergrove Wellness", every client, order, practitioner
@@ -39,15 +39,51 @@ any static server (`python3 -m http.server -d public 8080`).
 
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 9 chapters
-  (Dashboard, Messaging, Intake, Clients, Schedule, 3-Month Program, Shop &
-  drop-ship, Newsletter, Quotes).
+- **Play Showcase** (top right): restores the sample data, then plays 7 chapters:
+  Client app (free account), Client app (program member), Work queue, Dashboard,
+  3-Month Program, Schedule, Shop & drop-ship.
   - `Space` pause or resume, `→` next chapter, `Esc` exit.
 - Open `/?play` (or `/#play`) to start the tour on load. Handy for a kiosk
   screen or a screen recording.
-- Deep links to a section: `/#dashboard`, `/#schedule`, `/#clients`, `/#messages`,
+- The client app opens at `/app` (or `/#client`). The **Team console / Client app**
+  switch at the top moves between the two.
+- Deep links to a section: `/#queue`, `/#dashboard`, `/#schedule`, `/#clients`, `/#messages`,
   `/#intake`, `/#agreements`, `/#program`, `/#shop`, `/#newsletter`, `/#videos`.
 - For recording, a 1440×900 browser window at 100% zoom looks best.
+
+## Two interfaces
+
+**Client app** (`/app`): what clients use, on a phone or computer.
+
+- **New visitor:** a short questionnaire (goals, diet, allergies, health screening,
+  consent) creates a **free account** with a personal supplement plan.
+- **Free account:** sees their plan, adds it all to the cart in one tap, can
+  subscribe and save 15%, watches free classes, and buys **masterclasses at $59**
+  each (theirs to keep, with download). They also track orders, skip or pause
+  refills, and ask the team a question.
+- **Program member:** sees their course week, Thursday's live Zoom, member
+  pricing (20% off), and every class included.
+
+Use "Preview as" beside the phone to switch between a new visitor, a free
+account and a program member.
+
+**Team console**: the back office. Everything a client does in the app lands
+here. Orders go to the approval queue, questions go to a shared inbox, and
+purchases appear in the activity log.
+
+### Work queue: handing off the admin role
+
+Built for the situation where one employee does all the admin and is leaving.
+
+- **Needs a person:** one shared list of the only jobs left for people.
+  These are order approvals, client questions, a failed payment and test
+  results to review. Each is labelled with the role that handles it
+  (Assistant, Practitioner, Owner, Anyone).
+- **Runs itself:** each manual admin job, how often it happened, and what
+  replaces it, with estimated hours: about 22.5 a week before, 3.5 after. The
+  hours are pitch estimates to confirm with the team.
+- **Activity log:** everything the system did on its own.
+- **Team & handoff:** who can do what, and a sample handoff checklist.
 
 ## What it shows, and what is "proven" versus "custom build"
 
@@ -56,6 +92,8 @@ Each screen has a banner saying whether the feature already runs in production
 
 | Screen | Status | What it demonstrates |
 |---|---|---|
+| Client app | Custom | Free plan from a questionnaire, one-tap ordering, subscribe & save, free classes and $59 masterclasses, program member home, order tracking, ask the team |
+| Work queue | Custom | Shared to-do list with roles, the automation map of the admin job, activity log, roles and handoff checklist |
 | Dashboard | Proven | KPIs, needs-attention list, today's sessions, revenue chart |
 | Client messaging | Proven | Template composer with auto-filled wording and live preview |
 | Wellness intake | Proven + new | Consent with drawn signature and health screening (proven), then an instant personalised supplement and video plan (new) |
@@ -95,6 +133,8 @@ public/index.html    shell: top bar, nav, Play Showcase button
 public/app.css       styles (light and dark)
 public/data.js       sample data + recommendation engine
 public/app.js        the nine screens
+public/client.js     the client app
+public/queue.js      the Work queue
 public/tour.js       the Play Showcase player (cursor, captions, script)
 ```
 

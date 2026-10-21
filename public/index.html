@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Marcellus&family=Montserrat:wght@400;500;600;700&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%233B5A44'/%3E%3Cpath d='M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z' fill='%23F3F5F0'/%3E%3C/svg%3E">
-<!--STYLE--><link rel="stylesheet" href="app.css"><!--/STYLE-->
+<!--STYLE--><link rel="stylesheet" href="/app.css"><!--/STYLE-->
 </head>
 <body>
   <header class="top">
@@ -20,6 +20,10 @@
       <b>Evergrove Wellness</b>
     </a>
     <span class="sample" title="Every name, order and number here is invented">Showcase &middot; sample data</span>
+    <div class="modes" role="group" aria-label="Interface">
+      <button type="button" class="mode is-on" data-mode="admin">Team console</button>
+      <button type="button" class="mode" data-mode="client" id="modeClient">Client app</button>
+    </div>
     <span class="grow"></span>
     <span class="tools"><button class="linkish" id="resetBtn" type="button">Reset sample data</button></span>
     <button class="btn-play" id="playBtn" type="button" title="Plays a 2&ndash;3 minute guided tour. Restores the sample data first.">
@@ -31,6 +35,7 @@
     <nav class="rail" aria-label="Sections">
       <div class="group">Run the practice</div>
       <button class="nav" data-view="dashboard" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+      <button class="nav" data-view="queue" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2.2"/></svg>Work queue<span class="new">NEW</span></button>
       <button class="nav" data-view="schedule" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</button>
       <button class="nav" data-view="clients" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/></svg>Clients</button>
       <button class="nav" data-view="messages" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>Client messaging</button>
@@ -47,8 +52,10 @@
   </div>
   <div id="drawerRoot"></div>
   <div class="toast" id="toast" role="status" hidden></div>
-<!--SCRIPTS--><script src="data.js"></script>
-<script src="app.js"></script>
-<script src="tour.js"></script><!--/SCRIPTS-->
+<!--SCRIPTS--><script src="/data.js"></script>
+<script src="/app.js"></script>
+<script src="/client.js"></script>
+<script src="/queue.js"></script>
+<script src="/tour.js"></script><!--/SCRIPTS-->
 </body>
 </html>

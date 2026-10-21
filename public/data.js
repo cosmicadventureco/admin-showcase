@@ -74,17 +74,24 @@
     { sku: 'EG-BCX', name: 'Methylated B-Complex', line: 'nutri', dose: '60 capsules', price: 22, cost: 7.80, supplier: 'bluewater', goals: { energy: 2, focus: 2 }, tags: ['vegan'], hue: 15 }
   ];
 
+  /* access: free for everyone with an account, paid ($59 each, or included
+     for program members). */
+  var VIDEO_PRICE = 59;
   var VIDEOS = [
-    { id: 'v1', title: '10-Minute Morning Mobility', mins: 10, goals: ['joints', 'energy'], views: 4210, hue: 32 },
-    { id: 'v2', title: 'Box Breathing for Stress', mins: 6, goals: ['stress', 'focus'], views: 6890, hue: 190 },
-    { id: 'v3', title: 'Wind-Down Yoga for Sleep', mins: 18, goals: ['sleep', 'stress'], views: 5320, hue: 250 },
-    { id: 'v4', title: 'Gut Health 101', mins: 14, goals: ['digestion', 'immunity'], views: 3150, hue: 120 },
-    { id: 'v5', title: 'Desk Posture Reset', mins: 8, goals: ['joints', 'focus'], views: 2780, hue: 15 },
-    { id: 'v6', title: 'Building a Balanced Plate', mins: 12, goals: ['energy', 'digestion'], views: 3940, hue: 80 },
-    { id: 'v7', title: 'Guided Body Scan Meditation', mins: 20, goals: ['sleep', 'stress'], views: 7015, hue: 280 },
-    { id: 'v8', title: 'Strength Basics for Bone Health', mins: 22, goals: ['joints', 'energy'], views: 1960, hue: 350 },
-    { id: 'v9', title: 'Understanding Your Remedies', mins: 9, goals: ['immunity', 'detox'], views: 2410, hue: 55 },
-    { id: 'v10', title: 'Supporting Your Drainage Pathways', mins: 11, goals: ['detox', 'digestion'], views: 1720, hue: 170 }
+    { id: 'v1', title: '10-Minute Morning Mobility', mins: 10, goals: ['joints', 'energy'], views: 4210, hue: 32, access: 'free' },
+    { id: 'v2', title: 'Box Breathing for Stress', mins: 6, goals: ['stress', 'focus'], views: 6890, hue: 190, access: 'free' },
+    { id: 'v3', title: 'Wind-Down Yoga for Sleep', mins: 18, goals: ['sleep', 'stress'], views: 5320, hue: 250, access: 'free' },
+    { id: 'v4', title: 'Gut Health 101', mins: 14, goals: ['digestion', 'immunity'], views: 3150, hue: 120, access: 'free' },
+    { id: 'v9', title: 'Understanding Your Remedies', mins: 9, goals: ['immunity', 'detox'], views: 2410, hue: 55, access: 'free' },
+    { id: 'v11', title: 'Sleep Reset Masterclass', mins: 52, goals: ['sleep'], views: 1380, hue: 238, access: 'paid', masterclass: true },
+    { id: 'v12', title: 'Stress & Adrenals Deep Dive', mins: 47, goals: ['stress', 'energy'], views: 1612, hue: 30, access: 'paid', masterclass: true },
+    { id: 'v13', title: 'Detox Done Gently', mins: 44, goals: ['detox', 'digestion'], views: 990, hue: 160, access: 'paid', masterclass: true },
+    { id: 'v14', title: 'Energetics 101 with Theo Marsh', mins: 58, goals: ['energy', 'focus', 'immunity'], views: 1204, hue: 280, access: 'paid', masterclass: true },
+    { id: 'v7', title: 'Guided Body Scan Meditation', mins: 20, goals: ['sleep', 'stress'], views: 7015, hue: 290, access: 'paid' },
+    { id: 'v8', title: 'Strength Basics for Bone Health', mins: 22, goals: ['joints', 'energy'], views: 1960, hue: 350, access: 'paid' },
+    { id: 'v10', title: 'Supporting Your Drainage Pathways', mins: 11, goals: ['detox', 'digestion'], views: 1720, hue: 170, access: 'paid' },
+    { id: 'v6', title: 'Building a Balanced Plate', mins: 12, goals: ['energy', 'digestion'], views: 3940, hue: 80, access: 'free' },
+    { id: 'v5', title: 'Desk Posture Reset', mins: 8, goals: ['joints', 'focus'], views: 2780, hue: 15, access: 'free' }
   ];
 
   var SERVICES = [
@@ -95,7 +102,7 @@
     { id: 'corporate', label: 'Corporate Wellness Session', mins: 60, price: 0 }
   ];
 
-  var PLANS = { newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: '3-Month Program' };
+  var PLANS = { free: 'Free account', newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: '3-Month Program' };
 
   /* The flagship offer. Fictional practitioners; real structure. */
   var PROGRAM = {
@@ -133,6 +140,13 @@
     { w: 12, title: 'Your plan for the next year', vids: 3, mins: 36 }
   ];
   var TRACKS = { sleep: 'Deep Sleep track', stress: 'Calm Nervous System track', energy: 'Energy Rebuild track', digestion: 'Gut Reset track', detox: 'Gentle Detox track' };
+  /** What this person may do with a video: watch, buy, or watch as a member. */
+  function videoAccess(v, c) {
+    if (v.access === 'free') return 'free';
+    if (c && c.member) return 'included';
+    if (c && c.videosOwned && c.videosOwned.indexOf(v.id) >= 0) return 'owned';
+    return 'locked';
+  }
   function trackFor(goals) {
     for (var i = 0; i < goals.length; i++) if (TRACKS[goals[i]]) return TRACKS[goals[i]];
     return 'Whole-Body Balance track';
@@ -320,10 +334,36 @@
     ];
 
     enrollments.forEach(function (e) { var c = clients.filter(function (x) { return x.id === e.client; })[0]; c.plan = 'program'; c.member = true; });
+    clients.forEach(function (c) { c.videosOwned = []; });
+    clients[4].videosOwned = ['v11'];
+    clients[1].videosOwned = ['v8', 'v12'];
+    clients[9].videosOwned = ['v14'];
+    enrollments[3].payIssue = 'Card declined for payment 2 of 3';
+
+    /* Questions clients sent from the app. Anyone on the team can answer. */
+    var inbox = [
+      { id: 'm1', from: 'c3', at: iso(0), text: 'Can I take Drainage Milieu with my morning coffee, or should I wait?', done: false },
+      { id: 'm2', from: 'c5', at: iso(-1), text: 'I bought the Sleep Reset Masterclass. Is there a workbook to go with it?', done: false },
+      { id: 'm3', from: 'c6', at: iso(-2), text: 'Please skip my next refill, I am travelling until the 10th.', done: true }
+    ];
+
+    /* What the system did on its own, newest first. */
+    var activity = [
+      [0, '07:00', 'Week 12 unlocked for Nadia Haddad. Email sent.'],
+      [0, '06:45', 'Zoom reminder sent to 5 program members for Thursday 6:00pm.'],
+      [0, '06:30', 'Refill EG-10488 created for Ruth Abernathy. Held for approval (screening flag).'],
+      [-1, '21:14', 'Hannah Kowalski bought Sleep Reset Masterclass ($59). Access granted, receipt sent.'],
+      [-1, '17:02', 'Tracking 1Z84F2A10411 emailed to Marcus Bell.'],
+      [-1, '15:40', 'Payment 2 of 3 failed for Elena Fuentes. Card-update link sent. Retry in 3 days.'],
+      [-1, '11:08', 'Grace Whitfield finished the free questionnaire. Plan emailed, added to Immunity newsletter.'],
+      [-2, '19:25', 'Leila Moreau enrolled in Evergrove Restore. Welcome pack, Zoom invites and week 1 sent.'],
+      [-2, '09:12', 'Reorder reminder sent to 6 auto-ship clients.'],
+      [-3, '14:30', 'Grace Whitfield bought Energetics 101 with Theo Marsh ($59). Access granted.']
+    ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 4, clients: clients, bookings: bookings, orders: orders, emails: emails,
-      campaigns: campaigns, agreements: agreements, enrollments: enrollments, nextOrder: 10490, nextClient: 15,
+      v: 5, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
   }
@@ -340,6 +380,7 @@
     BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
     SUPPLIERS: SUPPLIERS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
+    VIDEO_PRICE: VIDEO_PRICE, videoAccess: videoAccess,
     recommend: recommend, goalLabel: goalLabel, product: product, video: video,
     seed: seed, iso: iso, routeLine: routeLine
   };
