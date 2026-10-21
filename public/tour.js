@@ -279,8 +279,13 @@
       await click('#w-' + id + ' [data-wapprove]', { after: 800 });
       await click('#w-' + id + ' [data-wconfirm]', { after: 1400 });
       await click('[data-wtab="auto"]', { after: 700 });
-      say('The admin job, mostly automated', 'About 28 hours a week of manual admin becomes about 4 (our estimate), and none of it depends on one person.');
-      await spot('[data-tour="jobs"]', 4600);
+      say('Automations you can see and adjust', 'Each one has an on/off switch, its own settings and a log. Here: when clinic stock gets ordered.');
+      await spot('[data-tour="automations"]', 2400);
+      await click('[data-aupanel="batch"][data-p="settings"]', { after: 900 });
+      await spot('#au-batch', 2600);
+      await click('[data-aurun="tracking"]', { after: 900 });
+      say('Every run is logged', 'Run one by hand and it shows up in its log straight away, alongside what it did on its own.');
+      await spot('#au-tracking', 2800);
       await click('[data-wtab="log"]', { after: 700 });
       say('A record of everything it did', 'Including Sofia’s questionnaire, her order and her class purchase from a minute ago.');
       await spot('[data-tour="activity"]', 4000);
@@ -345,6 +350,18 @@
       await click('[data-shtab="suppliers"]', { after: 700 });
       say('Physica, Biotics and DesBio in one place', 'How orders reach each one, their patient dispensaries, drop-ship terms and the pricing rules the platform enforces.');
       await spot('[data-tour="supplier"]', 3400);
+    } },
+    { name: 'Outcome', run: async function () {
+      App.go('outcome'); await sleep(600);
+      say('What it all adds up to', 'Sell more with less effort, deliver the Premium Course, stay safe with suppliers, and hand off the admin.');
+      await spot('[data-tour="purposes"]', 3200);
+      say('Time back, job by job', 'About 28 hours a week of manual admin becomes about 4. These are estimates to confirm with the team.');
+      await spot('[data-tour="jobs"]', 3600);
+      say('The client journey it runs', 'From a free questionnaire to the Premium Course and refills, with what runs itself and where a person steps in.');
+      await spot('[data-tour="journey"]', 3600);
+      say('Growth that fits the supplier rules', 'Advertise the free questionnaire and classes, never product prices. Then a calculator to try your own numbers.');
+      await spot('[data-tour="ads"]', 3000);
+      await spot('[data-tour="calc"]', 3000);
     } }
   ];
 
@@ -466,9 +483,10 @@
     card('<p class="k">Showcase complete</p><h2>Sales that run, admin that does not depend on one person</h2>' +
       '<p>The intake, records, scheduling, email and e-signature engine already runs a real business every day. The client app, program, shop and work queue are what we would build for you on top of it.</p>' +
       '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>Short courses $59 to $119</li><li>Practitioner booking</li><li>$2,995 Premium Course</li><li>Energetic scan reports</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
-      '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
+      '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endOutcome">See the outcome</button><button class="btn ghost" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });
+        c.querySelector('#endOutcome').addEventListener('click', function () { c.remove(); App.go('outcome'); });
         c.querySelector('#endReplay').addEventListener('click', function () { c.remove(); play(); });
       });
   }

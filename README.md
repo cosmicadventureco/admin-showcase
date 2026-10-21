@@ -93,9 +93,12 @@ Built for the situation where one employee does all the admin and is leaving.
   These are order approvals, client questions, a failed payment and test
   results to review. Each is labelled with the role that handles it
   (Assistant, Practitioner, Owner, Anyone).
-- **Runs itself:** each manual admin job, how often it happened, and what
-  replaces it, with estimated hours: about 28.5 a week before, 4 after. The
-  hours are pitch estimates to confirm with the team.
+- **Automations:** twelve automations as working controls, each with an on/off
+  switch, its own settings, a log and "Run now". Order approval and the
+  scan-report sign-off cannot be switched off. Some settings drive the rest
+  of the showcase: the clinic order threshold, the margin warning, how many
+  remedies a scan report carries, and whether plan and tracking emails go
+  out. Shop > Automations shows the order-related ones.
 - **Activity log:** everything the system did on its own.
 - **Team & handoff:** who can do what, and a sample handoff checklist.
 
@@ -157,6 +160,14 @@ The extraction is simulated with invented sample data and an invented report
 name ("Evergrove Resonance Map"). Building it for real needs one or two sets
 of real exports with names removed, to confirm the parser against the actual
 PDF layout.
+
+### Outcome (last page)
+
+The case for the build, kept off the working screens: what the dashboard is
+for, the admin hours it replaces (about 28.5 a week to 4, estimates), the
+client journey it runs with what is automatic and where a person steps in,
+advertising that stays inside the supplier rules, and a revenue calculator
+with illustrative inputs. The tour ends here.
 
 ## What it shows, and what is "proven" versus "custom build"
 

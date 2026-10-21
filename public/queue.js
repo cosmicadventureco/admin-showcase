@@ -12,22 +12,6 @@
   function S() { return App.state(); }
   function st() { if (!App.ui.wq) App.ui.wq = { tab: 'needs', confirm: null, reply: null }; return App.ui.wq; }
 
-  /* Estimates for the pitch, to confirm with the team before building. */
-  var JOBS = [
-    ['Typing intake answers into a spreadsheet', 'Daily', 'auto', 3, 0, 'Clients fill in the questionnaire themselves.'],
-    ['Choosing supplements for each new client', 'Daily', 'auto', 4, 0.5, 'Suggested from the answers. A practitioner only checks flagged clients.'],
-    ['Ordering from suppliers one product at a time', 'Daily', 'approve', 4, 0.5, 'Approved orders fill the supplier cart in one go and you click checkout. Clinic stock goes out as one weekly order.'],
-    ['Copying tracking numbers to clients', 'Daily', 'auto', 2, 0, 'Tracking emails go out the moment the supplier ships.'],
-    ['Refill reminders and reorders', 'Weekly', 'approve', 2, 0.3, 'Reminders are automatic. Each refill order still gets approved.'],
-    ['Selling short courses and sending access', 'Daily', 'auto', 1.5, 0, 'Checkout ($59 to $119) unlocks the course and sends a receipt.'],
-    ['Booking practitioner sessions and taking payment', 'Daily', 'auto', 2, 0, 'Clients pick a practitioner, 30 minutes or an hour, and a time, and pay when they book.'],
-    ['Enrolling Premium Course members, welcome packs', 'Weekly', 'auto', 1.5, 0, 'Payment, agreement, welcome email and Zoom invites in one step.'],
-    ['Unlocking course weeks, sending Zoom links', 'Weekly', 'auto', 1.5, 0, 'Weeks unlock every 7 days; reminders go out Thursday morning.'],
-    ['Turning scan exports into client reports', 'Weekly', 'approve', 4, 0.5, 'Findings are extracted and ranked automatically. A practitioner reviews, signs off and publishes.'],
-    ['Chasing payment-plan instalments', 'Monthly', 'auto', 1, 0.2, 'Cards are charged on schedule; a failed card gets an update link.'],
-    ['Answering client questions', 'Daily', 'person', 2, 2, 'Questions land in a shared inbox, so anyone can answer.']
-  ];
-  var HOW = { auto: ['ok', 'Runs itself'], approve: ['honey', 'One-click approval'], person: ['', 'A person, any teammate'] };
 
   function tasks() {
     var D = S(), out = [];
@@ -70,13 +54,10 @@
 
   function view() {
     var wq = st(), D = S(), list = tasks();
-    var before = JOBS.reduce(function (t, j) { return t + j[3]; }, 0), after = JOBS.reduce(function (t, j) { return t + j[4]; }, 0);
     var auto = 1284 + D.activity.length;
     var body;
     if (wq.tab === 'auto') {
-      body = '<div class="card"><p class="small muted" style="margin-top:0">The admin jobs one person used to do by hand, and who does them now. Hours are estimates for this pitch; we confirm them with your team before building.</p><div class="tablewrap"><table data-tour="jobs"><thead><tr><th>Job</th><th>How often</th><th>Now</th><th class="r">Hours a week before</th><th class="r">After</th></tr></thead><tbody>' +
-        JOBS.map(function (j) { return '<tr><td><b>' + esc(j[0]) + '</b><br><span class="small muted">' + esc(j[5]) + '</span></td><td>' + j[1] + '</td><td><span class="pill ' + HOW[j[2]][0] + '">' + HOW[j[2]][1] + '</span></td><td class="r">' + j[3] + '</td><td class="r">' + j[4] + '</td></tr>'; }).join('') +
-        '<tr class="total"><td colspan="3"><b>Total</b></td><td class="r"><b>' + before + '</b></td><td class="r"><b>' + after + '</b></td></tr></tbody></table></div></div>';
+      body = EGAuto.html();
     } else if (wq.tab === 'log') {
       body = '<div class="card"><div class="list" data-tour="activity">' + D.activity.slice(0, 25).map(function (a) { return '<div class="li"><span class="pill num">' + U.fmtDate(a.at, { month: 'short', day: 'numeric' }) + ' ' + a.time + '</span><span class="grow small">' + esc(a.text) + '</span></div>'; }).join('') + '</div></div>';
     } else if (wq.tab === 'team') {
@@ -93,13 +74,14 @@
       'Everything that still needs a person, in one list anyone on the team can work through. Everything else runs on its own and is logged.') +
       U.pitch('new', 'Built for handing off the admin role: the jobs one person did by hand become automatic or one-click, and what is left sits in a shared queue with clear roles, so nobody is the only one who knows how.') +
       '<div class="grid g4" style="margin-bottom:1rem" data-tour="wstats">' + U.stat(list.length, 'Need a person today', '') + U.stat(auto.toLocaleString(), 'Jobs done automatically this month', '') +
-      U.stat(before + 'h &rarr; ' + after + 'h', 'Admin hours a week (estimate)', '') + U.stat(money(5114, false), 'Short courses and sessions sold this month, no admin', '') + '</div>' +
-      '<div class="tabs">' + [['needs', 'Needs a person (' + list.length + ')'], ['auto', 'Runs itself'], ['log', 'Activity log'], ['team', 'Team & handoff']].map(function (t) { return '<button class="tab' + (wq.tab === t[0] ? ' is-on' : '') + '" data-wtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body;
+      U.stat(EGAuto.DEFS.filter(function (d) { return EGAuto.on(d.id); }).length + ' of ' + EGAuto.DEFS.length, 'Automations running', '') + U.stat(money(5114, false), 'Short courses and sessions sold this month', '') + '</div>' +
+      '<div class="tabs">' + [['needs', 'Needs a person (' + list.length + ')'], ['auto', 'Automations'], ['log', 'Activity log'], ['team', 'Team & handoff']].map(function (t) { return '<button class="tab' + (wq.tab === t[0] ? ' is-on' : '') + '" data-wtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body;
   }
 
   function bind() {
     var wq = st(), $ = U.$, $$ = U.$$;
     $$('[data-wtab]').forEach(function (b) { b.addEventListener('click', function () { wq.tab = b.getAttribute('data-wtab'); App.render(); }); });
+    if (wq.tab === 'auto') EGAuto.bind(App.render);
     $$('[data-wapprove]').forEach(function (b) { b.addEventListener('click', function () { wq.confirm = b.getAttribute('data-wapprove'); App.render(); }); });
     $$('[data-wcancel]').forEach(function (b) { b.addEventListener('click', function () { wq.confirm = null; App.render(); }); });
     $$('[data-wconfirm]').forEach(function (b) {

@@ -279,7 +279,7 @@
       c.plan_items = EG.recommend(c).picks.map(function (x) { return x.product.sku; });
       D.clients.unshift(c);
       D.emails.unshift({ at: U.today(), to: c.id, kind: 'Recommendations', subject: 'Your free Evergrove plan' });
-      U.activity(name + ' finished the free questionnaire in the client app. Plan emailed, added to the ' + c.goals.map(EG.goalLabel).join(', ') + ' newsletters.');
+      U.activity(name + ' finished the free questionnaire in the client app. ' + (EGAuto.on('plan') ? 'Plan emailed' + (EGAuto.setting('plan', 'segments') ? ', added to the ' + c.goals.map(EG.goalLabel).join(', ') + ' newsletters.' : '.') : 'Plan saved; the plan email is switched off.'));
       ca.as = c.id; ca.tab = 'plan'; App.render();
       U.toast('Your free plan is ready');
     });

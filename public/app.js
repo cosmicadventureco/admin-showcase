@@ -678,7 +678,7 @@
           Object.keys(by).map(function (sup) { return by[sup].map(function (x) { return '<tr><td>' + esc(x.p.name) + '</td><td>' + esc(EG.SUPPLIERS[sup].name) + '</td><td class="r">' + x.n + '</td><td class="r">' + money(x.p.cost * x.n) + '</td></tr>'; }).join(''); }).join('') +
           Object.keys(ship).map(function (k) { return '<tr><td class="muted">Shipping, drop-ship to client</td><td>' + esc(EG.SUPPLIERS[k].name) + '</td><td></td><td class="r">' + (ship[k] ? money(ship[k]) : 'Free') + '</td></tr>'; }).join('') +
           '</tbody></table></div>' +
-          '<div class="row small" style="gap:1.2rem"><span>Client pays <b class="num">' + money(total) + '</b>' + (o.discount ? ' (member price)' : '') + '</span><span>Supplier cost incl. shipping <b class="num">' + money(cost) + '</b></span><span>Margin <b class="num">' + money(total - cost) + ' (' + Math.round((1 - cost / total) * 100) + '%)</b></span><span class="muted">Ship to ' + esc(c ? c.name : '') + ', Salt Lake City, UT</span></div>' +
+          '<div class="row small" style="gap:1.2rem"><span>Client pays <b class="num">' + money(total) + '</b>' + (o.discount ? ' (member price)' : '') + '</span><span>Supplier cost incl. shipping <b class="num">' + money(cost) + '</b></span><span>Margin <b class="num">' + money(total - cost) + ' (' + Math.round((1 - cost / total) * 100) + '%)</b>' + (window.EGAuto && (1 - cost / total) * 100 < EGAuto.setting('approval', 'margin') && total - cost >= 0 ? ' <span class="pill warn">Under ' + EGAuto.setting('approval', 'margin') + '%</span>' : '') + '</span><span class="muted">Ship to ' + esc(c ? c.name : '') + ', Salt Lake City, UT</span></div>' +
           (total - cost < 0 ? '<div class="flagbar" style="margin-top:.6rem">This order loses ' + money(cost - total) + ' after Physica&rsquo;s $20 shipping on orders under $500. Consider a minimum order, a shipping charge, or holding it to combine with the client&rsquo;s next refill.</div>' : '') +
           (review ? '<label class="check" style="margin-top:.6rem"><input type="checkbox" data-reviewed="' + o.id + '"> I have reviewed ' + esc(first(c.name)) + '&rsquo;s screening (' + r.flags.map(function (f) { return { bloodthinner: 'blood thinner', pregnant: 'pregnancy', thyroid: 'thyroid' }[f]; }).join(', ') + ') and this order is appropriate</label>' : '') +
           (confirming
@@ -705,16 +705,6 @@
         return '<tr><td><div class="row" style="flex-wrap:nowrap">' + bottle(p, true) + '<span><b>' + esc(p.name) + '</b><br><span class="small muted">' + esc(p.dose) + '</span></span></div></td><td>' + esc(EG.LINES[p.line].label) + '<br><span class="small muted">' + esc(EG.LINES[p.line].kind) + '</span></td><td class="r">' + money(p.price) + '</td><td class="r">' + money(p.price * (1 - EG.PROGRAM.discount)) + '</td><td class="r">' + money(p.cost) + '</td><td class="r">' + Math.round((1 - p.cost / p.price) * 100) + '%</td><td>' + esc(EG.SUPPLIERS[p.supplier].name) + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
   }
-  var RULES = [
-    ['Take orders from your Shopify store', 'Orders from the members-only Shopify store land in the approval queue with the client and their plan attached.'],
-    ['Email the client the moment an order is approved', 'Branded as Evergrove, with what was ordered and when to expect it.'],
-    ['Fill the right supplier cart for each approved line', 'Physica, Biotics and DesBio carts are filled in your own logged-in session; you click checkout.'],
-    ['Gather clinic stock into one order per supplier', 'Orders when Physica reaches $500 for free shipping, or every Friday, whichever comes first.'],
-    ['Email tracking the moment the supplier ships', 'The client never sees the supplier.'],
-    ['Create auto-ship refills every 30 days', 'Each refill lands in the approval queue like any other order.'],
-    ['Apply 20% member pricing for program clients', 'Starts on enrolment and ends when the 3-month program does.'],
-    ['Alert when margin on an order drops under 35%', 'Catches supplier price changes before they cost you.']
-  ];
   /* What we know about each supplier, from their public websites (checked
      October 2026). Physica's terms were read in full; the others in part. */
   var SRC = {
@@ -749,9 +739,10 @@
   function clinicView() {
     return '<div class="card" style="margin-bottom:1rem"><p class="small" style="margin:0">Stock for the clinic collects here per supplier, each unit earmarked for the client it is for. One order goes out when it is worth it: Physica ships free from $500. One order a week instead of one per product is most of the time saved.</p></div>' +
       '<div class="supgrid" data-tour="batches">' + ['physica', 'biotics', 'desbio'].map(function (k) {
-        var s = EG.SUPPLIERS[k], lines = S.batches[k] || [], cost = batchCost(k), pct = s.freeFrom ? Math.min(100, cost / s.freeFrom * 100) : 100;
+        var s = EG.SUPPLIERS[k], lines = S.batches[k] || [], cost = batchCost(k);
+        var target = k === 'physica' && window.EGAuto ? EGAuto.setting('batch', 'threshold') : s.freeFrom, pct = target ? Math.min(100, cost / target * 100) : 100;
         return '<div class="card"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + esc(s.short) + '</h3><span class="price">' + money(cost) + '</span></div>' +
-          (s.freeFrom ? '<div class="bar" style="margin:.6rem 0 .3rem"><i style="width:' + pct + '%;background:' + (pct >= 100 ? 'var(--ok)' : 'var(--honey)') + '"></i></div><div class="small muted">' + (cost >= s.freeFrom ? 'Ships free' : money(s.freeFrom - cost) + ' to free shipping, or $' + s.flat + ' to ship now') + '</div>' : '<div class="small muted" style="margin-top:.4rem">' + esc(s.pathLabel) + '</div>') +
+          (target ? '<div class="bar" style="margin:.6rem 0 .3rem"><i style="width:' + pct + '%;background:' + (pct >= 100 ? 'var(--ok)' : 'var(--honey)') + '"></i></div><div class="small muted">' + (cost >= target ? 'Ready to order' + (cost >= s.freeFrom ? ', ships free' : '') : money(target - cost) + ' to the $' + target + ' order point' + (target >= s.freeFrom ? ' (free shipping)' : '')) + '</div>' : '<div class="small muted" style="margin-top:.4rem">' + esc(s.pathLabel) + '</div>') +
           '<table class="small" style="margin-top:.6rem"><thead><tr><th>Product</th><th class="r">Qty</th><th>For</th></tr></thead><tbody>' +
           (lines.length ? lines.map(function (l) { var c = client(l[2]); return '<tr><td>' + esc(EG.product(l[0]).name) + '</td><td class="r">' + l[1] + '</td><td>' + (c ? esc(c.name) : '<span class="muted">Clinic shelf</span>') + '</td></tr>'; }).join('') : '<tr><td colspan="3" class="muted">Nothing waiting.</td></tr>') + '</tbody></table>' +
           (lines.length ? '<button class="btn small" data-po="' + k + '" style="margin-top:.7rem">Order now: fill the ' + esc(s.short) + ' cart</button>' : '') + '</div>';
@@ -762,16 +753,10 @@
           po.lines.map(function (l) { var c = client(l[2]); return '<tr><td><input type="checkbox" aria-label="Picked"></td><td>' + esc(EG.product(l[0]).name) + '</td><td class="r">' + l[1] + '</td><td>' + (c ? esc(c.name) : 'Clinic shelf') + '</td></tr>'; }).join('') + '</tbody></table></div>';
       }).join('') : '');
   }
-  function rules() {
-    return '<div class="card"><div>' +
-      '<div class="rule"><span class="toggle locked" aria-label="Always on"></span><div class="grow"><b>A person approves every order before it reaches a supplier</b> <span class="pill">Always on</span><br><span class="small muted">This one cannot be switched off. Orders with a screening flag also need the reviewer to confirm they checked it.</span></div></div>' +
-      RULES.map(function (r, i) {
-        return '<div class="rule"><button class="toggle" data-rule="' + i + '" aria-label="Toggle rule"></button><div class="grow"><b>' + esc(r[0]) + '</b><br><span class="small muted">' + esc(r[1]) + '</span></div></div>';
-      }).join('') + '</div></div>';
-  }
+  function rules() { return window.EGAuto ? EGAuto.html('shop') : ''; }
   function bindShop() {
     $$('[data-shtab]').forEach(function (b) { b.addEventListener('click', function () { ui.shopTab = b.getAttribute('data-shtab'); render(); }); });
-    $$('[data-rule]').forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('off'); }); });
+    if (ui.shopTab === 'rules' && window.EGAuto) EGAuto.bind(render);
     var sim = $('#shSim'); if (sim) sim.addEventListener('click', function () { simulateOrder(); });
     /* storefront */
     var as = $('#stAs'); if (as) as.addEventListener('change', function () { ui.store.as = as.value; render(); });
@@ -873,7 +858,11 @@
         logLine('Email to ' + esc(c.email) + ': "Your order is confirmed"');
       },
       function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); },
-      function () { o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('UPS tracking ' + o.tracking + ' read from the supplier\u2019s shipping email.', true); logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' }); },
+      function () {
+        o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('UPS tracking ' + o.tracking + ' read from the supplier\u2019s shipping email.', true);
+        if (window.EGAuto && !EGAuto.on('tracking')) { logLine('Tracking emails are switched off, so the client was not emailed.'); return; }
+        logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' });
+      },
       function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); activity('Tracking ' + o.tracking + ' emailed to ' + c.name + '. Refill reminder set for day 25.'); }
     ];
     var chain = Promise.resolve();
@@ -1145,7 +1134,7 @@
   function reset() {
     S = EG.seed(); save();
     ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'store'; ui.calMonth = null; ui.quoteId = 'q1';
-    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null; ui.sc = null;
+    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null; ui.sc = null; ui.au = null; ui.oc = null;
     render();
   }
 

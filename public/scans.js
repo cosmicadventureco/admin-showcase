@@ -160,6 +160,7 @@
       steps.forEach(function (t, i) { chain = chain.then(function () { var l = $('#scProgLabel'), bar = $('#scProgBar'); if (l) l.textContent = t; if (bar) bar.style.width = ((i + 1) / steps.length * 100) + '%'; return wait(450); }); });
       chain.then(function () {
         sc.data = EG.sampleScan(c); sc.status = 'review';
+        if (window.EGAuto) sc.data.limit = EGAuto.setting('scans', 'top');
         U.activity('Scan exports for ' + c.name + ' extracted: 8 organ readings, ' + sc.data.items.length + ' findings. Waiting for practitioner review.');
         U.save(); go('review');
       });
