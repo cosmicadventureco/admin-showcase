@@ -19,8 +19,9 @@
     ['Emailing orders to Physica Energetics', 'Daily', 'approve', 4, 0.5, 'One click to approve, one to confirm. Routing is automatic.'],
     ['Copying tracking numbers to clients', 'Daily', 'auto', 2, 0, 'Tracking emails go out the moment the supplier ships.'],
     ['Refill reminders and reorders', 'Weekly', 'approve', 2, 0.3, 'Reminders are automatic. Each refill order still gets approved.'],
-    ['Selling single classes and sending access', 'Daily', 'auto', 1.5, 0, '$59 checkout unlocks the class and sends a receipt.'],
-    ['Enrolling program members, welcome packs', 'Weekly', 'auto', 1.5, 0, 'Payment, agreement, welcome email and Zoom invites in one step.'],
+    ['Selling short courses and sending access', 'Daily', 'auto', 1.5, 0, 'Checkout ($59 to $119) unlocks the course and sends a receipt.'],
+    ['Booking practitioner sessions and taking payment', 'Daily', 'auto', 2, 0, 'Clients pick a practitioner, 30 minutes or an hour, and a time, and pay when they book.'],
+    ['Enrolling Premium Course members, welcome packs', 'Weekly', 'auto', 1.5, 0, 'Payment, agreement, welcome email and Zoom invites in one step.'],
     ['Unlocking course weeks, sending Zoom links', 'Weekly', 'auto', 1.5, 0, 'Weeks unlock every 7 days; reminders go out Thursday morning.'],
     ['Chasing payment-plan instalments', 'Monthly', 'auto', 1, 0.2, 'Cards are charged on schedule; a failed card gets an update link.'],
     ['Answering client questions', 'Daily', 'person', 2, 2, 'Questions land in a shared inbox, so anyone can answer.']
@@ -49,7 +50,7 @@
       else if (wq.confirm === t.o.id) acts = '<span class="small">Send to the supplier for ' + money(U.orderCost(t.o)) + '?</span><button class="btn small" data-wconfirm="' + t.o.id + '">Yes, send</button><button class="btn ghost small" data-wcancel="1">Cancel</button>';
       else acts = '<button class="btn small" data-wapprove="' + t.o.id + '">Approve</button>';
     } else if (t.kind === 'msg') {
-      body = '<b>' + (t.m.lead ? 'Sales lead from ' : 'Question from ') + esc(t.c.name) + '</b>' + (t.m.lead ? ' <span class="pill honey">3-Month Program</span>' : '') + '<div class="small">&ldquo;' + esc(t.m.text) + '&rdquo;</div>' +
+      body = '<b>' + (t.m.lead ? 'Sales lead from ' : 'Question from ') + esc(t.c.name) + '</b>' + (t.m.lead ? ' <span class="pill honey">Premium Course</span>' : '') + '<div class="small">&ldquo;' + esc(t.m.text) + '&rdquo;</div>' +
         (wq.reply === t.m.id ? '<div class="row" style="margin-top:.5rem;flex-wrap:nowrap"><input type="text" id="wReply" placeholder="Type a reply" style="flex:1"><button class="btn small" data-wsend="' + t.m.id + '">Send</button></div>' : '');
       acts = wq.reply === t.m.id ? '' : '<button class="btn ghost small" data-wreply="' + t.m.id + '">Reply</button>';
     } else if (t.kind === 'pay') {
@@ -87,7 +88,7 @@
       'Everything that still needs a person, in one list anyone on the team can work through. Everything else runs on its own and is logged.') +
       U.pitch('new', 'Built for handing off the admin role: the jobs one person did by hand become automatic or one-click, and what is left sits in a shared queue with clear roles, so nobody is the only one who knows how.') +
       '<div class="grid g4" style="margin-bottom:1rem" data-tour="wstats">' + U.stat(list.length, 'Need a person today', '') + U.stat(auto.toLocaleString(), 'Jobs done automatically this month', '') +
-      U.stat(before + 'h &rarr; ' + after + 'h', 'Admin hours a week (estimate)', '') + U.stat(money(EG.VIDEO_PRICE * 37, false), 'Class sales this month, no admin', '') + '</div>' +
+      U.stat(before + 'h &rarr; ' + after + 'h', 'Admin hours a week (estimate)', '') + U.stat(money(5114, false), 'Short courses and sessions sold this month, no admin', '') + '</div>' +
       '<div class="tabs">' + [['needs', 'Needs a person (' + list.length + ')'], ['auto', 'Runs itself'], ['log', 'Activity log'], ['team', 'Team & handoff']].map(function (t) { return '<button class="tab' + (wq.tab === t[0] ? ' is-on' : '') + '" data-wtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body;
   }
 

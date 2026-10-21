@@ -124,7 +124,7 @@
       stat(active, 'Coaching clients', '+3 this month') +
       stat(upcoming.length, 'Sessions in the next 7 days', '') +
       stat(money(rev, false), 'Revenue, last 8 weeks', '+' + Math.round((last - prev) / prev * 100) + '% vs last week') +
-      stat(members, 'In the 3-Month Program', money(members * EG.PROGRAM.price, false) + ' enrolled') +
+      stat(members, 'In the Premium Course', money(members * EG.PROGRAM.price, false) + ' enrolled') +
       '</div>' +
       '<div class="split" style="margin-top:1rem">' +
       '<div class="card" data-tour="todo"><h3 class="h3">Needs attention</h3><div>' +
@@ -135,7 +135,7 @@
       '<h2 class="h2">Today</h2><div class="card"><div class="list">' +
       (todays.length ? todays.map(function (b) {
         var sv = service(b.service);
-        return '<div class="li"><span class="pill honey num">' + fmtTime(b.time) + '</span><div class="grow"><div class="title">' + esc(b.name || sv.label) + '</div><div class="meta">' +
+        return '<div class="li"><span class="pill honey num">' + fmtTime(b.time) + '</span><div class="grow"><div class="title">' + esc(b.name || sv.label) + (b.with ? ' with ' + esc(b.with) : '') + '</div><div class="meta">' +
           esc(b.guests.map(function (g) { return client(g).name; }).join(', ')) + ' &middot; ' + esc(b.where) + '</div></div>' +
           '<button class="btn ghost small" data-go="schedule">Roster</button></div>';
       }).join('') : '<p class="muted" style="margin:0">Nothing booked today.</p>') +
@@ -480,7 +480,7 @@
       var sv = service(b.service), dt = d(b.date);
       var missing = b.guests.filter(function (g) { var c = client(g); return c && !(c.consent && c.intake); }).length;
       return '<div class="card booking" data-booking="' + b.id + '"><div class="when"><span>' + dt.toLocaleDateString('en-US', { month: 'short' }) + '</span><b>' + dt.getDate() + '</b><span>' + dt.toLocaleDateString('en-US', { weekday: 'short' }) + '</span></div>' +
-        '<div style="min-width:0"><div class="row" style="justify-content:space-between"><div><div class="h3" style="margin:0">' + esc(b.name || sv.label) + '</div><div class="small muted">' + fmtTime(b.time) + ' &middot; ' + sv.mins + ' min &middot; ' + esc(b.where) + '</div></div>' +
+        '<div style="min-width:0"><div class="row" style="justify-content:space-between"><div><div class="h3" style="margin:0">' + esc(b.name || sv.label) + (b.with ? ' with ' + esc(b.with) : '') + '</div><div class="small muted">' + fmtTime(b.time) + ' &middot; ' + sv.mins + ' min &middot; ' + esc(b.where) + '</div></div>' +
         (missing ? '<span class="pill warn">' + missing + ' missing paperwork</span>' : '<span class="pill ok">All paperwork in</span>') + '</div>' +
         '<div class="roster">' + b.guests.map(function (g) {
           var c = client(g); if (!c) return '';
@@ -621,7 +621,7 @@
       '<label for="stAs" style="margin:0 0 0 auto">Shopping as</label><select id="stAs" style="width:auto">' + S.clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === st.as ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (program member)' : '') + '</option>'; }).join('') + '</select></div>' +
       '<div class="store">' +
       '<div class="storemain"><div class="storehead"><div><p class="eyebrow" style="margin:0">Evergrove apothecary</p><h2 class="h1" style="margin:0">Remedies &amp; supplements</h2><p class="small muted" style="margin:.2rem 0 0">Featuring the Physica Energetics range. Placeholder prices.</p></div>' +
-      (member ? '<span class="pill ok" id="stMember">Program member: 20% off everything</span>' : '<span class="pill">Join the 3-Month Program for 20% off</span>') + '</div>' +
+      (member ? '<span class="pill ok" id="stMember">Premium member: 20% off and free shipping</span>' : '<span class="pill">Premium Course members get 20% off and free shipping</span>') + '</div>' +
       '<div class="chips" style="margin:1rem 0">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['nutri', 'Nutritionals']].map(function (l) { return '<button class="chip' + (st.line === l[0] ? ' is-on' : '') + '" data-line="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>' +
       '<div class="pgrid">' + list.map(function (p) {
         var price = member ? p.price * (1 - EG.PROGRAM.discount) : p.price;
@@ -632,8 +632,8 @@
       (cartSkus.length ? cartSkus.map(function (k) { var p = EG.product(k); return '<div class="row small" style="justify-content:space-between;flex-wrap:nowrap;margin-bottom:.4rem"><span>' + st.cart[k] + ' &times; ' + esc(p.name) + '</span><span class="num">' + money(p.price * st.cart[k]) + '</span></div>'; }).join('') +
         '<div class="carttot"><div class="row" style="justify-content:space-between"><span>Subtotal</span><span class="num">' + money(sub) + '</span></div>' +
         (disc ? '<div class="row" style="justify-content:space-between;color:var(--ok)"><span>Member 20%</span><span class="num">&minus;' + money(disc) + '</span></div>' : '') +
-        '<div class="row" style="justify-content:space-between"><span>Shipping</span><span class="num">' + (sub - disc >= 75 ? 'Free' : '$6.95') + '</span></div>' +
-        '<div class="row" style="justify-content:space-between;font-weight:700"><span>Total</span><span class="num">' + money(sub - disc + (sub - disc >= 75 ? 0 : 6.95)) + '</span></div></div>' +
+        '<div class="row" style="justify-content:space-between"><span>Shipping</span><span class="num">' + (member || sub - disc >= 75 ? 'Free' : '$6.95') + '</span></div>' +
+        '<div class="row" style="justify-content:space-between;font-weight:700"><span>Total</span><span class="num">' + money(sub - disc + (member || sub - disc >= 75 ? 0 : 6.95)) + '</span></div></div>' +
         '<button class="btn" id="stCheckout" style="width:100%;margin-top:.8rem">Place order</button><p class="small muted" style="margin:.5rem 0 0">Showcase: no payment is taken.</p>'
         : '<p class="small muted" style="margin:0">Your cart is empty. Add a remedy to get started.</p>') +
       '</aside></div></div>';
@@ -813,7 +813,7 @@
       '<div class="grid g3" data-tour="videos">' + EG.VIDEOS.map(function (v) {
         var assigned = S.clients.filter(function (c) { return v.id in c.videos; }).length;
         return '<div class="card vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div>' +
-          '<span class="title">' + esc(v.title) + '</span><div class="pills">' + (v.access === 'paid' ? '<span class="pill honey">' + money(EG.VIDEO_PRICE, false) + ' or included in program</span>' : '<span class="pill ok">Free with an account</span>') + '</div>' + goalPills(v.goals) +
+          '<span class="title">' + esc(v.title) + '</span><div class="pills">' + (v.access === 'paid' ? '<span class="pill honey">Short course ' + money(v.price, false) + ', included in Premium</span>' : '<span class="pill ok">Free with an account</span>') + '</div>' + goalPills(v.goals) +
           '<div class="row" style="justify-content:space-between"><span class="small muted num">' + v.views.toLocaleString() + ' views &middot; in ' + assigned + ' plans</span><button class="btn ghost small" data-assign="' + v.id + '">Assign</button></div></div>';
       }).join('') + '</div>';
   }

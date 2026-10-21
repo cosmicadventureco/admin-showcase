@@ -40,15 +40,15 @@ any static server (`python3 -m http.server -d public 8080`).
 ## Presenting
 
 - **Play Showcase** (top right): restores the sample data, then plays 7 chapters:
-  Client app (free account), Client app (program member), Work queue, Dashboard,
-  3-Month Program, Schedule, Shop & drop-ship.
+  Client app (free account), Client app (Premium member), Work queue, Dashboard,
+  Premium Course, Schedule, Shop & drop-ship.
   - `Space` pause or resume, `→` next chapter, `Esc` exit.
 - Open `/?play` (or `/#play`) to start the tour on load. Handy for a kiosk
   screen or a screen recording.
 - The client app opens at `/app` (or `/#client`). The **Team console / Client app**
   switch at the top moves between the two.
 - Deep links to a section: `/#queue`, `/#dashboard`, `/#schedule`, `/#clients`, `/#messages`,
-  `/#intake`, `/#agreements`, `/#program`, `/#shop`, `/#newsletter`, `/#videos`.
+  `/#intake`, `/#agreements`, `/#program` (Premium Course), `/#shop`, `/#newsletter`, `/#videos`.
 - For recording, a 1440×900 browser window at 100% zoom looks best.
 
 ## Two interfaces
@@ -58,14 +58,18 @@ any static server (`python3 -m http.server -d public 8080`).
 - **New visitor:** a short questionnaire (goals, diet, allergies, health screening,
   consent) creates a **free account** with a personal supplement plan.
 - **Free account:** sees their plan, adds it all to the cart in one tap, can
-  subscribe and save 15%, watches free classes, and buys **masterclasses at $59**
-  each (theirs to keep, with download). They also track orders, skip or pause
-  refills, and ask the team a question.
-- **Program member:** sees their course week, Thursday's live Zoom, member
-  pricing (20% off), and every class included.
+  subscribe and save 15%, watches free classes, and buys **short courses from
+  $59 to $119** (theirs to keep, with downloads). They can **book a Certified
+  Practitioner**: $99 for 30 minutes, or +$49 for a full hour, paid at booking.
+  They also track orders, skip or pause refills, and ask the team a question.
+- **Premium Course member ($2,995, or 3 x $1,035):** sees their course week,
+  Thursday's live Zoom and member pricing. Benefits shown to clients:
+  energetics assessment and work, additional testing, a 12-week course built
+  around them, weekly live Zoom, 20% off every supplement, free shipping, every
+  short course included, and 25% off one-to-one sessions.
 
 Use "Preview as" beside the phone to switch between a new visitor, a free
-account and a program member.
+account and a Premium member.
 
 **Team console**: the back office. Everything a client does in the app lands
 here. Orders go to the approval queue, questions go to a shared inbox, and
@@ -80,7 +84,7 @@ Built for the situation where one employee does all the admin and is leaving.
   results to review. Each is labelled with the role that handles it
   (Assistant, Practitioner, Owner, Anyone).
 - **Runs itself:** each manual admin job, how often it happened, and what
-  replaces it, with estimated hours: about 22.5 a week before, 3.5 after. The
+  replaces it, with estimated hours: about 24.5 a week before, 3.5 after. The
   hours are pitch estimates to confirm with the team.
 - **Activity log:** everything the system did on its own.
 - **Team & handoff:** who can do what, and a sample handoff checklist.
@@ -92,7 +96,7 @@ Each screen has a banner saying whether the feature already runs in production
 
 | Screen | Status | What it demonstrates |
 |---|---|---|
-| Client app | Custom | Free plan from a questionnaire, one-tap ordering, subscribe & save, free classes and $59 masterclasses, program member home, order tracking, ask the team |
+| Client app | Custom | Free plan from a questionnaire, one-tap ordering, subscribe & save, free classes and $59-$119 short courses, practitioner booking ($99 / 30 min, +$49 for an hour), Premium member home, order tracking, ask the team |
 | Work queue | Custom | Shared to-do list with roles, the automation map of the admin job, activity log, roles and handoff checklist |
 | Dashboard | Proven | KPIs, needs-attention list, today's sessions, revenue chart |
 | Client messaging | Proven | Template composer with auto-filled wording and live preview |
@@ -100,7 +104,7 @@ Each screen has a banner saying whether the feature already runs in production
 | Clients | Proven | Searchable records, consent audit, sent-email log, client drawer |
 | Schedule | Proven | Upcoming sessions with paperwork status per guest, reminders, calendar |
 | Quotes & agreements | Proven | Line items with auto-calculated totals, e-signature |
-| 3-Month Program | Custom | $2,995 all-inclusive program (or 3 x $1,035): sales page, enrollment with signed agreement, energetics assessment and testing status, 12 weekly modules customised per member with downloads, weekly live Zoom with practitioners, 20% member pricing in the shop |
+| Premium Course | Custom | $2,995 all-inclusive 3-month course (or 3 x $1,035): sales page, enrollment with signed agreement, energetics assessment and testing status, 12 weekly modules customised per member with downloads, weekly live Zoom with practitioners, 20% member pricing in the shop |
 | Shop & fulfilment | Custom | Client storefront for the Physica Energetics range plus nutritionals, member pricing, and drop-ship fulfilment behind an approval queue |
 | Newsletter | Custom | Goal-based segments, per-reader product pick, campaign revenue |
 | Video library | Custom | Goal-tagged classes assigned by the intake, watch progress |

@@ -74,40 +74,54 @@
     { sku: 'EG-BCX', name: 'Methylated B-Complex', line: 'nutri', dose: '60 capsules', price: 22, cost: 7.80, supplier: 'bluewater', goals: { energy: 2, focus: 2 }, tags: ['vegan'], hue: 15 }
   ];
 
-  /* access: free for everyone with an account, paid ($59 each, or included
-     for program members). */
-  var VIDEO_PRICE = 59;
+  /* access: free with an account, or a paid short course ($59-$119 each,
+     included for Premium Course members). */
   var VIDEOS = [
     { id: 'v1', title: '10-Minute Morning Mobility', mins: 10, goals: ['joints', 'energy'], views: 4210, hue: 32, access: 'free' },
     { id: 'v2', title: 'Box Breathing for Stress', mins: 6, goals: ['stress', 'focus'], views: 6890, hue: 190, access: 'free' },
     { id: 'v3', title: 'Wind-Down Yoga for Sleep', mins: 18, goals: ['sleep', 'stress'], views: 5320, hue: 250, access: 'free' },
     { id: 'v4', title: 'Gut Health 101', mins: 14, goals: ['digestion', 'immunity'], views: 3150, hue: 120, access: 'free' },
     { id: 'v9', title: 'Understanding Your Remedies', mins: 9, goals: ['immunity', 'detox'], views: 2410, hue: 55, access: 'free' },
-    { id: 'v11', title: 'Sleep Reset Masterclass', mins: 52, goals: ['sleep'], views: 1380, hue: 238, access: 'paid', masterclass: true },
-    { id: 'v12', title: 'Stress & Adrenals Deep Dive', mins: 47, goals: ['stress', 'energy'], views: 1612, hue: 30, access: 'paid', masterclass: true },
-    { id: 'v13', title: 'Detox Done Gently', mins: 44, goals: ['detox', 'digestion'], views: 990, hue: 160, access: 'paid', masterclass: true },
-    { id: 'v14', title: 'Energetics 101 with Theo Marsh', mins: 58, goals: ['energy', 'focus', 'immunity'], views: 1204, hue: 280, access: 'paid', masterclass: true },
-    { id: 'v7', title: 'Guided Body Scan Meditation', mins: 20, goals: ['sleep', 'stress'], views: 7015, hue: 290, access: 'paid' },
-    { id: 'v8', title: 'Strength Basics for Bone Health', mins: 22, goals: ['joints', 'energy'], views: 1960, hue: 350, access: 'paid' },
-    { id: 'v10', title: 'Supporting Your Drainage Pathways', mins: 11, goals: ['detox', 'digestion'], views: 1720, hue: 170, access: 'paid' },
+    { id: 'v11', title: 'Sleep Reset', mins: 52, lessons: 4, price: 79, goals: ['sleep'], views: 1380, hue: 238, access: 'paid' },
+    { id: 'v12', title: 'Stress & Adrenals Deep Dive', mins: 74, lessons: 5, price: 99, goals: ['stress', 'energy'], views: 1612, hue: 30, access: 'paid' },
+    { id: 'v13', title: 'Detox Done Gently', mins: 61, lessons: 4, price: 89, goals: ['detox', 'digestion'], views: 990, hue: 160, access: 'paid' },
+    { id: 'v14', title: 'Energetics 101 with Theo Marsh', mins: 96, lessons: 6, price: 119, goals: ['energy', 'focus', 'immunity'], views: 1204, hue: 280, access: 'paid' },
+    { id: 'v15', title: 'Gut Reset in 14 Days', mins: 70, lessons: 5, price: 99, goals: ['digestion', 'immunity'], views: 1105, hue: 110, access: 'paid' },
+    { id: 'v7', title: 'Guided Meditation Series', mins: 40, lessons: 3, price: 59, goals: ['sleep', 'stress'], views: 7015, hue: 290, access: 'paid' },
+    { id: 'v8', title: 'Strength Basics for Bone Health', mins: 44, lessons: 3, price: 69, goals: ['joints', 'energy'], views: 1960, hue: 350, access: 'paid' },
+    { id: 'v10', title: 'Supporting Your Drainage Pathways', mins: 33, lessons: 3, price: 59, goals: ['detox', 'digestion'], views: 1720, hue: 170, access: 'paid' },
     { id: 'v6', title: 'Building a Balanced Plate', mins: 12, goals: ['energy', 'digestion'], views: 3940, hue: 80, access: 'free' },
     { id: 'v5', title: 'Desk Posture Reset', mins: 8, goals: ['joints', 'focus'], views: 2780, hue: 15, access: 'free' }
   ];
+
+  /* One-to-one sessions with a Certified Practitioner. */
+  var SESSION = { base: 99, mins: 30, upgrade: 49, upgradeMins: 60, premiumOff: 0.25 };
+  var CERTIFIED = [
+    { id: 'p1', name: 'Theo Marsh', role: 'Certified Energetics Practitioner', hue: 280 },
+    { id: 'p2', name: 'Dr. Ana Whitlock, ND', role: 'Naturopathic doctor', hue: 160 },
+    { id: 'p3', name: 'Lena Ortiz', role: 'Certified Wellness Practitioner', hue: 30 }
+  ];
+  function sessionPrice(long, c) {
+    var p = SESSION.base + (long ? SESSION.upgrade : 0);
+    return c && c.member ? Math.round(p * (1 - SESSION.premiumOff) * 100) / 100 : p;
+  }
 
   var SERVICES = [
     { id: 'initial', label: 'Initial Wellness Consultation', mins: 60, price: 145 },
     { id: 'followup', label: 'Follow-up Coaching', mins: 30, price: 75 },
     { id: 'energetics', label: 'Energetics Assessment', mins: 75, price: 0 },
     { id: 'breathwork', label: 'Group Breathwork Workshop', mins: 75, price: 35 },
-    { id: 'corporate', label: 'Corporate Wellness Session', mins: 60, price: 0 }
+    { id: 'corporate', label: 'Corporate Wellness Session', mins: 60, price: 0 },
+    { id: 'session30', label: 'Practitioner session (30 min)', mins: 30, price: 99 },
+    { id: 'session60', label: 'Practitioner session (1 hour)', mins: 60, price: 148 }
   ];
 
-  var PLANS = { free: 'Free account', newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: '3-Month Program' };
+  var PLANS = { free: 'Free account', newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: 'Premium Course' };
 
   /* The flagship offer. Fictional practitioners; real structure. */
   var PROGRAM = {
     name: 'Evergrove Restore',
-    sub: '3-Month Program',
+    sub: 'Premium 3-Month Course',
     price: 2995,
     plan: { n: 3, each: 1035 },
     weeks: 12,
@@ -115,9 +129,12 @@
     includes: [
       ['Custom energetics assessment & work', 'A one-to-one energetic assessment at the start and a retest at week 11, with a protocol built from your results.'],
       ['Additional testing', 'At-home test kits chosen by your practitioner, with results reviewed with you live.'],
-      ['A course built around you', '12 weekly video modules, unlocked one at a time, with tracks chosen from your intake. Watch online or download.'],
+      ['A 12-week course built around you', 'Weekly video modules unlocked one at a time, with a track chosen from your intake. Watch online or download.'],
       ['Weekly live Zoom with practitioners', 'Thursday group sessions for questions, coaching and accountability. Every session is recorded.'],
-      ['20% off every supplement', 'Member pricing across the whole shop for the length of the program, applied automatically.']
+      ['20% off every supplement', 'Member pricing across the whole shop for the length of the course, applied automatically.'],
+      ['Free shipping on every order', 'No minimum, for the length of the course.'],
+      ['Every short course included', 'All short courses free while you are enrolled (normally $59 to $119 each), yours to download.'],
+      ['25% off one-to-one sessions', 'Extra time with a Certified Practitioner from $74.25 instead of $99.']
     ]
   };
   var PRACTITIONERS = [
@@ -275,7 +292,9 @@
       { id: 'b9', service: 'breathwork', date: iso(15), time: '18:00', guests: ['c12', 'c8', 'c3'], where: 'Studio' },
       { id: 'b10', service: 'energetics', date: iso(19), time: '14:00', guests: ['c11'], where: 'Studio' },
       { id: 'b11', service: 'followup', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call' },
-      { id: 'b12', service: 'initial', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Studio' }
+      { id: 'b12', service: 'initial', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Studio' },
+      { id: 'b13', service: 'session60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 148 },
+      { id: 'b14', service: 'session30', date: iso(5), time: '15:30', guests: ['c5'], where: 'Video call', with: 'Theo Marsh', paid: 99 }
     ];
 
     var orders = [
@@ -343,7 +362,7 @@
     /* Questions clients sent from the app. Anyone on the team can answer. */
     var inbox = [
       { id: 'm1', from: 'c3', at: iso(0), text: 'Can I take Drainage Milieu with my morning coffee, or should I wait?', done: false },
-      { id: 'm2', from: 'c5', at: iso(-1), text: 'I bought the Sleep Reset Masterclass. Is there a workbook to go with it?', done: false },
+      { id: 'm2', from: 'c5', at: iso(-1), text: 'I bought the Sleep Reset course. Is there a workbook to go with it?', done: false },
       { id: 'm3', from: 'c6', at: iso(-2), text: 'Please skip my next refill, I am travelling until the 10th.', done: true }
     ];
 
@@ -352,17 +371,18 @@
       [0, '07:00', 'Week 12 unlocked for Nadia Haddad. Email sent.'],
       [0, '06:45', 'Zoom reminder sent to 5 program members for Thursday 6:00pm.'],
       [0, '06:30', 'Refill EG-10488 created for Ruth Abernathy. Held for approval (screening flag).'],
-      [-1, '21:14', 'Hannah Kowalski bought Sleep Reset Masterclass ($59). Access granted, receipt sent.'],
+      [-1, '21:14', 'Hannah Kowalski bought the Sleep Reset short course ($79). Access granted, receipt sent.'],
+      [-1, '18:20', 'Marcus Bell booked a 1-hour session with Lena Ortiz ($148). Calendar invite and Zoom link sent.'],
       [-1, '17:02', 'Tracking 1Z84F2A10411 emailed to Marcus Bell.'],
       [-1, '15:40', 'Payment 2 of 3 failed for Elena Fuentes. Card-update link sent. Retry in 3 days.'],
       [-1, '11:08', 'Grace Whitfield finished the free questionnaire. Plan emailed, added to Immunity newsletter.'],
       [-2, '19:25', 'Leila Moreau enrolled in Evergrove Restore. Welcome pack, Zoom invites and week 1 sent.'],
       [-2, '09:12', 'Reorder reminder sent to 6 auto-ship clients.'],
-      [-3, '14:30', 'Grace Whitfield bought Energetics 101 with Theo Marsh ($59). Access granted.']
+      [-3, '14:30', 'Grace Whitfield bought Energetics 101 with Theo Marsh ($119). Access granted.']
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 5, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 6, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
@@ -380,7 +400,7 @@
     BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
     SUPPLIERS: SUPPLIERS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
-    VIDEO_PRICE: VIDEO_PRICE, videoAccess: videoAccess,
+    SESSION: SESSION, CERTIFIED: CERTIFIED, sessionPrice: sessionPrice, videoAccess: videoAccess,
     recommend: recommend, goalLabel: goalLabel, product: product, video: video,
     seed: seed, iso: iso, routeLine: routeLine
   };

@@ -187,24 +187,42 @@
       await sleep(3600);
       await click('#caClose', { after: 400 });
       await click('[data-ctab="videos"]', { after: 600 });
-      say('Free classes, plus $59 masterclasses', 'Free accounts watch the free classes and can buy any masterclass to keep.');
+      say('Free classes, plus short courses from $59 to $119', 'Free accounts watch the free classes and can buy any short course to keep.');
       await spot('[data-tour="ca-picked"]', 3200);
-      await click('[data-tour="ca-picked"] [data-cbuy]', { after: 900 });
+      var buys = document.querySelectorAll('[data-tour="ca-picked"] [data-cbuy]');
+      await click(buys[buys.length - 1], { after: 1200 });
       await click('#caPayVideo', { after: 500 });
       say('Bought and unlocked in seconds', 'Access, receipt and download are handled automatically. Nobody on the team sends a link.');
+      await sleep(3200);
+      await click('#caClose', { after: 400 });
+      await click('[data-ctab="book"]', { after: 700 });
+      say('Book a Certified Practitioner', '$99 for 30 minutes, or add $49 for a full hour. Pick who, how long and when.');
+      await click('[data-cwho="p3"]', { after: 500 });
+      await click('[data-clong="1"]', { after: 900 });
+      await click('[data-cday="1"]', { after: 300 });
+      await click('[data-ctime="10:30"]', { after: 700 });
+      await spot('[data-tour="ca-booksum"]', 1800);
+      await click('#caBookPay', { after: 600 });
+      say('Booked and paid in one step', 'The calendar invite and Zoom link go out on their own, and the session appears on the team’s schedule.');
+      await sleep(3000);
+      await click('#caClose2', { after: 400 });
+      await click('[data-ctab="home"]', { after: 600 });
+      say('Premium Course: $2,995', 'The upgrade is always one tap away, with every benefit spelled out: product discounts, free shipping, every short course and more.');
+      await spot('[data-tour="ca-upsell"]', 2400);
+      await click('#caProgram', { after: 600 });
       await sleep(3600);
       await click('#caClose', { after: 400 });
     } },
-    { name: 'Client app: program member', run: async function () {
+    { name: 'Client app: Premium member', run: async function () {
       App.ui.ca = null; App.go('client'); await sleep(300);
       await choose('#caAs', 'c1');
-      say('Program members use the same app', 'Their week of the course, Thursday’s live Zoom and 20% off everything, on one screen.');
+      say('Premium members use the same app', 'Their week of the course, Thursday’s live Zoom, 20% off and free shipping, on one screen.');
       await spot('[data-tour="ca-week"]', 2400);
       await spot('[data-tour="ca-zoom"]', 1800);
       say('Reordering is one tap at member prices', 'Their plan is always on the home screen, with the discount already applied.');
       await spot('[data-tour="ca-plan"]', 3200);
       await click('[data-ctab="videos"]', { after: 600 });
-      say('Every class included', 'Members can watch and download the whole library, including masterclasses.');
+      say('Every short course included', 'Premium members can watch and download the whole library at no extra cost.');
       await sleep(2400);
     } },
     { name: 'Work queue', run: async function () {
@@ -216,7 +234,7 @@
       await click('#w-' + id + ' [data-wapprove]', { after: 800 });
       await click('#w-' + id + ' [data-wconfirm]', { after: 1400 });
       await click('[data-wtab="auto"]', { after: 700 });
-      say('The admin job, mostly automated', 'About 22 hours a week of manual admin becomes about 3.5 (our estimate), and none of it depends on one person.');
+      say('The admin job, mostly automated', 'About 24 hours a week of manual admin becomes about 3.5 (our estimate), and none of it depends on one person.');
       await spot('[data-tour="jobs"]', 4600);
       await click('[data-wtab="log"]', { after: 700 });
       say('A record of everything it did', 'Including Sofia’s questionnaire, her order and her class purchase from a minute ago.');
@@ -231,9 +249,9 @@
       await spot('[data-tour="stats"]', 2600);
       await spot('[data-tour="todo"]', 2600);
     } },
-    { name: '3-Month Program', run: async function () {
+    { name: 'Premium Course', run: async function () {
       App.ui.progTab = 'sales'; App.go('program'); await sleep(500);
-      say('Sell the $2,995 all-inclusive program', 'Energetics work, testing, a customised course, weekly live Zoom and member pricing, sold from one page.');
+      say('Sell the $2,995 Premium Course', 'Energetics work, testing, a customised course, weekly live Zoom, 20% off products and free shipping, sold from one page.');
       await spot('[data-tour="sales"] .pricebox', 2400);
       await click('#pEnroll', { after: 700 });
       say('Enrollment and agreement in one step', 'Pay in full or in three payments. The program agreement is signed in the same form.');
@@ -250,7 +268,7 @@
     } },
     { name: 'Schedule', run: async function () {
       App.ui.schedTab = 'list'; App.go('schedule'); await sleep(500);
-      say('Consultations with their paperwork status', 'Each session shows who is coming and who still owes forms. Reminders go out in one tap.');
+      say('Sessions booked in the app land here', 'Practitioner sessions, consultations and workshops, with who is coming and who still owes forms.');
       await spot('[data-tour="bookings"] .card', 3000);
       var btn = document.querySelector('[data-remind]');
       if (btn) await click(btn, { after: 1400 });
@@ -321,7 +339,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, $59 classes, the $2,995 program, and drop-shipping that always waits for a person.</p>', 4200);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, and drop-shipping that always waits for a person.</p>', 4200);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     for (chapterIndex = 0; chapterIndex < CHAPTERS.length; chapterIndex++) {
@@ -350,7 +368,7 @@
     stopped = false;
     card('<p class="k">Showcase complete</p><h2>Sales that run, admin that does not depend on one person</h2>' +
       '<p>The intake, records, scheduling, email and e-signature engine already runs a real business every day. The client app, program, shop and work queue are what we would build for you on top of it.</p>' +
-      '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>$59 masterclasses</li><li>3-Month Program</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
+      '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>Short courses $59 to $119</li><li>Practitioner booking</li><li>$2,995 Premium Course</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
       '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });
