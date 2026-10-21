@@ -85,6 +85,12 @@
     var mod = e ? EG.MODULES[e.week - 1] : null;
     return '<p class="eyebrow" style="margin:0">Good morning</p><h2 class="ca-title" style="margin-top:.1rem">' + esc(U.first(c.name)) + '</h2>' +
       '<div class="pills" style="margin-bottom:1rem">' + (c.member ? '<span class="pill ok">Premium member &middot; week ' + e.week + ' of 12</span><span class="pill honey">20% off everything</span>' : '<span class="pill">Free account</span>') + '</div>' +
+      (function () {
+        var sc = scanFor(c);
+        if (!sc) return '';
+        if (sc.status === 'published') return '<div class="ca-card ca-scan" data-tour="ca-scan"><span class="grow small"><b>Your scan report is ready</b><br><span class="muted">Evergrove Resonance Map &middot; ' + U.fmtDate(sc.date, { month: 'short', day: 'numeric' }) + '</span></span><button class="btn small" data-ctab="report">Open</button></div>';
+        return '<div class="ca-card"><span class="small"><b>Energetics scan</b><br><span class="muted">' + (sc.status === 'booked' ? 'Booked for ' + U.fmtDate(sc.date) : 'Your practitioner is reviewing it') + '</span></span></div>';
+      })() +
       (e ? '<div class="ca-card ca-prog" data-tour="ca-week"><div class="row" style="justify-content:space-between"><b>This week</b><span class="small muted num">' + Math.round(e.week / 12 * 100) + '%</span></div><div class="bar" style="margin:.4rem 0 .6rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' +
         '<div class="small">Week ' + e.week + ': ' + esc(mod.track ? EG.trackFor(c.goals) : mod.title) + '</div><div class="small muted">' + mod.vids + ' videos &middot; ' + mod.mins + ' min</div><button class="btn small" data-ctab="videos" style="margin-top:.6rem">Continue</button></div>' +
         '<div class="ca-card row" style="justify-content:space-between" data-tour="ca-zoom"><span><b>Live Zoom</b><br><span class="small muted">Thursday 6:00pm &middot; with ' + esc(EG.PRACTITIONERS[1].name) + '</span></span><button class="btn small" id="caZoom">Join</button></div>' : '') +
@@ -94,6 +100,17 @@
       (v ? '<div class="ca-card"><b>Watch next</b><div style="margin-top:.6rem">' + thumb(v) + '</div><div class="row" style="justify-content:space-between;margin-top:.5rem;flex-wrap:nowrap"><span class="small"><b>' + esc(v.title) + '</b><br>' + accessPill(v, c) + '</span>' + accessBtn(v, c) + '</div></div>' : '') +
       '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="small"><b>Talk to a Certified Practitioner</b><br><span class="muted">30 minutes, ' + money(EG.sessionPrice(false, c)) + (c.member ? ' with your Premium discount' : '') + '</span></span><button class="btn small" data-ctab="book">Book</button></div>' +
       (!c.member ? '<div class="ca-card ca-up" data-tour="ca-upsell"><p class="eyebrow" style="margin:0">Premium Course &middot; ' + money(EG.PROGRAM.price, false) + '</p><b>Three months with our practitioners</b><ul class="ca-ben">' + EG.PROGRAM.includes.slice(0, 7).map(function (x) { return '<li>' + esc(x[0]) + '</li>'; }).join('') + '</ul><button class="btn honey small" id="caProgram">See everything included</button></div>' : '');
+  }
+
+  function scanFor(c) {
+    return S().scans.filter(function (x) { return x.client === c.id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null;
+  }
+  function reportScreen(c) {
+    var sc = scanFor(c);
+    if (!sc || sc.status !== 'published') return '<h2 class="ca-title">Your scan report</h2><p class="small muted">' + (sc && sc.status === 'booked' ? 'Your energetics scan is booked for ' + U.fmtDate(sc.date) + '. Your report appears here once your practitioner has reviewed it.' : 'Your practitioner is reviewing your scan. We will email you as soon as your report is ready.') + '</p>';
+    var rem = EGScan.remedies(sc.data).slice(0, sc.data.limit).filter(function (x) { return EGScan.inShop(x.item); });
+    return '<button class="linkish" data-ctab="home" style="padding-left:0">&larr; Home</button>' + EGScan.reportHtml(sc, true) +
+      '<div class="ca-card" style="margin-top:1rem"><b>Order your remedies</b><p class="small muted" style="margin:.2rem 0 0">' + rem.length + ' remedies from your report' + (c.member ? ', at your 20% member price with free shipping' : '') + '. Your practitioner checks every order before it ships.</p><button class="btn honey ca-wide" id="caAddRem">Add my remedies to cart</button></div>';
   }
 
   function plan(c) {
@@ -212,7 +229,7 @@
   /* ------------------------------------------------------------- frame */
   function view() {
     var ca = st(), c = me(), tab = c ? ca.tab : (ca.tab === 'quiz' ? 'quiz' : 'home');
-    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'plan' ? plan(c) : tab === 'videos' ? videos(c) : tab === 'book' ? book(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : home(c);
+    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'plan' ? plan(c) : tab === 'videos' ? videos(c) : tab === 'book' ? book(c) : tab === 'report' ? reportScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : home(c);
     var n = cartCount();
     var tabs = [['home', 'Home', '<path d="M4 11l8-7 8 7v9H4z"/>'], ['plan', 'My plan', '<path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/>'], ['videos', 'Courses', '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>'], ['book', 'Book', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'], ['shop', 'Shop', '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>']];
     return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top"><span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>' +
@@ -222,7 +239,7 @@
       sheet() + '</div>' +
       '<aside class="cside"><p class="eyebrow">Client app</p><h1 class="h1">What your clients use</h1><p class="lede" style="margin-bottom:1rem">A separate, simple app for clients, on their phone or computer. It installs to the home screen and lives at <code>evergrove.example/app</code>.</p>' +
       U.pitch('new', 'Built on the same platform as the console. Everything a client does here, the team sees there: orders land in the approval queue, questions land in the inbox, purchases unlock instantly.') +
-      '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + ' (just signed up)</option>' : '') + '</select>' +
+      '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>' +
       '<ul class="cfeat"><li><b>Free plan from a questionnaire</b> Supplements and classes suggested from their answers.</li><li><b>One-tap ordering</b> Add the whole plan to the cart, subscribe and save.</li><li><b>Courses</b> Free classes, and short courses from ' + money(59, false) + ' to ' + money(119, false) + '. All included for Premium members.</li><li><b>Practitioner sessions</b> Book and pay for 30 minutes (' + money(EG.SESSION.base, false) + ') or an hour (+' + money(EG.SESSION.upgrade, false) + ') in one step.</li><li><b>Premium Course members</b> Course week, live Zoom, 20% off and free shipping, in one place.</li><li><b>Order tracking</b> Plain-language status for every order.</li><li><b>Ask the team</b> Questions go to a shared inbox, not one person.</li></ul></aside></div>';
   }
 
@@ -332,6 +349,12 @@
     });
     var so = $('#caSignOut'); if (so) so.addEventListener('click', function () { ca.as = ''; ca.tab = 'home'; App.render(); });
     var zoom = $('#caZoom'); if (zoom) zoom.addEventListener('click', function () { U.toast('Opening Zoom (simulated)'); });
+    var ar = $('#caAddRem');
+    if (ar) ar.addEventListener('click', function () {
+      var sc = scanFor(me());
+      EGScan.remedies(sc.data).slice(0, sc.data.limit).forEach(function (x) { var p = EGScan.inShop(x.item); if (p && !ca.cart[p.sku]) add(p.sku); });
+      open({ type: 'cart' });
+    });
     var pr = $('#caProgram'); if (pr) pr.addEventListener('click', function () { open({ type: 'program' }); });
     var call = $('#caCall');
     if (call) call.addEventListener('click', function () {

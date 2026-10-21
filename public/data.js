@@ -359,6 +359,16 @@
     clients[9].videosOwned = ['v14'];
     enrollments[3].payIssue = 'Card declined for payment 2 of 3';
 
+    /* Energetic scans done in the clinic. Priya's is published, Aiko's
+       exports are in and waiting for a practitioner, Leila's is booked. */
+    var scans = [
+      { id: 's1', client: 'c1', date: iso(-58), status: 'published', by: 'Theo Marsh', data: null },
+      { id: 's2', client: 'c7', date: iso(-1), status: 'uploaded', data: null },
+      { id: 's3', client: 'c12', date: iso(-70), status: 'published', by: 'Theo Marsh', data: null },
+      { id: 's4', client: 'c14', date: iso(8), status: 'booked', data: null }
+    ];
+    scans.forEach(function (sc) { if (sc.status === 'published') sc.data = sampleScan(clients.filter(function (x) { return x.id === sc.client; })[0]); });
+
     /* Questions clients sent from the app. Anyone on the team can answer. */
     var inbox = [
       { id: 'm1', from: 'c3', at: iso(0), text: 'Can I take Drainage Milieu with my morning coffee, or should I wait?', done: false },
@@ -382,8 +392,8 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 6, clients: clients, bookings: bookings, orders: orders, emails: emails,
-      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, nextOrder: 10490, nextClient: 15,
+      v: 7, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
   }
@@ -396,10 +406,109 @@
     return { supplier: p.supplier, reason: p.supplier === 'physica' ? 'Primary supplier' : 'Nutritional, from backup supplier' };
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /* Energetic scans                                                     */
+  /* ------------------------------------------------------------------ */
+
+  /* Same shape as the clinic's report builder works with: four exports per
+     scan (RR organ readings, RC root-cause findings, SS symptom support, IMB
+     imbalance markers). Everything here is invented sample content. */
+  var SCAN_SLOTS = [
+    { code: 'RR', label: 'Baseline / Resonance Report', hint: 'Organ system dials and write-ups' },
+    { code: 'RC', label: 'Root Cause Analysis Scan', hint: 'Primary findings, flagged RC' },
+    { code: 'SS', label: 'Symptom Support Scan', hint: 'Frequency and symptom-support items' },
+    { code: 'IMB', label: 'Imbalance Scan', hint: 'Markers with dilution notes' }
+  ];
+  var SCAN_SECTIONS = ['Generational Echoes', 'Toxins & Interferences', 'Resonating Maladies', 'Environmental Stressors',
+    'Hormone Markers', 'Amino Acid Markers', 'Mineral Markers', 'Vitamin Markers', 'Supportive Lifestyle Changes',
+    'Beneficial Positive Thoughts', 'Botanical Support', 'Recommended Remedies'];
+  /* The trailing letters of a dilution code set the note, on IMB hormone,
+     mineral and amino acid markers only - the builder's own rule. */
+  var DIL_NOTES = { V: 'May be low', X: 'May be low', C: 'May fluctuate', K: 'May fluctuate', M: 'May be high', LM: 'May be high', DM: 'May be high or unable to absorb', CM: 'May be high or unable to absorb', MM: 'May be high or unable to absorb' };
+  var DIL_SERIES = ['V', 'X', 'K', 'C', 'M', 'LM', 'DM', 'CM', 'MM'];
+  function dilNote(doc, category, dil) {
+    if (doc !== 'IMB' || !/hormone|mineral|amino/i.test(category)) return '';
+    var m = String(dil).match(/([A-Za-z]+)\s*$/);
+    return m ? DIL_NOTES[m[1].toUpperCase()] || '' : '';
+  }
+  /* RC before SS before IMB; then up the V, X, K, C, M ladder; then by number. */
+  function potencyKey(it) {
+    var m = String(it.dil).match(/^(\d+(?:\.\d+)?)\s*([A-Za-z]+)$/);
+    var doc = { RC: 0, SS: 1, IMB: 2 }[it.doc];
+    if (!m) return [doc, 99, 1e9];
+    var i = DIL_SERIES.indexOf(m[2].toUpperCase());
+    return [doc, i < 0 ? 98 : i, parseFloat(m[1])];
+  }
+  function comparePotency(a, b) {
+    var ka = potencyKey(a), kb = potencyKey(b);
+    for (var i = 0; i < 3; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i];
+    return 0;
+  }
+  var CLAIM_RE = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b/gi;
+  function claimWords(t) { var m = String(t || '').match(CLAIM_RE); return m ? m.map(function (x) { return x.toLowerCase(); }).filter(function (x, i, a) { return a.indexOf(x) === i; }) : []; }
+
+  var ORGANS = [
+    ['Adrenal', 72, 'The adrenal glands sit above the kidneys and are closely tied to how the body responds to pressure and demand.', 'Symptoms may include: an afternoon energy dip, feeling wired at night, salt cravings.', 'Emotional aspect: carrying responsibility for everyone else.'],
+    ['Liver', 66, 'The liver is the body’s main processing plant, involved in filtering, storage and hundreds of daily tasks.', 'Symptoms may include: waking between 1 and 3am, sluggish mornings.', 'Emotional aspect: frustration that has nowhere to go.'],
+    ['Small Intestine', 61, 'Most nutrients are absorbed in the small intestine, so its resonance often shows up alongside mineral and vitamin markers.', 'Symptoms may include: bloating after meals, irregular digestion.', ''],
+    ['Lymphatic', 58, 'The lymphatic system carries fluid and waste away from tissues and relies on movement to keep flowing.', 'Symptoms may include: puffiness in the morning, a heavy feeling in the legs.', ''],
+    ['Kidney', 52, 'The kidneys balance fluids and minerals. A reading in this range suggests energy is flowing in balance.', '', 'Emotional aspect: a steady sense of safety.'],
+    ['Heart', 49, 'The heart’s resonance sits in the balanced range on this scan.', '', ''],
+    ['Thyroid', 38, 'The thyroid helps set the body’s pace. A lower reading here suggests energy flow is reduced rather than overactive.', 'Symptoms may include: feeling cold, slow starts to the day.', 'Emotional aspect: holding back what you want to say.'],
+    ['Pineal', 34, 'The pineal gland is associated with the body’s day and night rhythm.', 'Symptoms may include: trouble winding down, light sleep.', '']
+  ];
+  /* doc, category, item, code, dilution, quantity, duration, description, section, status */
+  var FINDINGS = [
+    ['RC', 'Drainage Tonifiers', 'Adrenal Milieu', 'ADM', '11V', '8 Drops', '4 Weeks', 'A drainage tonifier selected to support the adrenal pathway during this phase of your plan.', 'Recommended Remedies', 'stressed'],
+    ['RC', 'Sarcodes', 'Pineal Code', 'PIN', '15C', '6 Drops', '3 Weeks', 'Chosen to support the day and night rhythm the scan highlighted.', 'Recommended Remedies', 'weakened'],
+    ['RC', 'Drainage Tonifiers', 'Liver Milieu', 'LIV', '30C', '8 Drops', '4 Weeks', 'Supports the liver pathway, the second-highest reading on your scan.', 'Recommended Remedies', 'stressed'],
+    ['RC', 'Detoxifier Homaccords', 'Metal-Tox', 'MTX', '8M', '5 Drops', '6 Weeks', 'Paired with the metal signature found in the Toxins & Interferences section.', 'Recommended Remedies', 'stressed'],
+    ['RC', 'Chemical Filter', 'Heavy Metal Signature', 'HM2', '200C', '5 Drops', '3 Weeks', 'An energetic signature associated with metal exposure. It is addressed through the remedy plan.', 'Toxins & Interferences', 'stressed'],
+    ['RC', 'Emotional Filter', 'Unresolved Grief', 'EF7', '30C', '5 Drops', '3 Weeks', 'An emotional pattern the scan links to an earlier period of life. Worth exploring in your coaching sessions.', 'Generational Echoes', 'weakened'],
+    ['RC', 'Electromagnetic', 'Wi-Fi Exposure', 'EM3', '12X', '5 Drops', '3 Weeks', 'Consider switching the router off overnight and keeping the phone out of the bedroom.', 'Environmental Stressors', 'weakened'],
+    ['SS', 'Drainage Tonifiers', 'Drainage Milieu', 'DRN', '12X', '8 Drops', '4 Weeks', 'A gentle starting point that supports the body’s natural drainage.', 'Recommended Remedies', 'weakened'],
+    ['SS', 'Drainage Tonifiers', 'Relax Milieu', 'RLX', '20C', '6 Drops', '4 Weeks', 'Selected for the wind-down and sleep pattern in your symptom scan.', 'Recommended Remedies', 'weakened'],
+    ['SS', 'Sarcodes', 'Thymus Code', 'THY', '200C', '5 Drops', '3 Weeks', 'Supports the thymus resonance found in the symptom scan.', 'Recommended Remedies', 'balanced'],
+    ['SS', 'Detoxifier Homaccords', 'Inflamma-Tox', 'INF', '1M', '5 Drops', '3 Weeks', 'Formulated to help the body eliminate inflammatory triggers.', 'Recommended Remedies', 'weakened'],
+    ['SS', 'Drainage Tonifiers', 'Heart’s Song Milieu', 'HSM', '6X', '6 Drops', '4 Weeks', 'Chosen alongside the emotional findings to support a calmer baseline.', 'Recommended Remedies', 'balanced'],
+    ['SS', 'Detoxifier Homaccords', 'Sinus-Tox', 'SIN', '30C', '5 Drops', '2 Weeks', 'A short course for the seasonal pattern in your symptom scan.', 'Recommended Remedies', 'weakened'],
+    ['SS', 'Drainage Tonifiers', 'Solace Milieu', 'SOL', '15C', '6 Drops', '4 Weeks', 'Supports emotional steadiness during the course.', 'Recommended Remedies', 'balanced'],
+    ['SS', 'Frequency', '528 Hertz Frequency', 'HZ528', '9C', '5 Drops', '3 Weeks', 'A supportive frequency included in your custom tincture.', 'Resonating Maladies', 'none'],
+    ['SS', 'Sleep', 'A consistent sleep window', '', '1X', '1 Drops', '4 Weeks', 'Lights out within the same 30 minutes each night, including weekends.', 'Supportive Lifestyle Changes', 'none'],
+    ['SS', 'Stress Management', 'Five-minute breathing breaks', '', '1X', '1 Drops', '4 Weeks', 'Twice a day, before lunch and before dinner. The Box Breathing class walks you through it.', 'Supportive Lifestyle Changes', 'none'],
+    ['SS', 'Power Thoughts', '“I am allowed to rest.”', '', '1X', '1 Drops', '4 Weeks', 'Say it when you notice the urge to do one more thing.', 'Beneficial Positive Thoughts', 'none'],
+    ['SS', 'Single Oils', 'Lavender', '', '6X', '2 Drops', '4 Weeks', 'A calming essential oil many people use at bedtime.', 'Botanical Support', 'none'],
+    ['IMB', 'Hormone Signatures', 'Cortisol', '', '600V', '5 Drops', '3 Weeks', 'A stress hormone that follows a daily rhythm.', 'Hormone Markers', 'weakened'],
+    ['IMB', 'Hormone Signatures', 'DHEA', '', '15C', '5 Drops', '3 Weeks', 'Made by the adrenal glands.', 'Hormone Markers', 'weakened'],
+    ['IMB', 'Hormone Signatures', 'Melatonin', '', '11V', '5 Drops', '3 Weeks', 'Associated with the body’s sleep signal.', 'Hormone Markers', 'weakened'],
+    ['IMB', 'Mineral Signatures', 'Magnesium', '', '11V', '5 Drops', '3 Weeks', 'Involved in hundreds of processes, including relaxation.', 'Mineral Markers', 'weakened'],
+    ['IMB', 'Mineral Signatures', 'Zinc', '', '8M', '5 Drops', '3 Weeks', 'A trace mineral used throughout the body.', 'Mineral Markers', 'stressed'],
+    ['IMB', 'Amino Acid Signatures', 'Tryptophan', '', '30CM', '5 Drops', '3 Weeks', 'An amino acid the body uses to make serotonin and melatonin.', 'Amino Acid Markers', 'stressed'],
+    ['IMB', 'Vitamin Signatures', 'Vitamin D3', '', '12X', '5 Drops', '3 Weeks', 'Often lower in the darker months.', 'Vitamin Markers', 'weakened']
+  ];
+
+  /** A scan for one client, with scores nudged so no two clients look alike. */
+  function sampleScan(c) {
+    var seed = 0; for (var i = 0; i < c.id.length; i++) seed += c.id.charCodeAt(i) * (i + 3);
+    var organs = ORGANS.map(function (o, k) {
+      var score = Math.max(18, Math.min(88, o[1] + ((seed * (k + 5)) % 13) - 6));
+      return { organ: o[0], score: score, paragraphs: o.slice(2).filter(Boolean), include: true };
+    }).sort(function (a, b) { return Math.abs(b.score - 50) - Math.abs(a.score - 50); });
+    var items = FINDINGS.map(function (f, k) {
+      return { id: 'f' + k, doc: f[0], category: f[1], item: f[2], code: f[3], dil: f[4], qty: f[5], dur: f[6], desc: f[7],
+        section: f[8], status: f[9], include: true, rc: f[0] === 'RC', note: dilNote(f[0], f[1], f[4]), claims: claimWords(f[7]) };
+    });
+    var rem = items.filter(function (x) { return x.section === 'Recommended Remedies'; }).sort(comparePotency);
+    rem.forEach(function (x, k) { x.rank = k; });
+    return { organs: organs, items: items, limit: 8, ageEst: (21 + seed % 14) + '.0' };
+  }
+
   window.EG = {
     BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
     SUPPLIERS: SUPPLIERS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
+    SCAN_SLOTS: SCAN_SLOTS, SCAN_SECTIONS: SCAN_SECTIONS, sampleScan: sampleScan, comparePotency: comparePotency, claimWords: claimWords,
     SESSION: SESSION, CERTIFIED: CERTIFIED, sessionPrice: sessionPrice, videoAccess: videoAccess,
     recommend: recommend, goalLabel: goalLabel, product: product, video: video,
     seed: seed, iso: iso, routeLine: routeLine

@@ -234,7 +234,7 @@
       await click('#w-' + id + ' [data-wapprove]', { after: 800 });
       await click('#w-' + id + ' [data-wconfirm]', { after: 1400 });
       await click('[data-wtab="auto"]', { after: 700 });
-      say('The admin job, mostly automated', 'About 24 hours a week of manual admin becomes about 3.5 (our estimate), and none of it depends on one person.');
+      say('The admin job, mostly automated', 'About 28 hours a week of manual admin becomes about 4 (our estimate), and none of it depends on one person.');
       await spot('[data-tour="jobs"]', 4600);
       await click('[data-wtab="log"]', { after: 700 });
       say('A record of everything it did', 'Including Sofia’s questionnaire, her order and her class purchase from a minute ago.');
@@ -243,11 +243,33 @@
       say('Clear roles for whoever takes over', 'Owner, practitioners and assistants each see what they need, with a checklist for handing the work over.');
       await spot('[data-tour="roles"]', 3600);
     } },
-    { name: 'Dashboard', run: async function () {
-      App.go('dashboard'); await sleep(500);
-      say('The owner’s view of the business', 'Program members, sessions, revenue and anything waiting, built from live records.');
-      await spot('[data-tour="stats"]', 2600);
-      await spot('[data-tour="todo"]', 2600);
+    { name: 'Energetic scans', run: async function () {
+      App.ui.sc = null; App.go('scans'); await sleep(600);
+      say('The in-house energetic scan, turned into a report', 'Scanner exports become a client report and a remedy plan the same day, without retyping anything.');
+      await spot('[data-tour="scanlist"]', 2600);
+      await click('[data-scopen="s2"]', { after: 600 });
+      say('Add the four scan exports', 'Resonance, root cause, symptom support and imbalance. Each has its own slot and rules.');
+      await click('#scAll', { after: 700 });
+      await click('#scExtract', { after: 300 });
+      var waited = 0;
+      while (App.ui.sc.step !== 'review' && waited < 6000) { await sleep(200); waited += 200; }
+      await sleep(400);
+      say('Readings and findings, pulled out and ranked', 'Organ dials, dilution notes and remedies in priority order. The practitioner can change anything.');
+      await spot('[data-tour="organs"]', 2400);
+      await spot('[data-tour="remedies"]', 2800);
+      say('Supplier wording is checked', 'Claim language like \u201celiminate\u201d is flagged so it gets reworded before a client ever sees it.');
+      await click('[data-edit]', { after: 500 });
+      await type('[data-desc]', 'Chosen to support a calmer inflammatory pattern.', 22);
+      await click('#scBuild', { after: 900 });
+      say('A practitioner signs off, then it is published', 'Nothing reaches the client until a practitioner has reviewed it.');
+      await spot('[data-tour="report"] .rr-banner', 2200);
+      await click('#scSign', { after: 400 });
+      await click('#scPublish', { after: 1400 });
+      await click('#scSeeApp', { after: 900 });
+      say('The client sees it in their app', 'Their report, with every recommended remedy one tap from the cart at member price.');
+      await sleep(2600);
+      await click('#caAddRem', { after: 2400 });
+      await click('#caClose', { after: 400 });
     } },
     { name: 'Premium Course', run: async function () {
       App.ui.progTab = 'sales'; App.go('program'); await sleep(500);
@@ -265,16 +287,6 @@
       await click('#pSeeMembers', { after: 800 });
       say('Every member at a glance', 'Course week, energetics assessment, testing, custom plan, payments and Zoom attendance.');
       await spot('[data-tour="members"]', 3000);
-    } },
-    { name: 'Schedule', run: async function () {
-      App.ui.schedTab = 'list'; App.go('schedule'); await sleep(500);
-      say('Sessions booked in the app land here', 'Practitioner sessions, consultations and workshops, with who is coming and who still owes forms.');
-      await spot('[data-tour="bookings"] .card', 3000);
-      var btn = document.querySelector('[data-remind]');
-      if (btn) await click(btn, { after: 1400 });
-      await click('#sCalTab', { after: 900 });
-      say('The month at a glance', 'One-to-one sessions in green, group workshops in gold.');
-      await spot('[data-tour="calendar"]', 2800);
     } },
     { name: 'Shop & drop-ship', run: async function () {
       App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(500);
@@ -339,7 +351,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, and drop-shipping that always waits for a person.</p>', 4200);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A simple app for clients, and a console that runs the admin side: free plans, one-tap ordering, short courses, practitioner sessions, the $2,995 Premium Course, energetic scan reports, and drop-shipping that always waits for a person.</p>', 4200);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     for (chapterIndex = 0; chapterIndex < CHAPTERS.length; chapterIndex++) {
@@ -368,7 +380,7 @@
     stopped = false;
     card('<p class="k">Showcase complete</p><h2>Sales that run, admin that does not depend on one person</h2>' +
       '<p>The intake, records, scheduling, email and e-signature engine already runs a real business every day. The client app, program, shop and work queue are what we would build for you on top of it.</p>' +
-      '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>Short courses $59 to $119</li><li>Practitioner booking</li><li>$2,995 Premium Course</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
+      '<ul><li>Client app</li><li>Free plan from a questionnaire</li><li>One-tap ordering</li><li>Short courses $59 to $119</li><li>Practitioner booking</li><li>$2,995 Premium Course</li><li>Energetic scan reports</li><li>Course videos &amp; live Zoom</li><li>Physica Energetics shop</li><li>Approved drop-shipping</li><li>Shared work queue</li><li>Roles &amp; handoff</li></ul>' +
       '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });

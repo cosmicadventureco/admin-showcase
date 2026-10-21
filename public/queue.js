@@ -23,6 +23,7 @@
     ['Booking practitioner sessions and taking payment', 'Daily', 'auto', 2, 0, 'Clients pick a practitioner, 30 minutes or an hour, and a time, and pay when they book.'],
     ['Enrolling Premium Course members, welcome packs', 'Weekly', 'auto', 1.5, 0, 'Payment, agreement, welcome email and Zoom invites in one step.'],
     ['Unlocking course weeks, sending Zoom links', 'Weekly', 'auto', 1.5, 0, 'Weeks unlock every 7 days; reminders go out Thursday morning.'],
+    ['Turning scan exports into client reports', 'Weekly', 'approve', 4, 0.5, 'Findings are extracted and ranked automatically. A practitioner reviews, signs off and publishes.'],
     ['Chasing payment-plan instalments', 'Monthly', 'auto', 1, 0.2, 'Cards are charged on schedule; a failed card gets an update link.'],
     ['Answering client questions', 'Daily', 'person', 2, 2, 'Questions land in a shared inbox, so anyone can answer.']
   ];
@@ -35,6 +36,7 @@
       out.push({ kind: 'order', id: o.id, who: flagged ? 'Practitioner' : 'Assistant', o: o, c: c, flagged: flagged });
     });
     D.inbox.filter(function (m) { return !m.done; }).forEach(function (m) { out.push({ kind: 'msg', id: m.id, who: m.lead ? 'Owner' : 'Anyone', m: m, c: U.client(m.from) }); });
+    D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { out.push({ kind: 'scan', id: 'sc-' + x.id, who: 'Practitioner', sc: x, c: U.client(x.client) }); });
     D.enrollments.filter(function (e) { return e.payIssue; }).forEach(function (e) { out.push({ kind: 'pay', id: 'p-' + e.client, who: 'Owner', e: e, c: U.client(e.client) }); });
     D.enrollments.filter(function (e) { return e.testing === 'Results in'; }).forEach(function (e) { out.push({ kind: 'results', id: 'r-' + e.client, who: 'Practitioner', e: e, c: U.client(e.client) }); });
     return out;
@@ -53,6 +55,9 @@
       body = '<b>' + (t.m.lead ? 'Sales lead from ' : 'Question from ') + esc(t.c.name) + '</b>' + (t.m.lead ? ' <span class="pill honey">Premium Course</span>' : '') + '<div class="small">&ldquo;' + esc(t.m.text) + '&rdquo;</div>' +
         (wq.reply === t.m.id ? '<div class="row" style="margin-top:.5rem;flex-wrap:nowrap"><input type="text" id="wReply" placeholder="Type a reply" style="flex:1"><button class="btn small" data-wsend="' + t.m.id + '">Send</button></div>' : '');
       acts = wq.reply === t.m.id ? '' : '<button class="btn ghost small" data-wreply="' + t.m.id + '">Reply</button>';
+    } else if (t.kind === 'scan') {
+      body = '<b>Review the energetic scan for ' + esc(t.c.name) + '</b><div class="small muted">Scanned ' + U.fmtDate(t.sc.date) + '. ' + (t.sc.status === 'review' ? 'Findings extracted, waiting for sign-off.' : 'All four exports are in.') + '</div>';
+      acts = '<button class="btn small" data-wscan="' + t.sc.id + '">Review</button>';
     } else if (t.kind === 'pay') {
       body = '<b>' + esc(t.e.payIssue) + '</b> for ' + esc(t.c.name) + '<div class="small muted">A card-update link went out automatically. The system retries in 3 days, so this is only here in case a call would help.</div>';
       acts = '<button class="btn ghost small" data-wresolve="' + t.c.id + '">Mark resolved</button>';
@@ -104,6 +109,9 @@
         setTimeout(function () { if (App.ui.view === 'queue') App.render(); }, 60);
         U.toast(id + ' approved and sent to the supplier. Tracking will follow automatically.');
       });
+    });
+    $$('[data-wscan]').forEach(function (b) {
+      b.addEventListener('click', function () { var sc = S().scans.filter(function (x) { return x.id === b.getAttribute('data-wscan'); })[0]; App.ui.sc = { open: sc.id, step: sc.data ? 'review' : 'upload', files: {}, signed: false, editing: null }; App.go('scans'); });
     });
     $$('[data-wreview]').forEach(function (b) { b.addEventListener('click', function () { App.ui.shopTab = 'pipeline'; App.go('shop'); }); });
     $$('[data-wreply]').forEach(function (b) { b.addEventListener('click', function () { wq.reply = b.getAttribute('data-wreply'); App.render(); var r = $('#wReply'); if (r) r.focus(); }); });

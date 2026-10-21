@@ -1,0 +1,41 @@
+# Push to main, and Cloudflare deploys the showcase.
+#
+# Same pattern as the live intake app, but a separate Worker
+# ("wellness-showcase" in wrangler.toml) with no database, storage or email
+# key, so a deploy here cannot touch anything real.
+#
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN   a token with "Edit Cloudflare Workers" permission
+#   CLOUDFLARE_ACCOUNT_ID  the account the Worker should live in
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-showcase
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the scripts parse
+        run: for f in public/*.js; do node -e "new Function(require('fs').readFileSync('$f','utf8'))" || exit 1; done
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'

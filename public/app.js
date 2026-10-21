@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v5';
+  var KEY = 'evergrove-showcase-v7';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 5) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 7) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -1057,7 +1057,7 @@
   function reset() {
     S = EG.seed(); save();
     ui.intakeDone = null; ui.log = []; ui.q = ''; ui.recordsTab = 'clients'; ui.schedTab = 'list'; ui.shopTab = 'store'; ui.calMonth = null; ui.quoteId = 'q1';
-    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null;
+    ui.store = { line: 'all', as: 'c1', cart: {} }; ui.progTab = 'sales'; ui.enrollDone = null; ui.progStudent = 'c1'; ui.confirming = null; ui.simulating = false; ui.ca = null; ui.wq = null; ui.sc = null;
     render();
   }
 
