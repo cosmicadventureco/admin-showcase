@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v10';
+  var KEY = 'evergrove-showcase-v11';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 10) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 11) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -177,7 +177,7 @@
     var sv = service(svc).label;
     switch (kind) {
       case 'reminder': return { subject: 'A quick reminder before your ' + sv, body: 'Hi ' + n + ',\n\nWe are looking forward to your ' + sv + when + '. Your intake questionnaire is still open. It takes about four minutes and lets Maya prepare a plan before you arrive.\n\n[Finish my intake]\n\nWarmly,\nThe Evergrove team' };
-      case 'plan': return { subject: 'Your personalised wellness plan', body: 'Hi ' + n + ',\n\nThank you for sharing your goals with us. Based on your intake, here is the plan Maya put together, with the three products and videos we think will help most.\n\n[See my plan]\n\nSubscribe and save 15% on refills, delivered every 30 days.\n\nWarmly,\nMaya' };
+      case 'plan': return { subject: 'Your personalised wellness plan', body: 'Hi ' + n + ',\n\nThank you for sharing your goals with us. Based on your intake, here is the plan Maya put together, with the three products and videos we think will help most.\n\n[See my plan]\n\nTurn on auto-ship and your refills arrive every 30 days, before you run out. Each one adds credit toward a session or short course.\n\nWarmly,\nMaya' };
       case 'refill': return { subject: 'Running low? Your refill ships in 5 days', body: 'Hi ' + n + ',\n\nYour next auto-ship leaves our partner warehouse in 5 days. Need to skip, swap or pause? One tap below.\n\n[Manage my refill]\n\nThe Evergrove team' };
       case 'review': return { subject: 'How did your session feel?', body: 'Hi ' + n + ',\n\nThank you for joining us for ' + sv + '. If it helped, a short review means a lot to a small studio like ours.\n\n[Leave a review]\n\nWith gratitude,\nMaya' };
       default: return { subject: 'Before your ' + sv + ' with Maya', body: 'Hi ' + n + ',\n\nWe are so glad you booked your ' + sv + when + '. Before we meet, please complete two quick steps:\n\n1. Sign the wellness consent\n2. Tell us about your goals (about 4 minutes)\n\n[Start my intake]\n\nYour answers shape the personalised supplement and video plan you will receive afterwards.\n\nWarmly,\nMaya Lindqvist\nEvergrove Wellness' };
@@ -366,7 +366,7 @@
       '<div><p class="eyebrow" style="margin:0">All set, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">Your personalised plan</h2></div></div>' +
       '<p class="muted">Built from your goals: ' + c.goals.map(function (g) { return esc(EG.goalLabel(g).toLowerCase()); }).join(', ') + '. ' + (r.needsReview ? 'Because of your health screening, Maya will review these picks before anything ships.' : 'Everything below is safe to start today.') + '</p>' +
       '<h3 class="h2" style="margin-top:1.2rem">Supplements</h3>' + planHtml(c, r) +
-      '<div class="row" style="justify-content:space-between;margin:1rem 0 0;padding:.9rem 1rem;background:var(--ok-soft);border-radius:10px"><span><b>Subscribe &amp; save 15%</b><br><span class="small muted">Ships every 30 days direct from our partner labs</span></span><span class="price num">' + money(r.subscribePrice) + '/mo <s class="muted small">' + money(r.monthly) + '</s></span></div>' +
+      '<div class="row" style="justify-content:space-between;margin:1rem 0 0;padding:.9rem 1rem;background:var(--ok-soft);border-radius:10px"><span><b>Auto-ship: never run out</b><br><span class="small muted">Refills every 30 days, skip or pause any time. Each refill adds $' + (window.EGAuto ? EGAuto.setting('refills', 'credit') : 5) + ' credit toward a session or short course.</span></span><span class="price num">' + money(r.monthly) + ' a refill</span></div>' +
       '<h3 class="h2">Videos picked for you</h3><div class="grid g3">' + r.videos.map(function (v) {
         return '<div class="vcard"><div class="thumb" style="--h:' + v.hue + '"><span class="play"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="#233027"/></svg></span><span class="dur">' + v.mins + ':00</span></div><span class="title">' + esc(v.title) + '</span></div>';
       }).join('') + '</div>' +
@@ -728,7 +728,7 @@
     }).join('');
     return '<div class="card" style="margin-bottom:1rem" data-tour="paths"><h3 class="h3">How an approved order reaches a supplier</h3><p class="small muted" style="margin-top:0">None of the three offers an ordering API to practitioners. Each path below runs inside a session the practitioner opened themselves. Nothing logs in with a stored password, because that breaks their terms and risks the account.</p>' +
       '<div class="paths">' + ['cart', 'link', 'email', 'manual'].map(function (k, i) { var t = EG.PATHS[k].split(': '); return '<div class="pathbox"><b>' + (i + 1) + '. ' + esc(t[0]) + '</b><span class="small muted">' + esc(t[1]) + '</span></div>'; }).join('') + '</div></div>' +
-      '<div class="policy card" style="margin-bottom:1rem"><h3 class="h3">Policy check: Premium &ldquo;20% off every supplement&rdquo;</h3><p class="small" style="margin:0">Physica enforces a minimum advertised price, and Biotics asks for online prices at or above suggested retail. A blanket 20% member discount on their products could break both policies, and the penalty is losing the account. Options: ask each supplier for written approval, give the Biotics discount as a private patient code, or swap the benefit for free shipping or store credit.</p></div>' +
+      '<div class="policy card" style="margin-bottom:1rem"><h3 class="h3">Policy check: Premium &ldquo;20% off every supplement&rdquo;</h3><p class="small" style="margin:0">Physica enforces a minimum advertised price, and Biotics asks for online prices at or above suggested retail. A blanket 20% member discount on their products could break both policies, and the penalty is losing the account. Options: ask each supplier for written approval, give the Biotics discount as a private patient code, or swap the benefit for free shipping or store credit. Auto-ship already works this way: no product discount, just credit toward sessions and short courses, which are the clinic&rsquo;s own services. Worth confirming with each supplier that this is fine.</p></div>' +
       '<div class="supgrid">' + cards + '</div>' +
       '<div class="split" style="margin-top:1rem"><div class="card"><h3 class="h3">Sales channels</h3><div class="list"><div class="li"><div class="grow"><div class="title">Client app</div><div class="meta">Signed-in clients only, so prices stay private.</div></div><span class="pill ok">Connected</span></div>' +
       '<div class="li"><div class="grow"><div class="title">Shopify store</div><div class="meta">Customer accounts required for these brands. Product pages not indexed; Google, Shop app and social channels off for them.</div></div><span class="pill ok">Connected</span></div></div></div>' +

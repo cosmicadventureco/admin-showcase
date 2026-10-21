@@ -18,6 +18,8 @@
     if (!App.ui.ca) App.ui.ca = { as: '', tab: 'home', cart: {}, sub: false, step: 1, quiz: { goals: [], allergies: [] }, sheet: null, filter: 'all', line: 'all', book: { who: 'p1', long: false, day: 0, time: '' } };
     return App.ui.ca;
   }
+  /* Auto-ship credit per refill, set on the Auto-ship refills automation. */
+  function credit() { return window.EGAuto ? EGAuto.setting('refills', 'credit') : 5; }
   function me() { return st().as ? U.client(st().as) : null; }
   function memberPrice(p, c) { return c && c.member ? p.price * (1 - EG.PROGRAM.discount) : p.price; }
   function cartCount() { var c = st().cart; return Object.keys(c).reduce(function (t, k) { return t + c[k]; }, 0); }
@@ -121,7 +123,7 @@
         var p = x.product;
         return '<div class="pick">' + U.bottle(p) + '<div class="grow"><div class="title">' + esc(p.name) + '</div><div class="why">' + esc(x.why.join(' · ')) + '</div>' + priceTag(p, c) + '</div><button class="btn ghost small" data-cadd="' + p.sku + '">' + (ca.cart[p.sku] ? 'Added' : 'Add') + '</button></div>';
       }).join('') + '</div>' +
-      '<label class="check ca-card" style="margin-top:.8rem"><input type="checkbox" id="caSub"' + (ca.sub ? ' checked' : '') + '> <span><b>Subscribe &amp; save 15%</b><br><span class="small muted">Refills every 30 days. Skip or pause any time.</span></span></label>' +
+      '<label class="check ca-card" style="margin-top:.8rem"><input type="checkbox" id="caSub"' + (ca.sub ? ' checked' : '') + '> <span><b>Auto-ship: never run out</b><br><span class="small muted">Refills every 30 days. Skip or pause any time. Each refill adds $' + credit() + ' toward a session or short course.</span></span></label>' +
       '<button class="btn ca-wide" id="caAddAll">Add all to cart</button>' +
       '<h3 class="ca-h">Classes for your plan</h3>' + suggested(c).slice(0, 3).map(function (v) { return videoRow(v, c); }).join('');
   }
@@ -148,7 +150,7 @@
   var SLOTS = ['09:00', '10:30', '13:00', '15:30', '17:00'];
   function book(c) {
     var b = st().book, days = weekdays(), pr = EG.CERTIFIED.filter(function (p) { return p.id === b.who; })[0];
-    var price = EG.sessionPrice(b.long, c);
+    var full = EG.sessionPrice(b.long, c), used = Math.min(c.credit || 0, full), price = full - used;
     return '<h2 class="ca-title">Book a session</h2><p class="small muted" style="margin-top:-.4rem">One-to-one with a Certified Practitioner, by video call.</p>' +
       '<h3 class="ca-h">Who</h3><div data-tour="ca-who">' + EG.CERTIFIED.map(function (p) {
         return '<button class="ca-pract' + (p.id === b.who ? ' is-on' : '') + '" data-cwho="' + p.id + '"><span class="av" style="background:hsl(' + p.hue + ' 35% 85%);color:#233027">' + U.initials(p.name.replace('Dr. ', '')) + '</span><span class="small"><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.role) + '</span></span></button>';
@@ -158,6 +160,7 @@
       '<div class="chips">' + SLOTS.map(function (t) { return '<button class="chip' + (b.time === t ? ' is-on' : '') + '" data-ctime="' + t + '">' + U.fmtTime(t) + '</button>'; }).join('') + '</div>' +
       '<div class="ca-card" style="margin-top:1rem" data-tour="ca-booksum"><div class="small"><b>' + (b.long ? '1 hour' : '30 minutes') + ' with ' + esc(pr.name) + '</b><br><span class="muted">' + (b.time ? U.fmtDate(days[b.day], { weekday: 'long', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(b.time) : 'Pick a time') + '</span></div>' +
       (c.member ? '<div class="small" style="color:var(--ok);margin-top:.3rem">Premium discount: 25% off</div>' : '') +
+      (used ? '<div class="small" style="color:var(--ok);margin-top:.3rem">Auto-ship credit: &minus;' + money(used) + '</div>' : '') +
       '<button class="btn paybtn ca-wide" id="caBookPay"' + (b.time ? '' : ' disabled') + '>Pay ' + money(price) + ' and book</button></div>';
   }
 
@@ -174,6 +177,7 @@
     var orders = S().orders.filter(function (o) { return o.client === c.id; }).slice().reverse();
     var owned = EG.VIDEOS.filter(function (v) { var a = EG.videoAccess(v, c); return a === 'owned' || a === 'included'; });
     return '<h2 class="ca-title">' + esc(c.name) + '</h2><p class="small muted" style="margin-top:-.4rem">' + esc(c.email) + ' &middot; ' + (c.member ? 'Premium member' : 'Free account') + '</p>' +
+      (c.autoship || c.credit ? '<div class="ca-card row" style="justify-content:space-between"><span class="small"><b>Auto-ship credit</b><br><span class="muted">$' + credit() + ' added with each refill. Use it on a session or short course.</span></span><span class="price">' + money(c.credit || 0) + '</span></div>' : '') +
       '<h3 class="ca-h">Orders</h3><div data-tour="ca-orders">' + (orders.length ? orders.map(function (o) {
         return '<div class="ca-card"><div class="row" style="justify-content:space-between"><b class="small">' + o.id + '</b><span class="price small">' + money(U.orderTotal(o)) + '</span></div><div class="small muted">' + o.items.map(function (it) { return EG.product(it[0]).name; }).join(', ') + '</div>' +
           '<div class="ca-track">' + STAGES.map(function (s, i) { return '<span class="' + (i <= o.stage ? 'on' : '') + '"></span>'; }).join('') + '</div><div class="small"><b>' + STAGES[o.stage] + '</b>' + (o.tracking && o.stage >= 3 ? ' &middot; <span class="num">' + o.tracking + '</span>' : '') + '</div></div>';
@@ -193,12 +197,11 @@
       var cart = st().cart, keys = Object.keys(cart);
       var sub = keys.reduce(function (t, k) { return t + EG.product(k).price * cart[k]; }, 0);
       var mem = c && c.member ? sub * EG.PROGRAM.discount : 0;
-      var save = st().sub ? (sub - mem) * 0.15 : 0;
-      var net = sub - mem - save, ship = (c && c.member) || net >= 75 || !keys.length ? 0 : 6.95;
+      var net = sub - mem, ship = (c && c.member) || net >= 75 || !keys.length ? 0 : 6.95;
       body = '<h3 class="ca-title">Your cart</h3>' + (keys.length ? keys.map(function (k) { var p = EG.product(k); return '<div class="ca-mini">' + U.bottle(p, true) + '<span class="grow small"><b>' + esc(p.name) + '</b></span><span class="row" style="flex-wrap:nowrap;gap:.3rem"><button class="qty" data-cqty="' + k + '" data-d="-1" aria-label="Remove one">&minus;</button><span class="num small">' + cart[k] + '</span><button class="qty" data-cqty="' + k + '" data-d="1" aria-label="Add one">+</button></span></div>'; }).join('') +
         '<div class="carttot"><div class="row" style="justify-content:space-between"><span>Subtotal</span><span class="num">' + money(sub) + '</span></div>' +
         (mem ? '<div class="row" style="justify-content:space-between;color:var(--ok)"><span>Member 20%</span><span class="num">&minus;' + money(mem) + '</span></div>' : '') +
-        (save ? '<div class="row" style="justify-content:space-between;color:var(--ok)"><span>Subscribe &amp; save 15%</span><span class="num">&minus;' + money(save) + '</span></div>' : '') +
+        (st().sub ? '<div class="row small" style="justify-content:space-between;color:var(--ok)"><span>Auto-ship on: $' + credit() + ' credit per refill</span><span>toward sessions</span></div>' : '') +
         '<div class="row" style="justify-content:space-between"><span>Shipping</span><span class="num">' + (ship ? money(ship) : 'Free') + '</span></div>' +
         '<div class="row" style="justify-content:space-between;font-weight:700"><span>Total</span><span class="num">' + money(net + ship) + '</span></div></div>' +
         '<button class="btn paybtn ca-wide" id="caPay">Pay ' + money(net + ship) + '</button><p class="small muted" style="text-align:center;margin:.4rem 0 0">Showcase: no payment is taken.</p>'
@@ -212,8 +215,9 @@
         '<p class="small muted" style="text-align:center">Paid ' + money(sh.price) + '. The calendar invite and Zoom link are in your inbox. Reschedule free up to 24 hours before.</p><button class="btn ca-wide" id="caClose2">Done</button>';
     } else if (sh.type === 'buy') {
       var v = EG.video(sh.id);
+      var vUsed = Math.min((c && c.credit) || 0, v.price);
       body = thumb(v, true) + '<p class="eyebrow" style="margin:.8rem 0 0">Short course</p><h3 class="ca-title">' + esc(v.title) + '</h3><p class="small muted">' + v.lessons + ' video lessons, ' + v.mins + ' minutes in all. Yours to keep, with downloads and a workbook.</p>' +
-        '<button class="btn paybtn ca-wide" id="caPayVideo">Pay ' + money(v.price) + '</button><p class="small muted" style="text-align:center;margin:.5rem 0 0">Every short course is included in the Premium Course.</p>';
+        (vUsed ? '<p class="small" style="color:var(--ok);margin:0">Auto-ship credit: &minus;' + money(vUsed) + '</p>' : '') + '<button class="btn paybtn ca-wide" id="caPayVideo">Pay ' + money(v.price - vUsed) + '</button><p class="small muted" style="text-align:center;margin:.5rem 0 0">Every short course is included in the Premium Course.</p>';
     } else if (sh.type === 'watch') {
       var w = EG.video(sh.id), a = EG.videoAccess(w, c);
       body = '<div class="player">' + thumb(w, true) + '<div class="bar"><i id="caProg" style="width:4%"></i></div></div><h3 class="ca-title" style="margin-top:.8rem">' + esc(w.title) + '</h3><p class="small muted">Playing (showcase preview) &middot; ' + w.mins + ' min</p>' +
@@ -240,7 +244,7 @@
       '<aside class="cside"><p class="eyebrow">Client app</p><h1 class="h1">What your clients use</h1><p class="lede" style="margin-bottom:1rem">A separate, simple app for clients, on their phone or computer. It installs to the home screen and lives at <code>evergrove.example/app</code>.</p>' +
       U.pitch('new', 'Built on the same platform as the console. Everything a client does here, the team sees there: orders land in the approval queue, questions land in the inbox, purchases unlock instantly.') +
       '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>' +
-      '<ul class="cfeat"><li><b>Free plan from a questionnaire</b> Supplements and classes suggested from their answers.</li><li><b>One-tap ordering</b> Add the whole plan to the cart, subscribe and save.</li><li><b>Courses</b> Free classes, and short courses from ' + money(59, false) + ' to ' + money(119, false) + '. All included for Premium members.</li><li><b>Practitioner sessions</b> Book and pay for 30 minutes (' + money(EG.SESSION.base, false) + ') or an hour (+' + money(EG.SESSION.upgrade, false) + ') in one step.</li><li><b>Premium Course members</b> Course week, live Zoom, 20% off and free shipping, in one place.</li><li><b>Order tracking</b> Plain-language status for every order.</li><li><b>Ask the team</b> Questions go to a shared inbox, not one person.</li></ul></aside></div>';
+      '<ul class="cfeat"><li><b>Free plan from a questionnaire</b> Supplements and classes suggested from their answers.</li><li><b>One-tap ordering</b> Add the whole plan to the cart and turn on auto-ship.</li><li><b>Courses</b> Free classes, and short courses from ' + money(59, false) + ' to ' + money(119, false) + '. All included for Premium members.</li><li><b>Practitioner sessions</b> Book and pay for 30 minutes (' + money(EG.SESSION.base, false) + ') or an hour (+' + money(EG.SESSION.upgrade, false) + ') in one step.</li><li><b>Premium Course members</b> Course week, live Zoom, 20% off and free shipping, in one place.</li><li><b>Order tracking</b> Plain-language status for every order.</li><li><b>Ask the team</b> Questions go to a shared inbox, not one person.</li></ul></aside></div>';
   }
 
   function bind() {
@@ -296,12 +300,12 @@
     var pay = $('#caPay');
     if (pay) pay.addEventListener('click', function () {
       var c = me(), D = S();
-      var disc = 1 - (1 - (c.member ? EG.PROGRAM.discount : 0)) * (1 - (ca.sub ? 0.15 : 0));
+      var disc = c.member ? EG.PROGRAM.discount : 0;
       var o = { id: 'EG-' + (D.nextOrder++), client: c.id, at: U.today(), items: Object.keys(ca.cart).map(function (k) { return [k, ca.cart[k]]; }), stage: 0, sub: ca.sub, discount: disc, fromApp: true };
       D.orders.push(o);
-      if (ca.sub) c.autoship = true;
+      if (ca.sub) { c.autoship = true; c.credit = (c.credit || 0) + credit(); }
       c.ltv += U.orderTotal(o);
-      U.activity(o.id + ' placed in the client app by ' + c.name + ' (' + money(U.orderTotal(o)) + (ca.sub ? ', subscribe & save' : '') + '). Waiting for approval.');
+      U.activity(o.id + ' placed in the client app by ' + c.name + ' (' + money(U.orderTotal(o)) + (ca.sub ? ', auto-ship on, $' + credit() + ' credit added' : '') + '). Waiting for approval.');
       U.save(); ca.cart = {}; open({ type: 'placed', id: o.id });
     });
     var track = $('#caTrack'); if (track) track.addEventListener('click', function () { ca.sheet = null; ca.tab = 'me'; App.render(); });
@@ -313,9 +317,10 @@
     var pv = $('#caPayVideo');
     if (pv) pv.addEventListener('click', function () {
       var c = me(), v = EG.video(ca.sheet.id);
-      c.videosOwned.push(v.id); c.ltv += v.price;
+      var used = Math.min(c.credit || 0, v.price); c.credit = (c.credit || 0) - used;
+      c.videosOwned.push(v.id); c.ltv += v.price - used;
       S().emails.unshift({ at: U.today(), to: c.id, kind: 'Class receipt', subject: 'Your class: ' + v.title });
-      U.activity(c.name + ' bought the ' + v.title + ' short course (' + money(v.price, false) + ') in the client app. Access granted, receipt sent.');
+      U.activity(c.name + ' bought the ' + v.title + ' short course (' + money(v.price - used) + (used ? ', ' + money(used) + ' auto-ship credit used' : '') + ') in the client app. Access granted, receipt sent.');
       U.save(); U.toast('Unlocked. It is yours to keep.');
       open({ type: 'watch', id: v.id });
     });
@@ -339,11 +344,12 @@
     $$('[data-ctime]').forEach(function (b) { b.addEventListener('click', function () { ca.book.time = b.getAttribute('data-ctime'); rerender(); }); });
     var bp = $('#caBookPay');
     if (bp) bp.addEventListener('click', function () {
-      var c = me(), bk = ca.book, pr = EG.CERTIFIED.filter(function (p) { return p.id === bk.who; })[0], date = weekdays()[bk.day], price = EG.sessionPrice(bk.long, c);
+      var c = me(), bk = ca.book, pr = EG.CERTIFIED.filter(function (p) { return p.id === bk.who; })[0], date = weekdays()[bk.day], full = EG.sessionPrice(bk.long, c), used = Math.min(c.credit || 0, full), price = full - used;
+      c.credit = (c.credit || 0) - used;
       S().bookings.push({ id: 'b' + Date.now(), service: bk.long ? 'session60' : 'session30', date: date, time: bk.time, guests: [c.id], where: 'Video call', with: pr.name, paid: price });
       c.ltv += price;
       S().emails.unshift({ at: U.today(), to: c.id, kind: 'Session booked', subject: 'Your session with ' + pr.name });
-      U.activity(c.name + ' booked ' + (bk.long ? 'a 1-hour' : 'a 30-minute') + ' session with ' + pr.name + ' (' + money(price) + ') for ' + U.fmtDate(date) + '. Paid, calendar invite and Zoom link sent.');
+      U.activity(c.name + ' booked ' + (bk.long ? 'a 1-hour' : 'a 30-minute') + ' session with ' + pr.name + ' (' + money(price) + (used ? ', ' + money(used) + ' auto-ship credit used' : '') + ') for ' + U.fmtDate(date) + '. Paid, calendar invite and Zoom link sent.');
       U.save(); ca.book = { who: bk.who, long: false, day: 0, time: '' };
       open({ type: 'booked', who: pr.name, date: date, time: bk.time, long: bk.long, price: price });
     });

@@ -382,7 +382,7 @@ body.clientmode .main { padding-block: 1.4rem 5rem; }
 .ca-sheet-bg { position: absolute; inset: 0; background: rgba(20, 28, 22, .4); z-index: 5; }
 .ca-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 88%; overflow-y: auto; background: var(--bg); border-radius: 20px 20px 0 0; padding: 1.4rem 1.1rem 1.4rem; z-index: 6; animation: up .25s ease; }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } }
-.ca-x { position: absolute; top: .6rem; right: .7rem; border: 0; background: var(--sunk); border-radius: 50%; width: 2rem; height: 2rem; font-size: 1.2rem; cursor: pointer; color: var(--ink); }
+.ca-x { position: absolute; z-index: 3; top: .6rem; right: .7rem; border: 0; background: var(--sunk); border-radius: 50%; width: 2rem; height: 2rem; font-size: 1.2rem; cursor: pointer; color: var(--ink); }
 .paybtn { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .paybtn:hover { background: var(--deep); border-color: var(--deep); }
 .qty { width: 1.7rem; height: 1.7rem; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }

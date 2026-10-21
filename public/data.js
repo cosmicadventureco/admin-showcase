@@ -258,7 +258,6 @@
       videos: vids,
       service: service,
       monthly: monthly,
-      subscribePrice: Math.round(monthly * 0.85 * 100) / 100,
       needsReview: flags.length > 0 || picks.some(function (x) { return x.review; }),
       flags: flags
     };
@@ -393,6 +392,8 @@
     enrollments.forEach(function (e) { var c = clients.filter(function (x) { return x.id === e.client; })[0]; c.plan = 'program'; c.member = true; });
     clients.forEach(function (c) { c.videosOwned = []; });
     clients[4].videosOwned = ['v11'];
+    /* Auto-ship credit already earned: $5 a refill, spent on sessions and courses. */
+    clients.forEach(function (c, i) { if (c.autoship) c.credit = [15, 10, 5, 20][i % 4]; });
     clients[1].videosOwned = ['v8', 'v12'];
     clients[9].videosOwned = ['v14'];
     enrollments[3].payIssue = 'Card declined for payment 2 of 3';
@@ -439,7 +440,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 10, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 11, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };

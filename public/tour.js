@@ -224,7 +224,7 @@
       await click('#caFinish', { after: 900 });
       say('Suggestions she can act on', 'Physica Energetics remedies matched to her goals, each with the reason it was picked.');
       await spot('[data-tour="ca-picks"]', 4200);
-      say('One tap to order the whole plan', 'Subscribe and save 15%, then pay. No back-and-forth emails.');
+      say('One tap to order the whole plan', 'She turns on auto-ship so she never runs out. Each refill earns credit toward a session or course, so supplement prices stay where the suppliers set them.');
       await click('#caSub', { after: 400 });
       await click('#caAddAll', { after: 2400 });
       await click('#caPay', { after: 600 });
@@ -237,7 +237,7 @@
       var buys = document.querySelectorAll('[data-tour="ca-picked"] [data-cbuy]');
       await click(buys[buys.length - 1], { after: 1200 });
       await click('#caPayVideo', { after: 500 });
-      say('Bought and unlocked in seconds', 'Access, receipt and download are handled automatically. Nobody on the team sends a link.');
+      say('Bought and unlocked in seconds', 'Her first auto-ship credit came off the price. Access, receipt and download are handled automatically.');
       await sleep(3200);
       await click('#caClose', { after: 400 });
       await click('[data-ctab="book"]', { after: 700 });

@@ -68,7 +68,8 @@ any static server (`python3 -m http.server -d public 8080`).
 - **New visitor:** a short questionnaire (goals, diet, allergies, health screening,
   consent) creates a **free account** with a personal supplement plan.
 - **Free account:** sees their plan, adds it all to the cart in one tap, can
-  subscribe and save 15%, watches free classes, and buys **short courses from
+  turn on auto-ship (refills every 30 days; each refill adds $5 credit toward a
+  session or short course, never a product discount), watches free classes, and buys **short courses from
   $59 to $119** (theirs to keep, with downloads). They can **book a Certified
   Practitioner**: $99 for 30 minutes, or +$49 for a full hour, paid at booking.
   They also track orders, skip or pause refills, and ask the team a question.
@@ -176,7 +177,7 @@ Each screen has a banner saying whether the feature already runs in production
 
 | Screen | Status | What it demonstrates |
 |---|---|---|
-| Client app | Custom | Free plan from a questionnaire, one-tap ordering, subscribe & save, free classes and $59-$119 short courses, practitioner booking ($99 / 30 min, +$49 for an hour), Premium member home, order tracking, ask the team |
+| Client app | Custom | Free plan from a questionnaire, one-tap ordering, auto-ship with session credit, free classes and $59-$119 short courses, practitioner booking ($99 / 30 min, +$49 for an hour), Premium member home, order tracking, ask the team |
 | Energetic scans | Custom (builder exists) | Scan exports to a reviewed, signed-off report in the client app, with remedies linked to the shop |
 | Work queue | Custom | Shared to-do list with roles, the automation map of the admin job, activity log, roles and handoff checklist |
 | Dashboard | Proven | KPIs, needs-attention list, today's sessions, revenue chart |
