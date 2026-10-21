@@ -19,7 +19,15 @@ practitioner-only, so every price and cost shown is a placeholder. Emails and or
 - Data lives in each visitor's own browser (localStorage). "Reset sample data"
   or Play Showcase restores the original sample set.
 
-## Deploy (about 2 minutes)
+## Deploy
+
+**Automatic:** every push to `main` deploys through `.github/workflows/deploy.yml`.
+It needs two repository secrets, set once under Settings > Secrets and variables >
+Actions: `CLOUDFLARE_API_TOKEN` (a token with "Edit Cloudflare Workers"
+permission) and `CLOUDFLARE_ACCOUNT_ID`. Until they exist, the Deploy run fails
+with a red cross and nothing is published.
+
+**By hand (about 2 minutes):**
 
 ```bash
 cd wellness-showcase
@@ -39,9 +47,9 @@ any static server (`python3 -m http.server -d public 8080`).
 
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 7 chapters:
-  Client app (free account), Client app (Premium member), Work queue, Dashboard,
-  Premium Course, Schedule, Shop & drop-ship.
+- **Play Showcase** (top right): restores the sample data, then plays 6 chapters
+  in about 3 minutes: Client app (free account), Client app (Premium member),
+  Work queue, Energetic scans, Premium Course, Shop & drop-ship.
   - `Space` pause or resume, `→` next chapter, `Esc` exit.
 - Open `/?play` (or `/#play`) to start the tour on load. Handy for a kiosk
   screen or a screen recording.
@@ -84,10 +92,33 @@ Built for the situation where one employee does all the admin and is leaving.
   results to review. Each is labelled with the role that handles it
   (Assistant, Practitioner, Owner, Anyone).
 - **Runs itself:** each manual admin job, how often it happened, and what
-  replaces it, with estimated hours: about 24.5 a week before, 3.5 after. The
+  replaces it, with estimated hours: about 28.5 a week before, 4 after. The
   hours are pitch estimates to confirm with the team.
 - **Activity log:** everything the system did on its own.
 - **Team & handoff:** who can do what, and a sample handoff checklist.
+
+### Energetic scans to client reports
+
+The clinic's in-house scan produces four exports (RR resonance/organ readings,
+RC root cause, SS symptom support, IMB imbalance markers). Their existing
+report builder turns those into a client report on one computer. The showcase
+connects that flow to everything else:
+
+1. **Add the exports** to the client's scan (four slots, as in the builder).
+2. **Extract:** organ readings with dials, findings sorted into report sections,
+   dilution notes on IMB markers ("May be low"...), and remedies ranked RC
+   first, then SS, by dilution. Supplier wording with claim language
+   ("eliminate", "cures"...) is flagged for rewording.
+3. **Review:** untick items, change readings, reorder remedies, set how many
+   go in the report.
+4. **Sign off and publish:** a practitioner must confirm before it goes out.
+   The client is emailed, the report appears in their app, and their
+   remedies are one tap from the cart (still through the order approval).
+
+The extraction is simulated with invented sample data and an invented report
+name ("Evergrove Resonance Map"). Building it for real needs one or two sets
+of real exports with names removed, to confirm the parser against the actual
+PDF layout.
 
 ## What it shows, and what is "proven" versus "custom build"
 
@@ -97,6 +128,7 @@ Each screen has a banner saying whether the feature already runs in production
 | Screen | Status | What it demonstrates |
 |---|---|---|
 | Client app | Custom | Free plan from a questionnaire, one-tap ordering, subscribe & save, free classes and $59-$119 short courses, practitioner booking ($99 / 30 min, +$49 for an hour), Premium member home, order tracking, ask the team |
+| Energetic scans | Custom (builder exists) | Scan exports to a reviewed, signed-off report in the client app, with remedies linked to the shop |
 | Work queue | Custom | Shared to-do list with roles, the automation map of the admin job, activity log, roles and handoff checklist |
 | Dashboard | Proven | KPIs, needs-attention list, today's sessions, revenue chart |
 | Client messaging | Proven | Template composer with auto-filled wording and live preview |
@@ -139,6 +171,7 @@ public/data.js       sample data + recommendation engine
 public/app.js        the nine screens
 public/client.js     the client app
 public/queue.js      the Work queue
+public/scans.js      energetic scans and the client report
 public/tour.js       the Play Showcase player (cursor, captions, script)
 ```
 
