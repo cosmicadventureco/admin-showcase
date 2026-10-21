@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v12';
+  var KEY = 'evergrove-showcase-v13';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
@@ -78,7 +78,8 @@
   }
   function lineTotal(l) { return (Number(l[1]) || 1) * (Number(l[2]) || 0); }
   function pitch(kind, text) {
-    return '<div class="pitch"><b>' + (kind === 'new' ? 'Custom build' : 'Proven today') + '</b><span>' + text + '</span></div>';
+    /* The build-status banners are switched off: the screens speak for themselves. */
+    return '';
   }
   function head(eyebrow, title, lede) {
     return '<p class="eyebrow">' + eyebrow + '</p><h1 class="h1">' + title + '</h1><p class="lede">' + lede + '</p>';
@@ -601,10 +602,10 @@
     var month = S.orders.reduce(function (t, o) { return t + orderTotal(o); }, 0);
     var cost = S.orders.reduce(function (t, o) { return t + orderCost(o); }, 0);
     var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
-    return head('Grow', 'Shop & fulfilment',
-      'A storefront for the Physica Energetics range and your other supplements. Orders drop-ship from the supplier, but only after a person on your team approves each one.') +
+    return head('Orders, products and suppliers', 'Shop',
+      'Orders drop-ship from the supplier, but only after a person on your team approves each one.') +
       pitch('new', 'Proposed drop-ship automation with a human checkpoint: every order, including auto-ship refills, waits in an approval queue. Once approved, routing, tracking emails and refill reminders run on their own.') +
-      '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', 'no packing by you') + '</div>' +
+      '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', '') + '</div>' +
       '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><div class="tabs" style="margin:0">' +
       [['pipeline', 'Orders' + (waiting ? ' (' + waiting + ')' : '')], ['products', 'Products'], ['suppliers', 'Suppliers']].map(function (t) { return '<button class="tab' + (ui.shopTab === t[0] ? ' is-on' : '') + '" data-shtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       (ui.shopTab === 'pipeline' ? '<button class="btn ghost" id="shSim">Simulate an incoming order</button>' : '') + '</div>' +

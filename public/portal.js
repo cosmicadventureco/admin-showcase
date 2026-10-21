@@ -1,8 +1,9 @@
 /* Evergrove Wellness showcase - Home and Client Portal.
  *
- * Home is four doors: Client Portal, Shop, Client reports and Protocols,
- * with a short list of what needs a person today. Client Portal is every
- * client, and one page per client with everything about them in seven tabs.
+ * Home is four doors: Client Portal, Shop, Client Report Creator and
+ * Protocol Creator, with a checklist and upcoming appointments. Client Portal
+ * is every client, and one page per client with everything about them in tabs,
+ * including the message thread with their practitioner.
  */
 (function () {
   'use strict';
@@ -10,6 +11,8 @@
   var U = App.util, esc = U.esc, money = U.money;
   function S() { return App.state(); }
   function st() { if (!App.ui.cp) App.ui.cp = { id: null, tab: 'info', q: '', booking: false, note: '' }; return App.ui.cp; }
+  function unreadBy() { var o = {}; (S().messages || []).forEach(function (m) { if (m.from === 'client' && !m.read) o[m.client] = (o[m.client] || 0) + 1; }); return o; }
+  function thread(id) { return (S().messages || []).filter(function (m) { return m.client === id; }); }
   function tier(c) { return c.member ? 'Premium Course' : c.plan === 'free' || c.plan === 'newsletter' ? 'Free account' : EG.PLANS[c.plan]; }
   var ICONS = {
     portal: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
@@ -23,34 +26,48 @@
   function home() {
     var D = S(), t = U.today();
     var approve = D.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
-    var review = D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).length;
+    var review = D.scans.filter(function (x) { return x.data && x.status === 'review'; }).length, files = D.scans.filter(function (x) { return !x.data && x.status === 'uploaded'; }).length;
     var active = D.protocols.filter(function (p) { return p.status === 'active'; }).length;
-    var todays = D.bookings.filter(function (b) { return b.date === t; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; });
     var doors = [
       ['clients', 'portal', 'Client Portal', 'Every client: details, bookings, billing, protocols, notes, forms and documents.', D.clients.length + ' clients'],
       ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' to approve' : 'All clear'],
-      ['scans', 'reports', 'Client report creator', 'Scan exports in, a finished client report out, after a practitioner signs off.', review ? review + ' to review' : 'All clear'],
-      ['protocols', 'protocols', 'Protocol creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active']
+      ['scans', 'reports', 'Client Report Creator', 'Upload the four scan files and get a finished client report, signed off by a practitioner.', review ? review + ' to review' : files ? files + ' waiting for files' : 'All clear'],
+      ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active']
     ];
-    var todo = [];
+    var todo = [], unread = unreadBy();
+    Object.keys(unread).forEach(function (id) { todo.push(['msg:' + id, 'Reply to ' + U.client(id).name + ' (' + unread[id] + ' new message' + (unread[id] > 1 ? 's' : '') + ')']); });
     if (approve) todo.push(['shop', approve + ' order' + (approve > 1 ? 's' : '') + ' waiting for approval']);
-    D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', 'Review the scan for ' + U.client(x.client).name]); });
-    todays.forEach(function (b) { todo.push(['clients:' + b.guests[0], U.fmtTime(b.time) + ' ' + (b.name || EG.SERVICES.filter(function (s) { return s.id === b.service; })[0].label) + ' with ' + b.guests.map(function (g) { return U.client(g).name; }).join(', ')]); });
+    D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', (x.data ? 'Review the report for ' : 'Upload the scan files for ') + U.client(x.client).name]); });
     D.clients.filter(function (c) { return c.member && !EGProto.activeFor(c.id); }).slice(0, 2).forEach(function (c) { todo.push(['protocols:' + c.id, c.name + ' has no protocol yet']); });
     return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Four places to run the practice from.</p>' +
       '<div class="doors" data-tour="doors">' + doors.map(function (d) {
-        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
+        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
       }).join('') + '</div>' +
-      '<h2 class="h2">Needs you today</h2><div class="card" data-tour="today">' + (todo.length ? todo.slice(0, 6).map(function (x) { return '<div class="todo"><span class="dotmark"></span><span class="grow">' + esc(x[1]) + '</span><button class="btn ghost small" data-todo="' + x[0] + '">Open</button></div>'; }).join('') : '<p class="muted" style="margin:0">Nothing needs you right now.</p>') + '</div>';
+      '<div class="homecols"><div><h2 class="h2">Checklist</h2><div class="card" data-tour="today">' + (todo.length ? todo.slice(0, 7).map(function (x) { return '<div class="todo"><span class="dotmark"></span><span class="grow">' + esc(x[1]) + '</span><button class="btn ghost small" data-todo="' + x[0] + '">Open</button></div>'; }).join('') : '<p class="muted" style="margin:0">Nothing needs you right now.</p>') + '</div></div>' +
+      '<div><h2 class="h2">Upcoming Appointments</h2><div class="card" data-tour="appts">' + appointments() + '</div></div></div>';
+  }
+  function svcLabel(b) { var sv = EG.SERVICES.filter(function (x) { return x.id === b.service; })[0]; return b.name || (sv ? sv.label : 'Session'); }
+  function appointments() {
+    var t = U.today(), end = EG.iso(7), last = '';
+    var up = S().bookings.filter(function (b) { return b.date >= t && b.date <= end; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }).slice(0, 7);
+    if (!up.length) return '<p class="muted" style="margin:0">Nothing booked this week.</p>';
+    return up.map(function (b) {
+      var day = b.date === t ? 'Today' : b.date === EG.iso(1) ? 'Tomorrow' : U.fmtDate(b.date, { weekday: 'long', month: 'short', day: 'numeric' });
+      var head = day !== last ? '<div class="appt-day">' + day + '</div>' : ''; last = day;
+      var who = b.guests.length > 2 ? U.client(b.guests[0]).name + ' + ' + (b.guests.length - 1) + ' more' : b.guests.map(function (g) { return U.client(g).name; }).join(', ');
+      return head + '<div class="appt"><div class="appt-d"><b>' + U.fmtTime(b.time) + '</b>' + esc(b.where) + '</div><div class="grow"><div class="small"><b>' + esc(svcLabel(b)) + '</b></div><div class="small muted">' + esc(who) + (b.with ? ' &middot; with ' + esc(b.with) : '') + '</div></div><button class="btn ghost small" data-todo="appt:' + b.guests[0] + '">Client</button></div>';
+    }).join('');
   }
   function bindHome() {
     U.$$('[data-door]').forEach(function (b) { b.addEventListener('click', function () { var v = b.getAttribute('data-door'); if (v === 'clients') st().id = null; App.go(v); }); });
     U.$$('[data-todo]').forEach(function (b) {
       b.addEventListener('click', function () {
         var p = b.getAttribute('data-todo').split(':');
-        if (p[0] === 'clients') { st().id = p[1]; st().tab = 'bookings'; }
-        if (p[0] === 'protocols') { App.ui.pc = { client: p[1], draft: null }; }
+        if (p[0] === 'clients' || p[0] === 'appt') { st().id = p[1]; st().tab = 'bookings'; p[0] = 'clients'; }
+        if (p[0] === 'msg') { st().id = p[1]; st().tab = 'messages'; p[0] = 'clients'; }
+        if (p[0] === 'protocols') { App.ui.pc = { client: p[1], draft: null, mode: 'edit' }; }
         if (p[0] === 'shop') App.ui.shopTab = 'pipeline';
+        if (p[0] === 'scans') App.ui.sc = null;
         App.go(p[0]);
       });
     });
@@ -71,7 +88,7 @@
   }
 
   /* ------------------------------------------------------ Client page */
-  var TABS = [['info', 'Basic information'], ['bookings', 'Bookings & packages'], ['billing', 'Billing & payments'], ['protocols', 'Protocols'], ['notes', 'Notes'], ['forms', 'Forms & waivers'], ['docs', 'Documents']];
+  var TABS = [['info', 'Basic information'], ['bookings', 'Bookings & packages'], ['billing', 'Billing & payments'], ['protocols', 'Protocols'], ['messages', 'Messages'], ['notes', 'Notes'], ['forms', 'Forms & waivers'], ['docs', 'Documents']];
 
   function payments(c) {
     var D = S(), e = U.enrollment(c.id), out = [];
@@ -123,9 +140,15 @@
     if (tab === 'protocols') {
       var ps = D.protocols.filter(function (p) { return p.client === c.id; });
       var act = EGProto.activeFor(c.id);
-      return '<div class="row" style="margin-bottom:1rem"><button class="btn small" id="cpNewProto">' + (act ? 'Edit in Protocol creator' : 'Create a protocol') + '</button>' + (act ? '<button class="btn ghost small" id="cpProtoPdf">Download PDF</button>' : '') + '</div>' +
-        (act ? EGProto.doc(act, false) : '<div class="card"><p class="muted" style="margin:0">No protocol yet. ' + (EGProto.latestScan(c.id) ? 'Their report is ready, so the Protocol creator will have suggestions.' : 'A protocol usually follows their scan report.') + '</p></div>') +
+      return '<div class="row" style="margin-bottom:1rem"><button class="btn small" id="cpNewProto">' + (act ? 'Edit in Protocol Creator' : 'Create a protocol') + '</button>' + (act ? '<button class="btn ghost small" id="cpProtoPdf">Download PDF</button>' : '') + '</div>' +
+        (act ? EGProto.doc(act, false) : '<div class="card"><p class="muted" style="margin:0">No protocol yet. ' + (EGProto.latestScan(c.id) ? 'Their report is ready, so the Protocol Creator will have suggestions.' : 'A protocol usually follows their scan report.') + '</p></div>') +
         (ps.filter(function (p) { return p.status !== 'active'; }).length ? '<h2 class="h2">Earlier protocols</h2><div class="card"><div class="list">' + ps.filter(function (p) { return p.status !== 'active'; }).map(function (p) { return '<div class="li"><div class="grow"><div class="title">Protocol from ' + U.fmtDate(p.start) + '</div><div class="meta">' + p.items.length + ' remedies &middot; ' + esc(p.by) + '</div></div><span class="pill">Replaced</span></div>'; }).join('') + '</div></div>' : '');
+    }
+    if (tab === 'messages') {
+      var th = thread(c.id);
+      return '<div class="card" data-tour="messages"><div class="row" style="justify-content:space-between;margin-bottom:.8rem"><h3 class="h3" style="margin:0">Messages with ' + esc(U.first(c.name)) + '</h3><span class="small muted">' + esc(U.first(c.name)) + ' writes from their app. Replies arrive there and by email.</span></div>' +
+        '<div class="thread">' + (th.length ? th.map(function (m) { return '<div class="bub ' + (m.from === 'team' ? 'me' : 'them') + '">' + esc(m.text) + '<span class="bub-m">' + esc(m.from === 'team' ? m.by : U.first(c.name)) + ' &middot; ' + U.fmtDate(m.at, { month: 'short', day: 'numeric' }) + ', ' + U.fmtTime(m.time) + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No messages yet.</p>') + '</div>' +
+        '<div class="msgbox"><textarea id="cpReply" rows="2" placeholder="Reply to ' + esc(U.first(c.name)) + '">' + esc(cp.reply || '') + '</textarea><button class="btn" id="cpSend">Send</button></div></div>';
     }
     if (tab === 'notes') {
       return '<div class="card"><div class="row" style="flex-wrap:nowrap;margin-bottom:.8rem"><input type="text" id="cpNote" placeholder="Add a private note about ' + esc(U.first(c.name)) + '" value="' + esc(cp.note) + '" style="flex:1"><button class="btn small" id="cpAddNote">Save</button></div>' +
@@ -160,11 +183,16 @@
     return '<button class="back" id="cpBack">&larr; All clients</button>' +
       '<div class="row cphead" data-tour="clienthead"><span class="av" style="width:3.2rem;height:3.2rem;font-size:1rem">' + U.initials(c.name) + '</span><div class="grow"><h1 class="h1" style="margin:0">' + esc(c.name) + '</h1><div class="pills"><span class="pill honey">' + esc(tier(c)) + '</span><span class="pill">' + esc(c.practitioner) + '</span>' + (c.consent && c.intake ? '' : '<span class="pill warn">Forms outstanding</span>') + '</div></div>' +
       '<div class="row"><button class="btn ghost small" id="cpApp">View their app</button><button class="btn small" id="cpProto">Protocol</button></div></div>' +
-      '<div class="tabs ctabs" data-tour="clienttabs">' + TABS.map(function (t) { return '<button class="tab' + (cp.tab === t[0] ? ' is-on' : '') + '" data-cptab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="tabs ctabs" data-tour="clienttabs">' + TABS.map(function (t) { var n = t[0] === 'messages' ? unreadBy()[c.id] : 0; return '<button class="tab' + (cp.tab === t[0] ? ' is-on' : '') + '" data-cptab="' + t[0] + '">' + t[1] + (n ? '<span class="unread">' + n + '</span>' : '') + '</button>'; }).join('') + '</div>' +
       tabBody(c, cp.tab);
   }
 
-  function view() { var cp = st(), c = cp.id ? U.client(cp.id) : null; return c ? page(c) : list(); }
+  function view() {
+    var cp = st(), c = cp.id ? U.client(cp.id) : null;
+    /* Opening the thread marks the client's messages as read. */
+    if (c && cp.tab === 'messages') { var html = page(c); thread(c.id).forEach(function (m) { if (m.from === 'client') m.read = true; }); U.save(); return html; }
+    return c ? page(c) : list();
+  }
   function bind() {
     var cp = st(), $ = U.$, $$ = U.$$, c = cp.id ? U.client(cp.id) : null;
     function keep() { var y = window.scrollY; App.render(); window.scrollTo(0, y); }
@@ -174,9 +202,11 @@
       return;
     }
     $('#cpBack').addEventListener('click', function () { cp.id = null; App.render(); });
+    /* On a phone the tabs scroll sideways: keep the open one in view. */
+    var on = $('.ctabs .is-on'); if (on) on.parentNode.scrollLeft = on.offsetLeft - 16;
     $$('[data-cptab]').forEach(function (b) { b.addEventListener('click', function () { cp.tab = b.getAttribute('data-cptab'); cp.booking = false; cp.doc = null; keep(); }); });
     $('#cpApp').addEventListener('click', function () { App.ui.ca = null; App.go('client'); App.ui.ca.as = c.id; App.ui.ca.tab = 'home'; App.render(); });
-    function toProto() { App.ui.pc = { client: c.id, draft: null }; App.go('protocols'); }
+    function toProto() { App.ui.pc = { client: c.id, draft: null, mode: 'edit' }; App.go('protocols'); }
     $('#cpProto').addEventListener('click', toProto);
     var np = $('#cpNewProto'); if (np) np.addEventListener('click', toProto);
     $$('[data-ci]').forEach(function (inp) { inp.addEventListener('input', function () { c[inp.getAttribute('data-ci')] = inp.value; U.save(); }); });
@@ -190,6 +220,17 @@
     });
     [['#cpPayLink', 'Card-update link sent'], ['#cpPayLink2', 'Payment link sent to ' + c.email + ' (simulated)'], ['#cpRefund', 'Refunds open a short form with the amount and reason (simulated)'], ['#cpProtoPdf', 'PDF downloaded (simulated)']].forEach(function (x) { var b = $(x[0]); if (b) b.addEventListener('click', function () { U.toast(x[1]); }); });
     $$('[data-receipt]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Receipt emailed to ' + c.email + ' (simulated)'); }); });
+    var send = $('#cpSend');
+    if (send) {
+      $('#cpReply').addEventListener('input', function (e) { cp.reply = e.target.value; });
+      send.addEventListener('click', function () {
+        var v = (cp.reply || '').trim(); if (!v) return;
+        var now = new Date();
+        S().messages.push({ id: 'msg' + Date.now(), client: c.id, from: 'team', by: c.practitioner, at: U.today(), time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), text: v, read: true, seen: false });
+        U.activity('Reply sent to ' + c.name + ' in the client app.');
+        cp.reply = ''; U.save(); keep(); U.toast('Sent to ' + U.first(c.name) + '’s app');
+      });
+    }
     var an = $('#cpAddNote');
     if (an) {
       $('#cpNote').addEventListener('input', function (e) { cp.note = e.target.value; });

@@ -1,7 +1,7 @@
 /* Evergrove Wellness showcase - energetic scans to client reports.
  *
  * The clinic's own report builder, connected to everything else: the four
- * scan exports go in, findings are pulled out and ranked, a practitioner
+ * scan files are uploaded, findings are pulled out and ranked, a practitioner
  * reviews and signs off, and the report is published straight to the
  * client's app with the recommended remedies one tap from the cart. The
  * extraction is simulated here with invented sample data.
@@ -12,7 +12,7 @@
   var U = App.util, esc = U.esc, money = U.money;
   var STATUS = { stressed: 'Stressed', weakened: 'Weakened', balanced: 'Balanced', none: 'Unmarked' };
   function S() { return App.state(); }
-  function st() { if (!App.ui.sc) App.ui.sc = { open: null, step: 'list', files: {}, signed: false, editing: null }; return App.ui.sc; }
+  function st() { if (!App.ui.sc) App.ui.sc = { open: null, step: 'list', files: {}, signed: false, editing: null, newClient: 'c7' }; return App.ui.sc; }
   function scan(id) { return S().scans.filter(function (x) { return x.id === id; })[0]; }
   function inShop(name) { return EG.PRODUCTS.filter(function (p) { return p.name === name; })[0] || null; }
   function scoreState(n) { return n > 55 ? 'stressed' : n < 45 ? 'weakened' : 'balanced'; }
@@ -63,28 +63,34 @@
   }
 
   /* ------------------------------------------------------------- screens */
-  function listView() {
-    var D = S();
-    var pill = { published: '<span class="pill ok">Published to client</span>', uploaded: '<span class="pill warn">Exports in, needs review</span>', booked: '<span class="pill">Scan booked</span>', review: '<span class="pill honey">In review</span>' };
-    return '<div class="grid g4" style="margin-bottom:1rem">' + U.stat(D.scans.length + 9, 'Scans this quarter', '') + U.stat(D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).length, 'Waiting for a practitioner', '') +
-      U.stat('Same day', 'Scan to published report', 'was 2 to 3 days') + U.stat('15 min', 'Practitioner review time', 'was about 90 min') + '</div>' +
-      '<div class="card"><div class="tablewrap"><table data-tour="scanlist"><thead><tr><th>Client</th><th>Scan date</th><th>Status</th><th>Remedies</th><th></th></tr></thead><tbody>' +
-      D.scans.map(function (sc) {
-        var c = U.client(sc.client), n = sc.data ? remedies(sc.data).slice(0, sc.data.limit).length : '&mdash;';
-        var act = sc.status === 'booked' ? '<span class="small muted">Scan on ' + U.fmtDate(sc.date) + '</span>' : '<button class="btn small' + (sc.status === 'published' ? ' ghost' : '') + '" data-scopen="' + sc.id + '">' + (sc.status === 'published' ? 'View report' : 'Review') + '</button>';
-        return '<tr><td><b>' + esc(c.name) + '</b><br><span class="small muted">' + (c.member ? 'Premium Course' : 'Single scan') + '</span></td><td class="num">' + U.fmtDate(sc.date) + '</td><td>' + pill[sc.status] + (sc.by && sc.status === 'published' ? '<br><span class="small muted">Signed off by ' + esc(sc.by) + '</span>' : '') + '</td><td class="num">' + n + '</td><td class="r">' + act + '</td></tr>';
-      }).join('') + '</tbody></table></div></div>';
-  }
+  var STEPS = ['Upload the 4 scan files', 'Review', 'Sign off & publish', 'Build the protocol'];
+  function stepline(n) { return '<div class="stepline">' + STEPS.map(function (x, i) { return '<span class="' + (i === n ? 'on' : '') + '">' + (i + 1) + '. ' + x + '</span>'; }).join('') + '</div>'; }
 
-  function uploadView(sc) {
-    var s = st(), c = U.client(sc.client), all = EG.SCAN_SLOTS.every(function (x) { return s.files[x.code]; });
-    return '<div class="card"><p class="eyebrow">Step 1 of 3</p><h3 class="h3">Add the scan exports for ' + esc(c.name) + '</h3><p class="small muted">Each of the four exports has its own slot, which tells the system which rules to apply. In the full build these can also be picked up from the scanner&rsquo;s shared folder automatically.</p>' +
+  /* Step 1, always at the top of the page: pick the client, add the four files. */
+  function newReport() {
+    var s = st(), D = S(), all = EG.SCAN_SLOTS.every(function (x) { return s.files[x.code]; });
+    var clients = D.clients.slice().sort(function (a, b) { return (b.member ? 1 : 0) - (a.member ? 1 : 0) || a.name.localeCompare(b.name); });
+    return '<div class="card newrep" data-tour="newreport">' + stepline(0) + '<h3 class="h3" style="margin-top:0">New client report</h3>' +
+      '<div class="row" style="margin-bottom:.9rem"><label for="scClient" style="margin:0">Client</label><select id="scClient" style="width:auto;min-width:16rem">' + clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === s.newClient ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (Premium)' : '') + '</option>'; }).join('') + '</select></div>' +
       '<div class="slots" data-tour="slots">' + EG.SCAN_SLOTS.map(function (x) {
         var f = s.files[x.code];
-        return '<button class="slot' + (f ? ' filled' : '') + '" data-slot="' + x.code + '"><b>' + x.code + '</b><span class="small">' + esc(x.label) + '</span><span class="small ' + (f ? 'ok' : 'muted') + '">' + (f ? esc(f) : esc(x.hint) + '. Click to add.') + '</span></button>';
+        return '<label class="slot' + (f ? ' filled' : '') + '"><input type="file" accept=".pdf,.csv,.txt" data-slotfile="' + x.code + '"><b>' + x.code + '</b><span class="small">' + esc(x.label) + '</span><span class="small ' + (f ? 'ok' : 'muted') + '">' + (f ? '&#10003; ' + esc(f) : esc(x.hint) + '. Click to choose the file.') + '</span></label>';
       }).join('') + '</div>' +
-      '<div class="row" style="margin-top:1rem"><button class="btn ghost" id="scAll">Add all four sample exports</button><button class="btn" id="scExtract"' + (all ? '' : ' disabled') + '>Extract and structure the data</button></div>' +
+      '<div class="row" style="margin-top:1rem"><button class="btn" id="scExtract"' + (all ? '' : ' disabled') + '>Create the report</button><button class="btn ghost" id="scAll">Use the sample files</button><span class="small muted">The report and the protocol are both saved to the client&rsquo;s documents.</span></div>' +
       '<div id="scProg" hidden style="margin-top:1rem"><div class="small" id="scProgLabel">Working</div><div class="bar" style="margin-top:.4rem"><i id="scProgBar" style="width:0%"></i></div></div></div>';
+  }
+
+  function listView() {
+    var D = S();
+    var pill = { published: '<span class="pill ok">Published</span>', uploaded: '<span class="pill warn">Scan done, files to add</span>', booked: '<span class="pill">Scan booked</span>', review: '<span class="pill honey">In review</span>' };
+    return newReport() + '<h2 class="h2">Reports</h2><div class="card"><div class="tablewrap"><table data-tour="scanlist"><thead><tr><th>Client</th><th>Scan date</th><th>Status</th><th>Remedies</th><th></th></tr></thead><tbody>' +
+      D.scans.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (sc) {
+        var c = U.client(sc.client), n = sc.data ? remedies(sc.data).slice(0, sc.data.limit).length : '&mdash;';
+        var act = sc.status === 'booked' ? '<span class="small muted">Scan on ' + U.fmtDate(sc.date) + '</span>'
+          : !sc.data ? '<button class="btn small" data-scfiles="' + sc.client + '">Add files</button>'
+          : '<button class="btn small' + (sc.status === 'published' ? ' ghost' : '') + '" data-scopen="' + sc.id + '">' + (sc.status === 'published' ? 'View report' : 'Review') + '</button>';
+        return '<tr><td><b>' + esc(c.name) + '</b><br><span class="small muted">' + (c.member ? 'Premium Course' : 'Single scan') + '</span></td><td class="num">' + U.fmtDate(sc.date) + '</td><td>' + pill[sc.status] + (sc.by && sc.status === 'published' ? '<br><span class="small muted">Signed off by ' + esc(sc.by) + '</span>' : '') + '</td><td class="num">' + n + '</td><td class="r">' + act + '</td></tr>';
+      }).join('') + '</tbody></table></div></div>';
   }
 
   function reviewView(sc) {
@@ -92,7 +98,7 @@
     var by = {};
     d.items.forEach(function (x) { if (x.section !== 'Recommended Remedies') (by[x.section] = by[x.section] || []).push(x); });
     var flagged = d.items.filter(function (x) { return x.claims.length && x.include; }).length;
-    return '<div class="card" style="margin-bottom:1rem"><p class="eyebrow">Step 2 of 3</p><h3 class="h3">Check what goes in the report</h3><p class="small muted">Everything below was pulled from the exports. Untick anything that should not appear, adjust a reading, reorder remedies, or fix wording the system flagged.</p>' +
+    return '<div class="card" style="margin-bottom:1rem">' + stepline(1) + '<h3 class="h3">Check what goes in the report</h3><p class="small muted">Everything below was pulled from the exports. Untick anything that should not appear, adjust a reading, reorder remedies, or fix wording the system flagged.</p>' +
       '<div class="fields" style="margin-top:.8rem"><div><label>Client</label><input type="text" value="' + esc(c.name) + '" readonly></div><div><label for="scAge">Approx. age imbalances began</label><input id="scAge" type="text" value="' + esc(d.ageEst) + '"></div></div>' +
       (flagged ? '<div class="flagbar">&#9873; ' + flagged + ' item' + (flagged > 1 ? 's use' : ' uses') + ' claim language from the supplier&rsquo;s text. Reword before publishing.</div>' : '<div class="flagbar ok">No claim language left in the report.</div>') + '</div>' +
       '<div class="split"><div class="card" data-tour="organs"><h3 class="h3">Organ readings</h3><p class="small muted" style="margin-top:0">Most out of balance first. 45 to 55 is balanced.</p>' + d.organs.map(function (o, i) {
@@ -119,8 +125,8 @@
 
   function finalView(sc) {
     var c = U.client(sc.client), s = st(), done = sc.status === 'published';
-    return '<div class="card" style="margin-bottom:1rem"><p class="eyebrow">Step 3 of 3</p><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + (done ? 'Published to ' + esc(c.name) + '&rsquo;s app' : 'Report ready to publish') + '</h3>' + (done ? '<span class="pill ok">Signed off by ' + esc(sc.by) + '</span>' : '') + '</div>' +
-      (done ? '<p class="small muted">' + esc(U.first(c.name)) + ' was emailed, the report is in their app, and their remedies are one tap from the cart.</p><div class="row"><button class="btn" id="scProto">Next: build the protocol</button><button class="btn ghost" id="scSeeApp">See it in the client app</button><button class="btn ghost" id="scPdf">Download PDF</button><button class="btn ghost" id="scBack">Back to scans</button></div>'
+    return '<div class="card" style="margin-bottom:1rem">' + stepline(done ? 3 : 2) + '<div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + (done ? 'Published to ' + esc(c.name) + '&rsquo;s app' : 'Report ready to publish') + '</h3>' + (done ? '<span class="pill ok">Signed off by ' + esc(sc.by) + '</span>' : '') + '</div>' +
+      (done ? '<p class="small muted">Saved to ' + esc(U.first(c.name)) + '&rsquo;s documents in the Client Portal and published to their app. ' + esc(U.first(c.name)) + ' was emailed.</p><div class="row"><button class="btn" id="scProto">Next: build the protocol</button><button class="btn ghost" id="scDocs">Open in Client Portal</button><button class="btn ghost" id="scSeeApp">See it in the client app</button><button class="btn ghost" id="scPdf">Download PDF</button><button class="btn ghost" id="scBack">Back to scans</button></div>'
         : '<label class="check" style="margin:.8rem 0" data-tour="signoff"><input type="checkbox" id="scSign"' + (s.signed ? ' checked' : '') + '> I have reviewed this report and it is ready for the client. <span class="muted">(Theo Marsh, Certified Energetics Practitioner)</span></label>' +
           '<div class="row"><button class="btn" id="scPublish"' + (s.signed ? '' : ' disabled') + '>Publish to client app</button><button class="btn ghost" id="scEdit">Back to edit</button><button class="btn ghost" id="scPdf">Download PDF</button></div>') + '</div>' +
       reportHtml(sc, false);
@@ -128,10 +134,10 @@
 
   function view() {
     var s = st(), sc = s.open ? scan(s.open) : null;
-    var body = !sc ? listView() : s.step === 'upload' ? uploadView(sc) : s.step === 'review' ? reviewView(sc) : finalView(sc);
-    return U.head('Client report creator', 'Client reports', 'The in-house scan, turned into a finished client report the same day, without retyping anything.') +
+    var body = !sc ? listView() : s.step === 'review' ? reviewView(sc) : finalView(sc);
+    return U.head('Scan files in, client report out', 'Client Report Creator', 'Upload the four scan files, check what was pulled out, sign off, and the report is saved to the client&rsquo;s documents and their app.') +
       U.pitch('new', 'Your report builder already turns scan exports into a report on one computer. Here it is connected to everything else: the client record, a practitioner sign-off, the client app and the shop.') +
-      (sc ? '<div class="row" style="margin-bottom:1rem"><button class="back" id="scList" style="margin:0">&larr; All scans</button><span class="small muted">' + esc(U.client(sc.client).name) + ' &middot; scan ' + U.fmtDate(sc.date) + '</span></div>' : '') + body;
+      (sc ? '<div class="row" style="margin-bottom:1rem"><button class="back" id="scList" style="margin:0">&larr; All reports</button><span class="small muted">' + esc(U.client(sc.client).name) + ' &middot; scan ' + U.fmtDate(sc.date) + '</span></div>' : '') + body;
   }
 
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -142,29 +148,36 @@
       b.addEventListener('click', function () {
         var x = scan(b.getAttribute('data-scopen'));
         s.open = x.id; s.files = {}; s.signed = false; s.editing = null;
-        go(x.status === 'published' ? 'final' : x.data ? 'review' : 'upload');
+        go(x.status === 'published' ? 'final' : 'review');
+      });
+    });
+    $$('[data-scfiles]').forEach(function (b) { b.addEventListener('click', function () { s.newClient = b.getAttribute('data-scfiles'); s.files = {}; App.render(); window.scrollTo(0, 0); }); });
+    var pick = $('#scClient'); if (pick) pick.addEventListener('change', function () { s.newClient = pick.value; s.files = {}; App.render(); });
+    $$('[data-slotfile]').forEach(function (inp) { inp.addEventListener('change', function () { if (inp.files[0]) { s.files[inp.getAttribute('data-slotfile')] = inp.files[0].name; App.render(); } }); });
+    var nb = slug(U.client(s.newClient || 'c7').name);
+    var all = $('#scAll'); if (all) all.addEventListener('click', function () { EG.SCAN_SLOTS.forEach(function (x) { s.files[x.code] = nb + '_' + x.code + '.pdf'; }); App.render(); });
+    var ex = $('#scExtract');
+    if (ex) ex.addEventListener('click', function () {
+      var c = U.client(s.newClient), D = S();
+      /* Attach the files to the scan already on record, or start a new one. */
+      var sc = D.scans.filter(function (x) { return x.client === c.id && !x.data && x.status !== 'published'; })[0];
+      if (!sc) { sc = { id: 's' + Date.now(), client: c.id, date: U.today(), status: 'uploaded', data: null }; D.scans.push(sc); }
+      ex.disabled = true; $('#scProg').hidden = false;
+      var steps = ['Reading RR: ' + (s.files.RR || 'RR'), 'Lifting organ readings and write-ups', 'Reading RC, SS and IMB findings', 'Applying dilution notes and ranking remedies', 'Checking wording for claim language'];
+      var chain = Promise.resolve();
+      steps.forEach(function (t, i) { chain = chain.then(function () { var l = $('#scProgLabel'), bar = $('#scProgBar'); if (l) l.textContent = t; if (bar) bar.style.width = ((i + 1) / steps.length * 100) + '%'; return wait(450); }); });
+      chain.then(function () {
+        sc.data = EG.sampleScan(c); sc.status = 'review'; sc.files = Object.keys(s.files).map(function (k) { return s.files[k]; });
+        if (window.EGAuto) sc.data.limit = EGAuto.setting('scans', 'top');
+        U.activity('Scan files for ' + c.name + ' read: 8 organ readings, ' + sc.data.items.length + ' findings. Waiting for practitioner review.');
+        s.open = sc.id; s.files = {}; s.signed = false; s.editing = null;
+        U.save(); go('review');
       });
     });
     var list = $('#scList'); if (list) list.addEventListener('click', function () { s.open = null; go('list'); });
     $$('#scBack').forEach(function (b) { b.addEventListener('click', function () { s.open = null; go('list'); }); });
     if (!sc) return;
-    var c = U.client(sc.client), base = slug(c.name);
-    /* upload */
-    $$('[data-slot]').forEach(function (b) { b.addEventListener('click', function () { var k = b.getAttribute('data-slot'); s.files[k] = s.files[k] ? null : base + '_' + k + '.pdf'; App.render(); }); });
-    var all = $('#scAll'); if (all) all.addEventListener('click', function () { EG.SCAN_SLOTS.forEach(function (x) { s.files[x.code] = base + '_' + x.code + '.pdf'; }); App.render(); });
-    var ex = $('#scExtract');
-    if (ex) ex.addEventListener('click', function () {
-      ex.disabled = true; $('#scProg').hidden = false;
-      var steps = ['Reading RR: ' + base + '_RR.pdf', 'Lifting organ readings and write-ups', 'Reading RC, SS and IMB findings', 'Applying dilution notes and ranking remedies', 'Checking wording for claim language'];
-      var chain = Promise.resolve();
-      steps.forEach(function (t, i) { chain = chain.then(function () { var l = $('#scProgLabel'), bar = $('#scProgBar'); if (l) l.textContent = t; if (bar) bar.style.width = ((i + 1) / steps.length * 100) + '%'; return wait(450); }); });
-      chain.then(function () {
-        sc.data = EG.sampleScan(c); sc.status = 'review';
-        if (window.EGAuto) sc.data.limit = EGAuto.setting('scans', 'top');
-        U.activity('Scan exports for ' + c.name + ' extracted: 8 organ readings, ' + sc.data.items.length + ' findings. Waiting for practitioner review.');
-        U.save(); go('review');
-      });
-    });
+    var c = U.client(sc.client);
     if (!sc.data) return;
     var d = sc.data;
     function keepScroll() { var y = window.scrollY; App.render(); window.scrollTo(0, y); }
@@ -205,7 +218,8 @@
       U.save(); App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
     });
     var pdf = $('#scPdf'); if (pdf) pdf.addEventListener('click', function () { U.toast('PDF saved to ' + c.name + '’s record (simulated)'); });
-    var np = $('#scProto'); if (np) np.addEventListener('click', function () { App.ui.pc = { client: c.id, draft: null }; App.go('protocols'); });
+    var np = $('#scProto'); if (np) np.addEventListener('click', function () { App.ui.pc = { client: c.id, draft: null, mode: 'edit' }; App.go('protocols'); });
+    var dc = $('#scDocs'); if (dc) dc.addEventListener('click', function () { EGPortal.open(c.id, 'docs'); });
     var see = $('#scSeeApp');
     if (see) see.addEventListener('click', function () { App.ui.ca = null; App.go('client'); App.ui.ca.as = c.id; App.ui.ca.tab = 'report'; App.render(); });
   }

@@ -95,6 +95,7 @@
         (sc && sc.status === 'published' ? '<div class="ca-card ca-scan" data-tour="ca-scan"><span class="grow small"><b>Your scan report</b><br><span class="muted">Resonance Map &middot; ' + U.fmtDate(sc.date, { month: 'short', day: 'numeric' }) + '</span></span><button class="btn small" data-ctab="report">Open</button></div>' : '') +
         '<div class="ca-card ca-prog" data-tour="ca-week"><div class="row" style="justify-content:space-between"><b>This week</b><span class="small muted num">' + Math.round(e.week / 12 * 100) + '%</span></div><div class="bar" style="margin:.4rem 0 .6rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' +
         '<div class="small">Week ' + e.week + ': ' + esc(mod.track ? EG.trackFor(c.goals) : mod.title) + '</div><button class="btn small" data-ctab="videos" style="margin-top:.6rem">Continue</button></div>' +
+        '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-msgcard"><span class="small"><b>Message ' + esc(U.first(c.practitioner)) + '</b><br><span class="muted">Questions about your protocol, an order or a class</span></span><button class="btn small" data-ctab="msg">Message</button></div>' +
         '<div class="ca-card row" style="justify-content:space-between" data-tour="ca-zoom"><span><b>Live Zoom</b><br><span class="small muted">Thursday 6:00pm &middot; with ' + esc(EG.PRACTITIONERS[1].name) + '</span></span><button class="btn small" id="caZoom">Join</button></div>';
     }
     return head +
@@ -102,7 +103,17 @@
       '<p class="small muted" style="margin:0">Remedy and supplement recommendations are made for you in the Premium Course, from your scan and a practitioner&rsquo;s review.</p></div>' +
       '<h3 class="ca-h">Picked for you</h3><div data-tour="ca-picked">' + picks.map(function (v) { return videoRow(v, c); }).join('') + '</div>' +
       '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap;margin-top:.8rem"><span class="small"><b>Talk to a Certified Practitioner</b><br><span class="muted">30 minutes, ' + money(EG.sessionPrice(false, c)) + '</span></span><button class="btn small" data-ctab="book">Book</button></div>' +
+      '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-msgcard"><span class="small"><b>Message ' + esc(U.first(c.practitioner)) + '</b><br><span class="muted">Questions about your protocol, an order or a class</span></span><button class="btn small" data-ctab="msg">Message</button></div>' +
       '<div class="ca-card ca-up" data-tour="ca-upsell"><p class="eyebrow" style="margin:0">Premium Course &middot; ' + money(EG.PROGRAM.price, false) + '</p><b>Your personal protocol, built with a practitioner</b><ul class="ca-ben">' + EG.PROGRAM.includes.slice(0, 6).map(function (x) { return '<li>' + esc(x[0]) + '</li>'; }).join('') + '</ul><button class="btn honey small" id="caProgram">See everything included</button></div>';
+  }
+  /* The thread with their practitioner. Replies come from the Client Portal. */
+  function thread(c) { return (S().messages || []).filter(function (m) { return m.client === c.id; }); }
+  function unseen(c) { return thread(c).filter(function (m) { return m.from === 'team' && m.seen === false; }).length; }
+  function messages(c) {
+    var th = thread(c);
+    return '<h2 class="ca-title">Messages</h2><p class="small muted" style="margin-top:-.4rem">With ' + esc(c.practitioner) + ' and the Evergrove team. We usually reply within a day.</p>' +
+      '<div class="thread" data-tour="ca-thread">' + (th.length ? th.map(function (m) { return '<div class="bub ' + (m.from === 'client' ? 'me' : 'them') + '">' + esc(m.text) + '<span class="bub-m">' + (m.from === 'client' ? 'You' : esc(m.by)) + ' &middot; ' + U.fmtDate(m.at, { month: 'short', day: 'numeric' }) + '</span></div>'; }).join('') : '<p class="small muted">No messages yet. Ask anything about your protocol, an order or a class.</p>') + '</div>' +
+      '<div class="msgbox"><textarea id="caMsg" rows="2" placeholder="Write a message"></textarea><button class="btn small" id="caMsgSend">Send</button></div>';
   }
   /* Today's doses from a protocol, grouped by time of day, ticked off as taken. */
   function todayList(pr, short) {
@@ -191,7 +202,7 @@
       }).join('') : '<p class="small muted">No orders yet.</p>') + '</div>' +
       (c.autoship ? '<h3 class="ca-h">Refills</h3><div class="ca-card row" style="justify-content:space-between"><span class="small"><b>Next refill in 9 days</b><br><span class="muted">' + (c.plan_items || []).length + ' items, every 30 days</span></span><span class="row"><button class="btn ghost small" data-crefill="skip">Skip</button><button class="btn ghost small" data-crefill="pause">Pause</button></span></div>' : '') +
       '<h3 class="ca-h">My classes</h3>' + (owned.length ? owned.slice(0, 4).map(function (v) { return videoRow(v, c); }).join('') : '<p class="small muted">Classes you buy appear here, yours to keep.</p>') +
-      '<h3 class="ca-h">Ask our team</h3><div class="ca-card"><textarea id="caAsk" rows="3" placeholder="Questions about your plan, an order or a class"></textarea><button class="btn small" id="caAskSend" style="margin-top:.5rem">Send</button><p class="small muted" style="margin:.4rem 0 0">We usually reply within a day.</p></div>' +
+      '<h3 class="ca-h">Questions?</h3><div class="ca-card row" style="justify-content:space-between"><span class="small">Message ' + esc(c.practitioner) + '</span><button class="btn small" data-ctab="msg">Messages</button></div>' +
       '<button class="linkish" id="caSignOut" style="margin-top:1rem">Sign out</button>';
   }
 
@@ -239,19 +250,21 @@
 
   /* ------------------------------------------------------------- frame */
   function view() {
+    var ca0 = st(), c0 = me();
+    if (c0 && ca0.tab === 'msg') thread(c0).forEach(function (m) { if (m.from === 'team') m.seen = true; });
     var ca = st(), c = me(), tab = c ? ca.tab : (ca.tab === 'quiz' ? 'quiz' : 'home');
-    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'book' ? book(c) : tab === 'report' ? reportScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : home(c);
+    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'book' ? book(c) : tab === 'report' ? reportScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
     var n = cartCount();
     var tabs = [['home', 'Home', '<path d="M4 11l8-7 8 7v9H4z"/>']].concat(c && c.member ? [['protocol', 'Protocol', '<path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/>']] : []).concat([ ['videos', 'Courses', '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>'], ['book', 'Book', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'], ['shop', 'Shop', '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>']]);
     return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top"><span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>' +
-      (c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="me" id="caMe" aria-label="My account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button><button class="ca-cartbtn" id="caCart" aria-label="Cart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>' + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '') + '</div>' +
+      (c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>' + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-cartbtn" data-ctab="me" id="caMe" aria-label="My account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button><button class="ca-cartbtn" id="caCart" aria-label="Cart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>' + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '') + '</div>' +
       '<div class="ph-body" id="caBody">' + screen + '</div>' +
       (c ? '<nav class="ph-tabs">' + tabs.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">' + t[2] + '</svg>' + t[1] + '</button>'; }).join('') + '</nav>' : '') +
       sheet() + '</div>' +
       '<aside class="cside"><p class="eyebrow">Client app</p><h1 class="h1">What your clients use</h1><p class="lede" style="margin-bottom:1rem">A separate, simple app for clients, on their phone or computer. It installs to the home screen and lives at <code>evergrove.example/app</code>.</p>' +
-      U.pitch('new', 'Built on the same platform as the console. Everything a client does here, the team sees there: orders land in the approval queue, questions land in the inbox, purchases unlock instantly.') +
+      U.pitch('new', 'Built on the same platform as the console. Everything a client does here, the team sees there: orders land in the approval queue, messages land on the client page, purchases unlock instantly.') +
       '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>' +
-      '<ul class="cfeat"><li><b>Free account</b> A wellness snapshot from the questionnaire, free classes, short courses and session booking. No product suggestions.</li><li><b>Premium Course members</b> Their protocol with a daily schedule and reminders, their scan report, course week and Zoom.</li><li><b>Shop</b> Open to Premium members and clients who have had a consultation, so a practitioner is always involved.</li><li><b>Order tracking</b> Plain-language status for every order.</li></ul></aside></div>';
+      '<ul class="cfeat"><li><b>Free account</b> A wellness snapshot from the questionnaire, free classes, short courses and session booking. No product suggestions.</li><li><b>Premium Course members</b> Their protocol with a daily schedule and reminders, their scan report, course week and Zoom.</li><li><b>Shop</b> Open to Premium members and clients who have had a consultation, so a practitioner is always involved.</li><li><b>Messages</b> A direct line to their practitioner. Replies are sent from the Client Portal.</li><li><b>Order tracking</b> Plain-language status for every order.</li></ul></aside></div>';
   }
 
   function bind() {
@@ -338,12 +351,12 @@
     $$('[data-crefill]').forEach(function (b) {
       b.addEventListener('click', function () { var c = me(), k = b.getAttribute('data-crefill'); U.activity(c.name + (k === 'skip' ? ' skipped their next refill' : ' paused refills') + ' in the client app. Schedule updated.'); U.toast(k === 'skip' ? 'Next refill skipped' : 'Refills paused'); });
     });
-    var ask = $('#caAskSend');
-    if (ask) ask.addEventListener('click', function () {
-      var t = $('#caAsk').value.trim(), c = me(); if (!t) return;
-      S().inbox.unshift({ id: 'm' + Date.now(), from: c.id, at: U.today(), text: t, done: false });
-      U.activity('New question from ' + c.name + ' in the client app. Added to the shared inbox.');
-      U.save(); $('#caAsk').value = ''; U.toast('Sent. The team usually replies within a day.');
+    var ms = $('#caMsgSend');
+    if (ms) ms.addEventListener('click', function () {
+      var t = $('#caMsg').value.trim(), c = me(), now = new Date(); if (!t) return;
+      S().messages.push({ id: 'msg' + Date.now(), client: c.id, from: 'client', by: c.name, at: U.today(), time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), text: t, read: false });
+      U.activity('New message from ' + c.name + ' in the client app, for ' + c.practitioner + '.');
+      U.save(); rerender(); U.toast('Sent to ' + U.first(c.practitioner));
     });
     $$('[data-cwho]').forEach(function (b) { b.addEventListener('click', function () { ca.book.who = b.getAttribute('data-cwho'); rerender(); }); });
     $$('[data-clong]').forEach(function (b) { b.addEventListener('click', function () { ca.book.long = b.getAttribute('data-clong') === '1'; rerender(); }); });

@@ -12,7 +12,8 @@
 
   var U = App.util, esc = U.esc, money = U.money;
   function S() { return App.state(); }
-  function st() { if (!App.ui.pc) App.ui.pc = { client: 'c7', draft: null }; return App.ui.pc; }
+  function st() { if (!App.ui.pc) App.ui.pc = { client: 'c7', draft: null, mode: 'list' }; return App.ui.pc; }
+  function byId(id) { return S().protocols.filter(function (p) { return p.id === id; })[0]; }
   function latestScan(id) { return S().scans.filter(function (x) { return x.client === id && x.status === 'published'; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null; }
   function activeFor(id) { return S().protocols.filter(function (p) { return p.client === id && p.status === 'active'; })[0] || null; }
   function endDate(start, weeks) { var d = new Date(start + 'T12:00:00'); d.setDate(d.getDate() + weeks * 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -45,8 +46,24 @@
     return { id: null, client: id, status: 'draft', created: U.today(), start: EG.iso(2), by: 'Theo Marsh', items: [], note: '' };
   }
 
+  /* Every protocol, newest first, each with its report one click away. */
+  function listView() {
+    var ps = st(), D = S(), rows = D.protocols.slice().sort(function (a, b) { return (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || (a.start < b.start ? 1 : -1); });
+    var shown = ps.viewing ? byId(ps.viewing) : null;
+    var clients = D.clients.slice().sort(function (a, b) { return (b.member ? 1 : 0) - (a.member ? 1 : 0) || a.name.localeCompare(b.name); });
+    return '<p class="eyebrow">What each client takes, how much and when</p><h1 class="h1">Protocol Creator</h1><p class="lede">Build a protocol from the client&rsquo;s report, publish it to their app with a daily schedule and reminders, and view or print any protocol report.</p>' +
+      '<div class="card" style="margin-bottom:1rem"><div class="row"><label for="pcClient" style="margin:0">New protocol for</label><select id="pcClient" style="width:auto;min-width:16rem">' + clients.map(function (x) { return '<option value="' + x.id + '"' + (x.id === ps.client ? ' selected' : '') + '>' + esc(x.name) + (x.member ? ' (Premium)' : '') + '</option>'; }).join('') + '</select><button class="btn" id="pcNew">Open the creator</button></div></div>' +
+      '<h2 class="h2">Protocols</h2><div class="card"><div class="tablewrap"><table data-tour="protolist"><thead><tr><th>Client</th><th>Starts</th><th>Remedies</th><th>Practitioner</th><th>Status</th><th></th></tr></thead><tbody>' +
+      (rows.length ? rows.map(function (p) {
+        return '<tr><td><b>' + esc(U.client(p.client).name) + '</b></td><td class="num">' + U.fmtDate(p.start) + '</td><td class="num">' + p.items.length + '</td><td>' + esc(p.by) + '</td><td>' + (p.status === 'active' ? '<span class="pill ok">Active</span>' : '<span class="pill">Replaced</span>') + '</td>' +
+          '<td class="r"><button class="btn small' + (ps.viewing === p.id ? '' : ' ghost') + '" data-pview="' + p.id + '">View report</button>' + (p.status === 'active' ? ' <button class="btn ghost small" data-pedit="' + p.client + '">Edit</button>' : '') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="muted">No protocols yet.</td></tr>') + '</tbody></table></div></div>' +
+      (shown ? '<div id="pcReport" style="margin-top:1.2rem"><div class="row" style="justify-content:space-between;margin-bottom:.6rem"><h2 class="h2" style="margin:0">Protocol report: ' + esc(U.client(shown.client).name) + '</h2><span class="row"><button class="btn ghost small" id="pcPrint">Download PDF</button><button class="btn ghost small" id="pcHide">Close</button></span></div>' + doc(shown, false) + '</div>' : '');
+  }
+
   function view() {
     var ps = st(), D = S();
+    if (ps.mode !== 'edit') return listView();
     if (!ps.draft || ps.draft.client !== ps.client) ps.draft = draftFor(ps.client);
     var d = ps.draft, c = U.client(ps.client), sc = latestScan(c.id), sug = EG.protoSuggestions(c, sc);
     var have = {}; d.items.forEach(function (x) { have[x.sku] = 1; });
@@ -56,11 +73,12 @@
       return '<div class="sug">' + U.bottle(p, true) + '<div class="grow"><b class="small">' + esc(p.name) + '</b><div class="small muted">' + esc(x.why) + '</div></div>' +
         (have[x.sku] ? '<span class="pill ok">Added</span>' : '<button class="btn ghost small" data-padd="' + x.sku + '">Add</button>') + '</div>';
     };
-    return '<p class="eyebrow">Protocol creator</p><h1 class="h1">Protocols</h1><p class="lede">Choose what a client takes, how much and when. Suggestions come from their latest report and their goals; you decide.</p>' +
+    return '<button class="back" id="pcBack">&larr; All protocols</button><p class="eyebrow">Protocol Creator</p><h1 class="h1">' + esc(c.name) + '</h1><p class="lede">Choose what ' + esc(U.first(c.name)) + ' takes, how much and when. Suggestions come from their latest report and their goals; you decide.</p>' +
       '<div class="row" style="margin-bottom:1rem"><label for="pcClient" style="margin:0">Client</label><select id="pcClient" style="width:auto;min-width:16rem">' + clients.map(function (x) { return '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.name) + (x.member ? ' (Premium)' : '') + '</option>'; }).join('') + '</select>' +
-      (d.editing ? '<span class="pill ok">Editing the active protocol</span>' : '<span class="pill">New protocol</span>') + '</div>' +
+      (d.editing ? '<span class="pill ok">Editing the active protocol</span>' : '<span class="pill">New protocol</span>') + (sc ? '<button class="btn ghost small" id="pcSeeReport">' + (ps.report ? 'Hide' : 'View') + ' client report</button>' : '') + '</div>' +
+      (sc && ps.report ? '<div style="margin-bottom:1rem">' + EGScan.reportHtml(sc, true) + '</div>' : '') +
       '<div class="split"><div class="card" data-tour="suggestions"><h3 class="h3">Suggestions</h3>' +
-        (sc ? '<p class="label" style="margin-top:.6rem">From the report of ' + U.fmtDate(sc.date) + '</p>' + sug.filter(function (x) { return x.from === 'report'; }).map(sugRow).join('') : '<p class="small muted">No published report yet. Create one in Client reports to get remedy suggestions from the scan.</p>') +
+        (sc ? '<p class="label" style="margin-top:.6rem">From the report of ' + U.fmtDate(sc.date) + '</p>' + sug.filter(function (x) { return x.from === 'report'; }).map(sugRow).join('') : '<p class="small muted">No published report yet. Create one in the Client Report Creator to get remedy suggestions from the scan.</p>') +
         '<p class="label" style="margin-top:1rem">From their goals: ' + c.goals.map(EG.goalLabel).join(', ') + '</p>' + sug.filter(function (x) { return x.from === 'goals'; }).slice(0, 4).map(sugRow).join('') + '</div>' +
       '<div class="card" data-tour="builder"><h3 class="h3">' + esc(U.first(c.name)) + '&rsquo;s protocol</h3>' +
         (d.items.length ? d.items.map(function (x, i) {
@@ -72,14 +90,28 @@
         }).join('') : '<p class="small muted">Add remedies from the suggestions to start.</p>') +
         '<div class="fields" style="margin-top:.8rem"><div><label for="pcStart">Starts</label><input id="pcStart" type="date" value="' + d.start + '"></div><div><label for="pcBy">Practitioner</label><select id="pcBy">' + EG.CERTIFIED.map(function (p) { return '<option' + (p.name === d.by ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') + '</select></div>' +
         '<div class="wide"><label for="pcNote">Note to the client</label><textarea id="pcNote" rows="2">' + esc(d.note) + '</textarea></div></div>' +
-        '<div class="row" style="margin-top:1rem"><button class="btn" id="pcPublish"' + (d.items.length ? '' : ' disabled') + '>Publish to ' + esc(U.first(c.name)) + '&rsquo;s app</button><button class="btn ghost" id="pcOrder"' + (d.items.length ? '' : ' disabled') + '>Order these remedies</button><button class="btn ghost" id="pcPdf"' + (d.items.length ? '' : ' disabled') + '>Save PDF to documents</button></div></div></div>' +
-      (d.items.length ? '<h2 class="h2">What ' + esc(U.first(c.name)) + ' will see</h2>' + doc(d, false) : '');
+        '<div class="row" style="margin-top:1rem"><button class="btn" id="pcPublish"' + (d.items.length ? '' : ' disabled') + '>Publish to ' + esc(U.first(c.name)) + '&rsquo;s app</button><button class="btn ghost" id="pcOrder"' + (d.items.length ? '' : ' disabled') + '>Order these remedies</button><button class="btn ghost" id="pcPdf"' + (d.items.length ? '' : ' disabled') + '>Download PDF</button></div></div></div>' +
+      (d.items.length ? '<h2 class="h2">Protocol report: what ' + esc(U.first(c.name)) + ' will see</h2>' + doc(d, false) : '');
   }
 
   function bind() {
     var ps = st(), $ = U.$, $$ = U.$$, d = ps.draft;
     function keep() { var y = window.scrollY; App.render(); window.scrollTo(0, y); }
-    $('#pcClient').addEventListener('change', function (e) { ps.client = e.target.value; ps.draft = null; App.render(); });
+    function edit(id) { ps.client = id; ps.draft = null; ps.mode = 'edit'; ps.report = false; App.render(); window.scrollTo(0, 0); }
+    if (ps.mode !== 'edit') {
+      $('#pcClient').addEventListener('change', function (e) { ps.client = e.target.value; });
+      $('#pcNew').addEventListener('click', function () { edit($('#pcClient').value); });
+      $$('[data-pedit]').forEach(function (b) { b.addEventListener('click', function () { edit(b.getAttribute('data-pedit')); }); });
+      $$('[data-pview]').forEach(function (b) {
+        b.addEventListener('click', function () { ps.viewing = b.getAttribute('data-pview'); App.render(); var el = $('#pcReport'); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 90); });
+      });
+      var hide = $('#pcHide'); if (hide) hide.addEventListener('click', function () { ps.viewing = null; keep(); });
+      var pr = $('#pcPrint'); if (pr) pr.addEventListener('click', function () { U.toast('PDF downloaded (simulated)'); });
+      return;
+    }
+    $('#pcBack').addEventListener('click', function () { ps.mode = 'list'; ps.draft = null; App.render(); window.scrollTo(0, 0); });
+    var sr = $('#pcSeeReport'); if (sr) sr.addEventListener('click', function () { ps.report = !ps.report; keep(); });
+    $('#pcClient').addEventListener('change', function (e) { ps.client = e.target.value; ps.draft = null; ps.report = false; App.render(); });
     $$('[data-padd]').forEach(function (b) {
       b.addEventListener('click', function () {
         var sku = b.getAttribute('data-padd'), sug = EG.protoSuggestions(U.client(d.client), latestScan(d.client)).filter(function (x) { return x.sku === sku; })[0] || {};
@@ -110,7 +142,7 @@
       D.protocols.unshift(p);
       D.emails.unshift({ at: U.today(), to: c.id, kind: 'Protocol', subject: 'Your protocol is ready' });
       U.activity('Protocol for ' + c.name + ' published by ' + p.by + ': ' + p.items.length + ' remedies. Daily reminders scheduled in their app.');
-      U.save(); ps.draft = null; App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
+      U.save(); ps.draft = null; App.render(); U.toast('Published and saved to ' + U.first(c.name) + '’s documents.');
     });
     var ord = $('#pcOrder');
     if (ord) ord.addEventListener('click', function () {
@@ -122,9 +154,7 @@
     });
     var pdf = $('#pcPdf');
     if (pdf) pdf.addEventListener('click', function () {
-      c.docs = c.docs || [];
-      c.docs.unshift({ name: 'Protocol ' + U.fmtDate(d.start, { month: 'short', day: 'numeric' }) + '.pdf', at: U.today(), kind: 'Protocol' });
-      U.save(); U.toast('PDF saved to ' + c.name + '’s documents');
+      U.toast('PDF downloaded (simulated). Published protocols are saved to ' + U.first(c.name) + '’s documents automatically.');
     });
   }
 

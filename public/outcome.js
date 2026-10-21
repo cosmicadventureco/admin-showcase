@@ -16,6 +16,7 @@
     ['Ordering from suppliers one product at a time', 'Daily', 'approve', 4, 0.5, 'An approved order fills the supplier cart in one go; you click checkout.'],
     ['Copying tracking numbers to clients', 'Daily', 'auto', 2, 0, 'Tracking goes to the client when the supplier ships.'],
     ['Chasing forms, bookings and payments', 'Daily', 'auto', 3, 0.5, 'Each client page shows what is outstanding, and links go out automatically.'],
+    ['Answering client questions by text and email', 'Daily', 'approve', 2, 1, 'One message thread per client, on their page and in their app.'],
     ['Finding a client’s documents and history', 'Daily', 'auto', 2, 0, 'Reports, protocols, forms, notes and payments live on one page per client.']
   ];
   var HOW = { auto: ['ok', 'Runs itself'], approve: ['honey', 'You check it, one click'] };
@@ -32,18 +33,18 @@
 
   function view() {
     var before = JOBS.reduce(function (t, j) { return t + j[3]; }, 0), after = JOBS.reduce(function (t, j) { return t + j[4]; }, 0);
-    return '<p class="eyebrow">Why build this</p><h1 class="h1">Outcome</h1><p class="lede">Four tools that carry the practice day to day, so the admin no longer rests on one person. Everything else can be added when it is needed.</p>' +
+    return '<p class="eyebrow">Summary</p><h1 class="h1">The Outcome</h1><p class="lede">Four tools that carry the practice day to day, so the admin no longer rests on one person. Everything else can be added when it is needed.</p>' +
       '<div class="grid g4" style="margin-bottom:1.6rem" data-tour="purposes">' + [
-        ['Client Portal', 'One page per client: details, bookings and packages, billing, protocols, notes, forms and documents.'],
+        ['Client Portal', 'One page per client: details, bookings and packages, billing, protocols, messages, notes, forms and documents.'],
         ['Shop', 'Orders wait for a person, then fill the supplier cart in one go. Prices stay behind login, as Physica requires.'],
-        ['Client reports', 'The scan exports become a finished report the same day, with claim language flagged and a practitioner sign-off.'],
-        ['Protocols', 'Suggested from the report. You set what, how much and when; the client gets a schedule and reminders.']
+        ['Client Report Creator', 'Upload the four scan files and get a finished report the same day, with claim language flagged and a practitioner sign-off.'],
+        ['Protocol Creator', 'Suggested from the report. You set what, how much and when; the client gets a schedule and reminders.']
       ].map(function (x) { return '<div class="card"><h3 class="h3" style="font-size:1.05rem">' + x[0] + '</h3><p class="small muted" style="margin:0">' + x[1] + '</p></div>'; }).join('') + '</div>' +
       '<h2 class="h2">Time back: about ' + before + ' hours a week of admin becomes ' + after + '</h2><div class="card"><p class="small muted" style="margin-top:0">Estimates for this pitch; we confirm them with the team before building.</p><div class="tablewrap"><table data-tour="jobs"><thead><tr><th>Job</th><th>How often</th><th>After the build</th><th class="r">Hours a week now</th><th class="r">After</th></tr></thead><tbody>' +
         JOBS.map(function (j) { return '<tr><td><b>' + esc(j[0]) + '</b><br><span class="small muted">' + esc(j[5]) + '</span></td><td>' + j[1] + '</td><td><span class="pill ' + HOW[j[2]][0] + '">' + HOW[j[2]][1] + '</span></td><td class="r">' + j[3] + '</td><td class="r">' + j[4] + '</td></tr>'; }).join('') +
         '<tr class="total"><td colspan="3"><b>Total</b></td><td class="r"><b>' + before + '</b></td><td class="r"><b>' + after + '</b></td></tr></tbody></table></div></div>' +
       '<h2 class="h2">Ready to add later, when you want them</h2><div class="later" data-tour="later">' + LATER.map(function (x) { return '<div class="card"><b>' + x[0] + '</b><p class="small muted" style="margin:.2rem 0 0">' + x[1] + '</p></div>'; }).join('') + '</div>' +
-      '<p class="small muted" style="margin-top:.8rem">Most of these are already sketched in this prototype and switched off to keep things simple.</p>';
+      '<p class="small muted" style="margin-top:.8rem">Most of these are already sketched in this prototype and switched off to keep things simple. Today the sample data lives in the browser; the build adds a proper database.</p>';
   }
 
   App.register('outcome', view, function () {});

@@ -209,10 +209,12 @@
   var CHAPTERS = [
     { name: 'Home', run: async function () {
       App.go('dashboard'); await sleep(600);
-      say('Four tools run the practice', 'Client Portal, Shop, Client reports and Protocols. Everything else can be added later, when it is needed.');
+      say('Four tools run the practice', 'Client Portal, Shop, Client Report Creator and Protocol Creator. Everything else can be added later, when it is needed.');
       await spot('[data-tour="doors"]', 4200, 6);
-      say('What needs a person today', 'Orders to approve, reports to review, forms outstanding. One list, so nothing depends on one person remembering.');
-      await spot('[data-tour="today"]', 3600);
+      say('Checklist', 'Messages to answer, orders to approve, scan files to upload. One list, so nothing depends on one person remembering.');
+      await spot('[data-tour="today"]', 3400);
+      say('Upcoming Appointments', 'The week ahead at a glance, each one a click from the client’s page.');
+      await spot('[data-tour="appts"]', 3000);
     } },
     { name: 'Client Portal', run: async function () {
       App.ui.cp = null; App.go('clients'); await sleep(600);
@@ -231,6 +233,11 @@
       await click('[data-cptab="protocols"]', { after: 800 });
       say('Protocols', 'The polished PDF of what they take and when, ready to print or send.');
       await spot('[data-tour="protodoc"]', 3200);
+      await click('[data-cptab="messages"]', { after: 700 });
+      say('Messages', 'Clients write to their practitioner from the app. The reply goes from here, straight back to their phone.');
+      await spot('[data-tour="messages"] .thread', 2400);
+      await type('#cpReply', 'Yes, keep the bedtime dose the same for now. We will review it at your next session.', 18);
+      await click('#cpSend', { after: 900 });
       await click('[data-cptab="forms"]', { after: 700 });
       say('Forms and waivers', 'Intake, consent and the program agreement, signed online. Anything missing can be sent in one click.');
       await spot('[data-tour="forms"]', 3000);
@@ -238,13 +245,13 @@
       say('Documents', 'Scan reports, protocols and anything uploaded, kept together.');
       await spot('[data-tour="docs"]', 2800);
     } },
-    { name: 'Client reports', run: async function () {
+    { name: 'Client Report Creator', run: async function () {
       App.ui.sc = null; App.go('scans'); await sleep(600);
-      say('Client report creator', 'The in-house energetic scan becomes a finished client report the same day, without retyping.');
-      await spot('[data-tour="scanlist"]', 2600);
-      await click('[data-scopen="s2"]', { after: 600 });
-      say('Add the four scan exports', 'Resonance, root cause, symptom support and imbalance, each in its own slot.');
+      say('Client Report Creator: step 1', 'Pick the client and upload the four scan files: resonance, root cause, symptom support and imbalance. Each has its own slot.');
+      await spot('[data-tour="newreport"]', 3000);
+      await choose('#scClient', 'c7');
       await click('#scAll', { after: 700 });
+      await spot('[data-tour="slots"]', 1600);
       await click('#scExtract', { after: 300 });
       await until(function () { return App.ui.sc.step === 'review'; }, 6000);
       await sleep(400);
@@ -255,16 +262,16 @@
       await click('[data-edit]', { after: 500 });
       await type('[data-desc]', 'Chosen to support a calmer inflammatory pattern.', 22);
       await click('#scBuild', { after: 900 });
-      say('A practitioner signs off, then it is published', 'Nothing reaches the client until a practitioner has reviewed it.');
+      say('A practitioner signs off, then it is published', 'Nothing reaches the client until a practitioner has reviewed it. The report is saved to her documents.');
       await spot('[data-tour="report"] .rr-banner', 2200);
       await click('#scSign', { after: 400 });
       await click('#scPublish', { after: 1400 });
       say('Straight on to the protocol', 'The report feeds the protocol creator, so nothing is copied across by hand.');
       await click('#scProto', { after: 900 });
     } },
-    { name: 'Protocols', run: async function () {
-      if (App.ui.view !== 'protocols') { App.ui.pc = { client: 'c7', draft: null }; App.go('protocols'); await sleep(600); }
-      say('Protocol creator', 'Suggestions come from Aiko’s report first, then from her goals. The practitioner decides what goes in.');
+    { name: 'Protocol Creator', run: async function () {
+      if (App.ui.view !== 'protocols') { App.ui.pc = { client: 'c7', draft: null, mode: 'edit' }; App.go('protocols'); await sleep(600); }
+      say('Protocol Creator', 'Suggestions come from Aiko’s report first, then from her goals. The practitioner decides what goes in.');
       await spot('[data-tour="suggestions"]', 3000);
       var adds = document.querySelectorAll('[data-padd]');
       for (var i = 0; i < Math.min(2, adds.length); i++) await click(document.querySelectorAll('[data-padd]')[0], { after: 600 });
@@ -277,6 +284,11 @@
       await click('#pcPublish', { after: 1200 });
       say('Publish, then order in one click', 'The remedies go to the Shop as one order, sized for the length of the protocol. A person still approves it.');
       await click('#pcOrder', { after: 1400 });
+      await click('#pcBack', { after: 700 });
+      say('Every protocol, with its report', 'Any protocol report can be opened, printed or downloaded. It is also on the client’s page under Protocols and Documents.');
+      await spot('[data-tour="protolist"]', 2400);
+      var act = App.state().protocols.filter(function (p) { return p.client === 'c7' && p.status === 'active'; })[0];
+      if (act) { await click('[data-pview="' + act.id + '"]', { after: 900 }); await spot('#pcReport [data-tour="protodoc"]', 2800); }
     } },
     { name: 'What the client sees', run: async function () {
       App.ui.ca = null; App.go('client'); await sleep(400);
@@ -288,6 +300,10 @@
       await click('[data-ctab="protocol"]', { after: 700 });
       say('Her full protocol, and reordering', 'The whole schedule and the PDF, with one button to order her remedies again.');
       await spot('[data-tour="ca-protocol"]', 3200);
+      await click('#caMsgs', { after: 700 });
+      say('A direct line to her practitioner', 'She asks a question from the app. It lands on her page in the Client Portal and on the Checklist.');
+      await type('#caMsg', 'Can I take the evening drops with dinner?', 30);
+      await click('#caMsgSend', { after: 1200 });
     } },
     { name: 'Free accounts', run: async function () {
       App.ui.ca = null; App.go('client'); await sleep(600);
@@ -327,11 +343,11 @@
       say('Physica, Biotics and DesBio', 'How orders reach each one and the pricing rules the platform keeps to. Physica prices stay behind login.');
       await spot('[data-tour="supplier"]', 3400);
     } },
-    { name: 'Outcome', run: async function () {
+    { name: 'The Outcome', run: async function () {
       App.go('outcome'); await sleep(600);
       say('Four tools as the backbone', 'Enough to run the practice day to day, without the admin resting on one person.');
       await spot('[data-tour="purposes"]', 3200);
-      say('Time back, job by job', 'About 18 hours a week of admin becomes about 2. Estimates to confirm with the team.');
+      say('Time back, job by job', 'About 20 hours a week of admin becomes about 3. Estimates to confirm with the team.');
       await spot('[data-tour="jobs"]', 3600);
       say('The rest, when you want it', 'Newsletters, a video library, a Shopify store and more are already sketched, and switched off for now.');
       await spot('[data-tour="later"]', 3200);
@@ -403,7 +419,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Four tools that carry the practice: a Client Portal, a Shop, a client report creator and a protocol creator. Plus a simple app for clients and the $6,995 Premium Course.</p>', 2800);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Four tools that carry the practice: the Client Portal, the Shop, the Client Report Creator and the Protocol Creator. Plus a simple app for clients and the $6,995 Premium Course.</p>', 2800);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     clockStart = performance.now(); pausedTotal = 0;
@@ -455,8 +471,8 @@
     stopped = false;
     card('<p class="k">Showcase complete</p><h2>The backbone of the practice</h2>' +
       '<p>Four tools to start with. Everything else is added when the business needs it.</p>' +
-      '<ul><li>Client Portal</li><li>Shop with approved drop-shipping</li><li>Client report creator</li><li>Protocol creator &amp; schedules</li><li>Client app</li><li>$6,995 Premium Course</li></ul>' +
-      '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endOutcome">See the outcome</button><button class="btn ghost" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
+      '<ul><li>Client Portal</li><li>Shop with approved drop-shipping</li><li>Client Report Creator</li><li>Protocol Creator &amp; schedules</li><li>Client messages</li><li>Client app</li><li>$6,995 Premium Course</li></ul>' +
+      '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endOutcome">See The Outcome</button><button class="btn ghost" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });
         c.querySelector('#endOutcome').addEventListener('click', function () { c.remove(); App.go('outcome'); });

@@ -53,18 +53,22 @@ video library, work queue, automation settings, clinic batching, Shopify,
 quotes) is still in the code but hidden, and listed on the Outcome page as
 "ready to add later".
 
-**Practice side** (Home shows four big buttons and a "Needs you today" list):
+**Practice side** (Home shows four big buttons, a Checklist and Upcoming
+Appointments for the week; The Outcome sits apart at the bottom of the menu):
 
 1. **Client Portal:** the client list, and one page per client with tabs:
    Basic information, Bookings & packages, Billing & payments, Protocols (the
-   PDF of their recommendations), Notes, Forms & waivers, Documents (scan
-   reports, protocols, uploads).
+   PDF of their recommendations), Messages (the thread with the client, who
+   writes from their app), Notes, Forms & waivers, Documents (scan reports,
+   protocols, uploads).
 2. **Shop:** Orders (the approval queue and the order pipeline), Products,
    Suppliers. Nothing reaches a supplier until a person approves it.
-3. **Client reports:** the energetic scan exports become a reviewed,
-   practitioner-signed client report. "Next: build the protocol" hands over to
-   the protocol creator.
-4. **Protocols:** suggestions from the client's latest report first, then from
+3. **Client Report Creator:** step 1 is at the top of the page: pick the
+   client and upload the four scan files (RR, RC, SS, IMB). Then review, sign
+   off and publish. The report is saved to the client's documents and app, and
+   "Next: build the protocol" hands over to the Protocol Creator.
+4. **Protocol Creator:** a list of every protocol with "View report" (the
+   printable protocol report), plus the creator itself: suggestions from the client's latest report first, then from
    their goals. The practitioner sets dose, weeks, how to take it and the times
    of day (morning, midday, evening, bedtime). Publishing puts the schedule and
    reminders in the client's app and the PDF in their documents. "Order these
@@ -79,6 +83,10 @@ quotes) is still in the code but hidden, and listed on the Outcome page as
 - **Premium Course ($6,995, or 3 x $2,395):** today's protocol with tick-offs
   and reminders, the full protocol and one-tap reorder, their scan report, the
   course week and Thursday's live Zoom.
+- **Everyone:** a Messages screen (chat icon, top of the app) to write to their
+  practitioner. Replies come from the client's Messages tab in the Client Portal.
+
+Data lives in the browser for the showcase; the real build adds a database.
 
 Use "Preview as" beside the phone to switch between a new visitor, a free
 account and two Premium members.
@@ -87,7 +95,8 @@ account and two Premium members.
 
 - **Play Showcase** (top right): restores the sample data, then plays 8
   chapters in about 6 minutes at normal speed: Home, Client Portal, Client
-  reports, Protocols, What the client sees, Free accounts, Shop, Outcome.
+  Report Creator, Protocol Creator, What the client sees, Free accounts, Shop,
+  The Outcome.
   - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
   - **» 1×** (or F) speeds up: 1×, 2× (about 3 minutes), 4×.
@@ -158,7 +167,7 @@ PDF layout.
 ### Outcome (last page)
 
 The case for the build, kept off the working screens: the four tools, the
-admin hours they replace (about 18 a week to 2, estimates to confirm with the
+admin hours they replace (about 20 a week to 3, estimates to confirm with the
 team), and what can be added later. The tour ends here.
 
 ### Drop-shipping always needs a person

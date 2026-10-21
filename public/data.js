@@ -443,6 +443,18 @@
       { id: 'm3', from: 'c6', at: iso(-2), text: 'Please skip my next refill, I am travelling until the 10th.', done: true }
     ];
 
+    /* Conversations between clients and their practitioner, from the app. */
+    var messages = [
+      ['c1', 'client', 'Priya Raman', -3, '08:12', 'Is it okay to take the Adrenal Milieu drops in water, or straight under the tongue?', true],
+      ['c1', 'team', 'Theo Marsh', -3, '10:40', 'Either works. Under the tongue is best, but a little water is fine if that is easier to stick with.', true],
+      ['c1', 'client', 'Priya Raman', 0, '07:55', 'Thank you! Sleeping much better this week. Should I keep the bedtime dose the same?', false],
+      ['c7', 'team', 'Theo Marsh', -1, '16:20', 'Hi Aiko, your scan went well. I will have your report and protocol to you in a day or two.', true],
+      ['c7', 'client', 'Aiko Tanaka', -1, '18:02', 'Great, thank you. I have a work trip next week. Will that be a problem with timing?', false],
+      ['c3', 'client', 'Elena Fuentes', 0, '09:30', 'Can I take Drainage Milieu with my morning coffee, or should I wait?', false],
+      ['c5', 'client', 'Hannah Kowalski', -2, '12:05', 'Is there a workbook to go with the Sleep Reset course?', true],
+      ['c5', 'team', 'Dr. Ana Whitlock, ND', -2, '14:30', 'Yes, it is under lesson 1 as a download. Let me know if you cannot find it.', true]
+    ].map(function (m, i) { return { id: 'msg' + i, client: m[0], from: m[1], by: m[2], at: iso(m[3]), time: m[4], text: m[5], read: m[6] }; });
+
     /* What the system did on its own, newest first. */
     var activity = [
       [0, '07:00', 'Week 12 unlocked for Nadia Haddad. Email sent.'],
@@ -459,7 +471,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 12, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 13, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
