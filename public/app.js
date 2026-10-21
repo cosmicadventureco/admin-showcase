@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v9';
+  var KEY = 'evergrove-showcase-v10';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'store',
@@ -19,7 +19,7 @@
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 9) return s; }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 10) return s; }
     } catch (e) { /* storage blocked: fall through to fresh sample data */ }
     return EG.seed();
   }
@@ -911,7 +911,7 @@
     var a = S.agreements.filter(function (x) { return x.id === ui.quoteId; })[0] || S.agreements[0];
     return head('Paperwork', 'Agreements & quotes',
       'Write a quote once. Every line total and the grand total are worked out for you, and the client signs online.') +
-      pitch('proven', 'The current app already builds quotes and contracts with itemised, auto-calculated invoices and e-signatures. Here it is set up for corporate wellness programmes.') +
+      pitch('proven', 'The current app already builds quotes and contracts with itemised, auto-calculated invoices and e-signatures. Here it is set up for partnerships with retreat organisers and for client agreements.') +
       '<div class="tabs">' + S.agreements.map(function (x) { return '<button class="tab' + (x.id === a.id ? ' is-on' : '') + '" data-q="' + x.id + '">' + esc(x.client) + ' <span class="pill ' + (x.status === 'Signed' ? 'ok' : 'warn') + '" style="margin-left:.3rem">' + x.status + '</span></button>'; }).join('') + '</div>' +
       '<div class="split"><div class="card"><div class="fields">' +
       '<div class="wide"><label for="qTitle">Title</label><input id="qTitle" type="text" value="' + esc(a.title) + '"></div>' +

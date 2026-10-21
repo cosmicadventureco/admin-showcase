@@ -147,7 +147,7 @@
     { id: 'followup', label: 'Follow-up Coaching', mins: 30, price: 75 },
     { id: 'energetics', label: 'Energetics Assessment', mins: 75, price: 0 },
     { id: 'breathwork', label: 'Group Breathwork Workshop', mins: 75, price: 35 },
-    { id: 'corporate', label: 'Corporate Wellness Session', mins: 60, price: 0 },
+    { id: 'corporate', label: 'Retreat Partner Session', mins: 60, price: 0 },
     { id: 'session30', label: 'Practitioner session (30 min)', mins: 30, price: 99 },
     { id: 'session60', label: 'Practitioner session (1 hour)', mins: 60, price: 148 }
   ];
@@ -321,7 +321,7 @@
       { id: 'b2', service: 'followup', date: iso(0), time: '13:00', guests: ['c2'], where: 'Studio' },
       { id: 'b3', service: 'breathwork', date: iso(1), time: '18:00', guests: ['c1', 'c5', 'c10', 'c12', 'c13'], where: 'Studio' },
       { id: 'b4', service: 'energetics', date: iso(2), time: '10:00', guests: ['c3'], where: 'Video call' },
-      { id: 'b5', service: 'corporate', date: iso(4), time: '12:00', guests: ['c4', 'c11', 'c13', 'c9'], where: 'Harbor & Pine (on site)', name: 'Harbor & Pine lunch session' },
+      { id: 'b5', service: 'corporate', date: iso(4), time: '12:00', guests: ['c4', 'c11', 'c13', 'c9'], where: 'Video call', name: 'Stillwater Retreats guest briefing' },
       { id: 'b6', service: 'followup', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call' },
       { id: 'b7', service: 'initial', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio' },
       { id: 'b8', service: 'followup', date: iso(11), time: '09:00', guests: ['c6'], where: 'Video call' },
@@ -370,15 +370,17 @@
 
     var agreements = [
       {
-        id: 'q1', title: 'Corporate Wellness Program', client: 'Harbor & Pine Architects',
-        contact: 'Dana Reyes, People Ops', status: 'Viewed', sent: iso(-2),
+        id: 'q1', title: 'Spring Renewal Retreat: Practitioner Partnership', client: 'Stillwater Retreats',
+        contact: 'Leah Brandt, Retreat Director', status: 'Viewed', sent: iso(-2),
         lines: [
-          ['Lunch-and-learn sessions (monthly)', 6, 450],
-          ['1:1 coaching credits for staff', 20, 75],
-          ['Personalised supplement starter kits', 24, 38],
-          ['On-demand video library seats (6 months)', 24, 12]
+          ['Lead practitioner days (4-day retreat)', 4, 1200],
+          ['Energetic scan and report for each guest', 24, 95],
+          ['Pre-retreat questionnaire and personal plan', 24, 35],
+          ['Personal remedy kit for each guest', 24, 72],
+          ['30-minute follow-up session after the retreat', 24, 99],
+          ['Short course access for guests (3 months)', 24, 25]
         ],
-        terms: 'Sessions are scheduled at least 14 days ahead. Unused coaching credits roll over for 90 days. Supplement kits ship directly to each employee from our fulfilment partners.'
+        terms: '50% deposit on signing, balance due 14 days before the retreat. Guests complete the consent and questionnaire at least 10 days before arrival. Remedy kits ship to the venue for arrival day. Cancellations more than 30 days out are refunded less the deposit.'
       },
       {
         id: 'q2', title: 'VIP Concierge Renewal', client: 'Nadia Haddad', contact: 'nadia.haddad@example.com',
@@ -437,7 +439,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 9, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 10, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
