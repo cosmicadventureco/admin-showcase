@@ -140,9 +140,9 @@ account and two Premium members.
   protocol, approve the order in the Shop. Client side: fill in the health
   questionnaire, sign a waiver, confirm the appointment, look at the client
   report, the protocol and the shop.
-  - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
+  - **Play / Pause** (or Space). **−10s / +10s** (or Left / Right arrow) jump back or ahead about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
-  - **» 1×** (or F) speeds up: 1×, 2× (about 2 minutes), 4×.
+  - **Speed** (or F): 1×, 1.5×, 2×. Normal speed now runs about 2 minutes.
 - Open `/?play` (or `/#play`) to start the tour on load.
 - Deep links: `/#dashboard`, `/#clients`, `/#shop`, `/#scans`, `/#protocols`,
   `/#outcome`, `/#client`.

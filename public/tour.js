@@ -2,12 +2,12 @@
  *
  * Drives the real console with a visible, obviously simulated cursor: it moves,
  * clicks, types and signs exactly as a person would, so every screen it shows
- * is the working app rather than a recording. About three minutes at normal
+ * is the working app rather than a recording. About two minutes at normal
  * speed.
  *
- * Controls while playing: Space pauses, Left arrow or the << button goes back
- * about 10 seconds, F or the >> button speeds up (1x, 2x, 4x), Right arrow
- * skips a chapter, Esc stops.
+ * Controls while playing: Play and Pause (or Space), -10s / Left arrow goes
+ * back about 10 seconds, +10s / Right arrow jumps ahead about 10 seconds,
+ * Speed / F cycles 1x, 1.5x and 2x, Esc stops.
  *
  * Going back works by putting the app's data back the way it was when the
  * chapter began, then replaying the chapter instantly, with no waits, up to
@@ -19,7 +19,9 @@
   var playing = false, paused = false, stopped = false, skip = false;
   /* Every wait, cursor move and keystroke runs on this clock. Normal speed is
      half the original pace; the >> button steps through 2x and 4x. */
-  var SPEEDS = [0.5, 1, 2], speedIdx = 0;
+  var SPEEDS = [1, 1.5, 2], speedIdx = 0;
+  /* Play time still to skip after +10s; consumed instantly by the next waits. */
+  var ffLeft = 0;
   function rate() { return SPEEDS[speedIdx]; }
   var cur = { x: 0, y: 0 };
   var els = {};
@@ -42,6 +44,7 @@
         if (rewindTo) return reject(REWIND);
         if (skip) return reject(SKIP);
         if (instant) return resolve();
+        if (ffLeft > 0 && !paused) { var take = Math.min(left, ffLeft); left -= take; ffLeft -= take; if (left <= 0) return resolve(); }
         var now = performance.now();
         if (!paused) left -= (now - last) * rate();
         last = now;
@@ -58,7 +61,7 @@
     var sx = cur.x, sy = cur.y;
     var dist = Math.hypot(x - sx, y - sy);
     ms = ms || Math.min(1100, Math.max(380, dist * 1.1));
-    if (reduce || instant) { cur.x = x; cur.y = y; place(); return Promise.resolve(); }
+    if (reduce || instant || ffLeft > 0) { if (ffLeft > 0) ffLeft = Math.max(0, ffLeft - ms); cur.x = x; cur.y = y; place(); return Promise.resolve(); }
     return new Promise(function (resolve, reject) {
       var done = 0, last = performance.now();
       (function frame(now) {
@@ -349,14 +352,15 @@
     els.spot = document.createElement('div'); els.spot.className = 'spot'; els.spot.hidden = true;
     els.cap = document.createElement('div'); els.cap.className = 'caption'; els.cap.setAttribute('role', 'status'); els.cap.setAttribute('aria-live', 'polite');
     els.cap.innerHTML = '<div class="k"><span id="cChap"></span><span id="cCount"></span></div><h4 id="cTitle"></h4><p id="cText"></p>' +
-      '<div class="ctl"><button type="button" id="cBack" class="ff" title="Back 10 seconds (Left arrow)" aria-label="Back 10 seconds">&laquo; 10s</button><button type="button" id="cPause">Pause</button><button type="button" id="cSkip">Next &rarr;</button><button type="button" id="cFF" class="ff" title="Speed up (F)" aria-label="Speed: normal. Click to speed up">&raquo; 1&times;</button><div class="prog"><i id="cProg"></i></div><button type="button" id="cStop">Exit</button></div>';
+      '<div class="ctl"><button type="button" id="cPlay" title="Play (Space)">Play</button><button type="button" id="cPause" title="Pause (Space)">Pause</button><button type="button" id="cBack" class="ff" title="Back 10 seconds (Left arrow)" aria-label="Back 10 seconds">&minus;10s</button><button type="button" id="cFwd" class="ff" title="Forward 10 seconds (Right arrow)" aria-label="Forward 10 seconds">+10s</button><button type="button" id="cFF" class="ff" title="Change speed (F)">Speed 1&times;</button><div class="prog"><i id="cProg"></i></div><button type="button" id="cStop">Exit</button></div>';
     [els.shield, els.spot, els.cursor, els.cap].forEach(function (e) { document.body.appendChild(e); });
     els.cTitle = $('#cTitle'); els.cText = $('#cText');
-    $('#cPause').addEventListener('click', togglePause);
+    $('#cPlay').addEventListener('click', function () { if (paused) togglePause(); });
+    $('#cPause').addEventListener('click', function () { if (!paused) togglePause(); });
     $('#cFF').addEventListener('click', fastForward);
     $('#cBack').addEventListener('click', rewind);
-    paintSpeed();
-    $('#cSkip').addEventListener('click', function () { skip = true; });
+    $('#cFwd').addEventListener('click', forward);
+    paintSpeed(); paintPlay();
     $('#cStop').addEventListener('click', stop);
   }
   function teardown() {
@@ -366,13 +370,20 @@
   function togglePause() {
     if (paused) pausedTotal += performance.now() - pausedAt; else pausedAt = performance.now();
     paused = !paused;
-    var b = $('#cPause'); if (b) b.textContent = paused ? 'Resume' : 'Pause';
+    paintPlay();
   }
+  function paintPlay() {
+    var a = $('#cPlay'), b = $('#cPause'); if (!a || !b) return;
+    a.classList.toggle('on', !paused); b.classList.toggle('on', paused);
+    a.setAttribute('aria-pressed', String(!paused)); b.setAttribute('aria-pressed', String(paused));
+  }
+  /* Jump ahead about ten seconds of play: the next waits and moves happen at once. */
+  function forward() { if (!playing || instant) return; ffLeft += 10000; }
   function stop() { stopped = true; }
   function paintSpeed() {
     var b = $('#cFF'); if (!b) return;
-    var x = rate() * 2;
-    b.innerHTML = '&raquo; ' + x + '&times;';
+    var x = rate();
+    b.innerHTML = 'Speed ' + x + '&times;';
     b.classList.toggle('on', x > 1);
     b.setAttribute('aria-label', 'Speed: ' + (x === 1 ? 'normal' : x + ' times') + '. Click to change');
   }
@@ -381,7 +392,7 @@
     if (!playing) return;
     if (e.key === 'Escape') { e.preventDefault(); stop(); }
     else if (e.key === ' ') { e.preventDefault(); togglePause(); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); skip = true; }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); forward(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); rewind(); }
     else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fastForward(); }
   }
@@ -398,7 +409,7 @@
 
   async function play() {
     if (playing) return;
-    playing = true; paused = false; stopped = false; skip = false;
+    playing = true; paused = false; stopped = false; skip = false; ffLeft = 0;
     marks = []; snaps = []; instant = false; fastUntil = -1; rewindTo = null;
     App.reset(); App.go('dashboard');
     document.body.classList.add('touring');
@@ -437,7 +448,7 @@
           Object.keys(App.ui).forEach(function (k) { delete App.ui[k]; });
           Object.keys(ui).forEach(function (k) { App.ui[k] = ui[k]; });
           App.render(); window.scrollTo(0, 0);
-          instant = true; replaying = true; fastUntil = to.idx; rewindTo = null; skip = false;
+          instant = true; replaying = true; fastUntil = to.idx; rewindTo = null; skip = false; ffLeft = 0;
           els.cursor.style.opacity = 0; els.cap.classList.add('rewinding');
           chapterIndex = to.chapter - 1;
           continue;
