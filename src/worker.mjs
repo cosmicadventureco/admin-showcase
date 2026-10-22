@@ -8,6 +8,10 @@
  *
  * Email goes out through Resend, the same provider the intake app uses.
  * Needs one secret: npx wrangler secret put RESEND_API_KEY
+ *
+ * With a KV namespace bound as NDA_KV, each signature is also kept against
+ * the signer's IP address, and GET /api/nda tells the page whether this IP
+ * has signed, so the agreement is asked once per IP as well as per device.
  */
 
 const json = (body, status = 200) =>
@@ -24,7 +28,7 @@ const TERMS = {
     '2. Keep it confidential. You will keep the demo and what you learn from it confidential, including its design, features, workflows, written content and any pricing. You may share it only with people in your own organization who need to see it to evaluate working with Tyler Webb, and only if they agree to these same terms.',
     '3. No copying or reuse. You will not copy, download, save, record, scrape, screenshot for distribution or otherwise reproduce the demo or its source code. You will not use the demo, in whole or in part, as a model, template or framework for any other app, product or project, whether you build it yourself or have someone else build it.',
     '4. No license. Viewing the demo gives you no ownership and no license. Any right to use the software comes only from a separate agreement signed by Tyler Webb.',
-    '5. Remedies and term. A breach could cause harm that money alone cannot repair, so Tyler Webb may seek an injunction as well as any other remedy available by law. This agreement is governed by the laws of the State of Utah. It lasts three years from the date you sign, except that the source code stays confidential indefinitely. It does not cover information that was already public, or that you already knew or developed independently without using the demo.'
+    '5. If the agreement is broken, and how long it lasts. If these terms are broken, Tyler Webb may ask a court to order the copying or use to stop, and may use any other remedy the law allows. This agreement is governed by the laws of the State of Utah. It lasts three years from the date you sign, except that the source code stays confidential indefinitely. It does not cover information that was already public, or that you already knew or developed independently without using the demo.'
   ]
 };
 
@@ -37,10 +41,12 @@ async function signNda(request, env) {
   if (name.split(/\s+/).length < 2) return json({ ok: false, error: 'A full name is needed.' }, 400);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, error: 'That email address looks incomplete.' }, 400);
   if (b.agreed !== true) return json({ ok: false, error: 'The agreement was not accepted.' }, 400);
-  if (!env.RESEND_API_KEY) return json({ ok: false, error: 'Email is not set up yet.' }, 503);
-
   const cf = request.cf || {};
   const received = new Date().toISOString();
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+  if (env.NDA_KV && ip) await env.NDA_KV.put('ip:' + ip, JSON.stringify({ name, email, org, version, received }));
+  if (!env.RESEND_API_KEY) return json({ ok: false, error: 'Email is not set up yet.' }, 503);
+
   const rows = [
     ['Name (signature)', name],
     ['Email', email],
@@ -49,7 +55,7 @@ async function signNda(request, env) {
     ['Received (server, UTC)', received],
     ['Agreement version', version],
     ['Page', clean(b.page, 300)],
-    ['IP address', request.headers.get('CF-Connecting-IP') || ''],
+    ['IP address', ip],
     ['Location', [cf.city, cf.region, cf.country].filter(Boolean).join(', ')],
     ['Browser', clean(request.headers.get('User-Agent'), 300)]
   ];
@@ -80,11 +86,20 @@ async function signNda(request, env) {
   return json({ ok: true });
 }
 
+/* Has someone at this IP already signed this version? */
+async function signedHere(request, env) {
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+  if (!env.NDA_KV || !ip) return json({ signed: false });
+  const rec = await env.NDA_KV.get('ip:' + ip, 'json');
+  return json({ signed: !!(rec && TERMS[rec.version]) });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/api/nda') {
-      if (request.method !== 'POST') return json({ ok: false, error: 'Use POST.' }, 405);
+      if (request.method === 'GET') return signedHere(request, env);
+      if (request.method !== 'POST') return json({ ok: false, error: 'Use POST or GET.' }, 405);
       return signNda(request, env);
     }
     return env.ASSETS.fetch(request);

@@ -568,8 +568,9 @@
     { code: 'IMB', label: 'Imbalance Scan', hint: 'Markers with dilution notes' }
   ];
   var SCAN_SECTIONS = ['Generational Echoes', 'Toxins & Interferences', 'Resonating Maladies', 'Environmental Stressors',
-    'Hormone Markers', 'Amino Acid Markers', 'Mineral Markers', 'Vitamin Markers', 'Supportive Lifestyle Changes',
-    'Beneficial Positive Thoughts', 'Botanical Support', 'Recommended Remedies'];
+    'Hormone Markers', 'Neurological Markers', 'Amino Acid Markers', 'Enzyme Markers', 'Mineral Markers', 'Vitamin Markers',
+    'Dental Markers', 'Vertebral Markers', 'Cell Health Markers', 'Inflammation Markers', 'Chinese Medicine Markers',
+    'Meridians / Vortices', 'Supportive Lifestyle Changes', 'Beneficial Positive Thoughts', 'Botanical Support', 'Recommended Remedies'];
   /* The trailing letters of a dilution code set the note, on IMB hormone,
      mineral and amino acid markers only - the builder's own rule. */
   var DIL_NOTES = { V: 'May be low', X: 'May be low', C: 'May fluctuate', K: 'May fluctuate', M: 'May be high', LM: 'May be high', DM: 'May be high or unable to absorb', CM: 'May be high or unable to absorb', MM: 'May be high or unable to absorb' };

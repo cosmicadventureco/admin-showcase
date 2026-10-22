@@ -24,3 +24,10 @@ NDA_NOTIFY = "cosmicadventureco@gmail.com"
 
 # To serve it on your own domain instead of workers.dev, uncomment and edit:
 # routes = [{ pattern = "showcase.yourdomain.com", custom_domain = true }]
+
+# Remembers who signed the demo agreement by IP, so it is asked once per IP.
+# Create it once with: npx wrangler kv namespace create NDA_KV
+# then paste the id it prints below and uncomment.
+# [[kv_namespaces]]
+# binding = "NDA_KV"
+# id = "PASTE_ID_HERE"

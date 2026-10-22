@@ -872,6 +872,10 @@ label.slot:hover { border-color: var(--sage); }
 
 /* Confidential demo agreement */
 body.nda-open { overflow: hidden; }
+body.nda-wait { visibility: hidden; }
+.slot.drag { outline: 2px dashed var(--honey); outline-offset: 2px; }
+.pdf-render { width: 100%; background: #fff; }
+.pdf-render .rr { box-shadow: none; border-radius: 0; }
 .nda { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; overflow-y: auto; background: color-mix(in srgb, var(--ink) 55%, transparent); padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .nda-card { width: min(40rem, 100%); background: var(--surface); border-radius: 16px; padding: 1.6rem 1.6rem 1.2rem; box-shadow: 0 30px 80px rgba(0,0,0,.3); display: grid; gap: .7rem; }
 .nda-card .eyebrow { margin: 0; }

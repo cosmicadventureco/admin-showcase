@@ -12,7 +12,7 @@
   var U = App.util, esc = U.esc, money = U.money;
   var STATUS = { stressed: 'Stressed', weakened: 'Weakened', balanced: 'Balanced', none: 'Unmarked' };
   function S() { return App.state(); }
-  function st() { if (!App.ui.sc) App.ui.sc = { open: null, step: 'list', files: {}, signed: false, editing: null, newClient: 'c7' }; return App.ui.sc; }
+  function st() { if (!App.ui.sc) App.ui.sc = { open: null, step: 'list', files: {}, fileObjs: {}, signed: false, editing: null, newClient: 'c7' }; return App.ui.sc; }
   function scan(id) { return S().scans.filter(function (x) { return x.id === id; })[0]; }
   function inShop(name) { return EG.PRODUCTS.filter(function (p) { return p.name === name; })[0] || null; }
   function scoreState(n) { return n > 55 ? 'stressed' : n < 45 ? 'weakened' : 'balanced'; }
@@ -38,11 +38,14 @@
     var by = {};
     d.items.filter(function (x) { return x.include && x.section !== 'Recommended Remedies'; }).forEach(function (x) { (by[x.section] = by[x.section] || []).push(x); });
     var organs = d.organs.filter(function (o) { return o.include; });
-    var dob = '04/12/' + (1975 + (c.name.length * 3) % 20);
+    var info = d.info, scanDate = U.fmtDate(sc.date, { month: 'short', day: 'numeric', year: 'numeric' });
+    /* A report read from real files shows what the files say; the sample ones fill the same boxes. */
+    var grid = info ? [['Client', c.name], ['Scan date', scanDate], ['Date of birth', info.dob || '—'], ['Age', info.age || '—'], ['Sex', info.sex || '—'], ['Approx. age imbalances began', d.ageEst || '—']]
+      : [['Client', c.name], ['Scan date', scanDate], ['Date of birth', '04/12/' + (1975 + (c.name.length * 3) % 20)],
+        ['Practitioner', sc.by || 'Deana'], ['Approx. age imbalances began', d.ageEst], ['Course week', (U.enrollment(c.id) || { week: 1 }).week + ' of 12']];
     return '<div class="rr' + (compact ? ' compact' : '') + '" data-tour="report">' +
-      '<div class="rr-banner"><div class="rr-title">Root Cause Resonance Map</div><div class="rr-sub">Energetic scan report &middot; sample brand, sample data</div>' +
-      '<div class="rr-grid">' + [['Client', c.name], ['Scan date', U.fmtDate(sc.date, { month: 'short', day: 'numeric', year: 'numeric' })], ['Date of birth', dob],
-        ['Practitioner', sc.by || 'Deana'], ['Approx. age imbalances began', d.ageEst], ['Course week', (U.enrollment(c.id) || { week: 1 }).week + ' of 12']].map(function (x) { return '<div><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>' +
+      '<div class="rr-banner"><div class="rr-title">Root Cause Resonance Map</div><div class="rr-sub">Energetic scan report &middot; ' + (info ? 'Root Cause Clinic' : 'sample brand, sample data') + '</div>' +
+      '<div class="rr-grid">' + grid.map(function (x) { return '<div><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>' +
       (compact ? '' : '<p class="rr-welcome">This report turns your scan into three parts: which body systems stood out, what the scan linked them to, and the remedies your practitioner chose in priority order. The dials show energetic resonance. They are not a diagnosis and not a measure of how well an organ works.</p>') + '</div>' +
       '<div class="rr-body"><div class="rr-h">Organ systems</div>' + organs.map(function (o) {
         var stt = scoreState(o.score);
@@ -68,16 +71,17 @@
 
   /* Step 1, always at the top of the page: pick the client, add the four files. */
   function newReport() {
-    var s = st(), D = S(), all = EG.SCAN_SLOTS.every(function (x) { return s.files[x.code]; });
+    var s = st(), D = S(), any = EG.SCAN_SLOTS.some(function (x) { return s.files[x.code]; }), real = Object.keys(s.fileObjs).length;
     var clients = D.clients.slice().sort(function (a, b) { return (b.member ? 1 : 0) - (a.member ? 1 : 0) || a.name.localeCompare(b.name); });
     return '<div class="card newrep" data-tour="newreport">' + stepline(0) + '<h3 class="h3" style="margin-top:0">New client report</h3>' +
       '<div class="row" style="margin-bottom:.9rem"><label for="scClient" style="margin:0">Client</label><select id="scClient" style="width:auto;min-width:16rem">' + clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === s.newClient ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (Premium)' : '') + '</option>'; }).join('') + '<option value="new"' + (s.newClient === 'new' ? ' selected' : '') + '>+ New name&hellip;</option></select>' +
         (s.newClient === 'new' ? '<input type="text" id="scNewName" placeholder="Client&rsquo;s full name" value="' + esc(s.newName || '') + '" style="width:auto;min-width:14rem" autocomplete="off">' : '') + '</div>' +
       '<div class="slots" data-tour="slots">' + EG.SCAN_SLOTS.map(function (x) {
         var f = s.files[x.code];
-        return '<label class="slot' + (f ? ' filled' : '') + '"><input type="file" accept=".pdf,.csv,.txt" data-slotfile="' + x.code + '"><b>' + x.code + '</b><span class="small">' + esc(x.label) + '</span><span class="small ' + (f ? 'ok' : 'muted') + '">' + (f ? '&#10003; ' + esc(f) : esc(x.hint) + '. Click to choose the file.') + '</span></label>';
+        return '<label class="slot' + (f ? ' filled' : '') + '"><input type="file" accept=".pdf,application/pdf" data-slotfile="' + x.code + '"><b>' + x.code + '</b><span class="small">' + esc(x.label) + '</span><span class="small ' + (f ? 'ok' : 'muted') + '">' + (f ? '&#10003; ' + esc(f) : esc(x.hint) + '. Click or drop the PDF here.') + '</span></label>';
       }).join('') + '</div>' +
-      '<div class="row" style="margin-top:1rem"><button class="btn" id="scExtract"' + (all ? '' : ' disabled') + '>Create the report</button><button class="btn ghost" id="scAll">Use the sample files</button><span class="small muted">The report and the protocol are both saved to the client&rsquo;s documents.</span></div>' +
+      '<div class="row" style="margin-top:1rem"><button class="btn" id="scExtract"' + (any ? '' : ' disabled') + '>Create the report</button><label class="btn ghost" for="scMulti" style="cursor:pointer">Choose all 4 PDFs at once</label><input type="file" id="scMulti" accept=".pdf,application/pdf" multiple hidden><button class="btn ghost" id="scAll">Use the sample files</button></div>' +
+      '<p class="small muted" style="margin:.6rem 0 0">' + (real ? 'The PDFs are read right here in your browser. They are not uploaded anywhere.' : 'Files named like 07-03-26_RC.pdf go to the right box on their own. The PDFs are read in your browser, never uploaded. The report and the protocol are saved to the client&rsquo;s documents.') + '</p>' +
       '<div id="scProg" hidden style="margin-top:1rem"><div class="small" id="scProgLabel">Working</div><div class="bar" style="margin-top:.4rem"><i id="scProgBar" style="width:0%"></i></div></div></div>';
   }
 
@@ -89,7 +93,8 @@
         var c = U.client(sc.client), n = sc.data ? remedies(sc.data).slice(0, sc.data.limit).length : '&mdash;';
         var act = sc.status === 'booked' ? '<span class="small muted">Scan on ' + U.fmtDate(sc.date) + '</span>'
           : !sc.data ? '<button class="btn small" data-scfiles="' + sc.client + '">Add files</button>'
-          : '<button class="btn small' + (sc.status === 'published' ? ' ghost' : '') + '" data-scopen="' + sc.id + '">' + (sc.status === 'published' ? 'View report' : 'Review') + '</button>';
+          : '<button class="btn small' + (sc.status === 'published' ? ' ghost' : '') + '" data-scopen="' + sc.id + '">' + (sc.status === 'published' ? 'View report' : 'Review') + '</button>' +
+            (sc.data.real ? ' <button class="btn small ghost" data-scdel="' + sc.id + '" title="Removes this report and its scan data from this browser">Delete</button>' : '');
         return '<tr><td><b>' + esc(c.name) + '</b><br><span class="small muted">' + (c.member ? 'Premium Course' : 'Single scan') + '</span></td><td class="num">' + U.fmtDate(sc.date) + '</td><td>' + pill[sc.status] + (sc.by && sc.status === 'published' ? '<br><span class="small muted">Signed off by ' + esc(sc.by) + '</span>' : '') + '</td><td class="num">' + n + '</td><td class="r">' + act + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
   }
@@ -172,36 +177,75 @@
     $$('[data-scfiles]').forEach(function (b) { b.addEventListener('click', function () { s.newClient = b.getAttribute('data-scfiles'); s.files = {}; App.render(); window.scrollTo(0, 0); }); });
     var pick = $('#scClient'); if (pick) pick.addEventListener('change', function () { s.newClient = pick.value; s.files = {}; App.render(); var nn = $('#scNewName'); if (nn) nn.focus(); });
     var nn = $('#scNewName'); if (nn) nn.addEventListener('input', function () { s.newName = nn.value; });
-    $$('[data-slotfile]').forEach(function (inp) { inp.addEventListener('change', function () { if (inp.files[0]) { s.files[inp.getAttribute('data-slotfile')] = inp.files[0].name; App.render(); } }); });
+    /* Real files stay in memory only, for this page visit; the names are what the screen shows. */
+    function take(code, f) { if (!code || !f) return; s.files[code] = f.name; s.fileObjs[code] = f; }
+    function takeAll(list) {
+      var missed = [];
+      Array.prototype.forEach.call(list, function (f) { var code = EGPdf.slotFor(f.name); if (code) take(code, f); else missed.push(f.name); });
+      if (missed.length) U.toast('Could not tell which scan ' + missed.join(', ') + (missed.length > 1 ? ' are' : ' is') + '. Drop it on its box instead.');
+      App.render();
+    }
+    $$('[data-slotfile]').forEach(function (inp) { inp.addEventListener('change', function () { if (inp.files[0]) { take(inp.getAttribute('data-slotfile'), inp.files[0]); App.render(); } }); });
+    $$('.slot').forEach(function (el) {
+      el.addEventListener('dragover', function (e) { e.preventDefault(); el.classList.add('drag'); });
+      el.addEventListener('dragleave', function () { el.classList.remove('drag'); });
+      el.addEventListener('drop', function (e) {
+        e.preventDefault(); el.classList.remove('drag');
+        var fs = e.dataTransfer.files; if (!fs.length) return;
+        if (fs.length > 1) return takeAll(fs);
+        take(el.querySelector('[data-slotfile]').getAttribute('data-slotfile'), fs[0]); App.render();
+      });
+    });
+    var multi = $('#scMulti'); if (multi) multi.addEventListener('change', function () { takeAll(multi.files); });
+    $$('[data-scdel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var D = S(), id = b.getAttribute('data-scdel'), x = scan(id);
+        if (!confirm('Delete the report for ' + U.client(x.client).name + '? Its scan data is removed from this browser.')) return;
+        D.scans = D.scans.filter(function (y) { return y.id !== id; }); U.save(); App.render(); U.toast('Report deleted.');
+      });
+    });
     var nbc = U.client(s.newClient || 'c7'), nb = slug(nbc ? nbc.name : (s.newName || 'new client'));
-    var all = $('#scAll'); if (all) all.addEventListener('click', function () { EG.SCAN_SLOTS.forEach(function (x) { s.files[x.code] = nb + '_' + x.code + '.pdf'; }); App.render(); });
+    var all = $('#scAll'); if (all) all.addEventListener('click', function () { EG.SCAN_SLOTS.forEach(function (x) { s.files[x.code] = nb + '_' + x.code + '.pdf'; }); s.fileObjs = {}; App.render(); });
     var ex = $('#scExtract');
+    function progress(t, frac) { var l = $('#scProgLabel'), bar = $('#scProgBar'); if (l) l.textContent = t; if (bar) bar.style.width = Math.round(frac * 100) + '%'; }
     if (ex) ex.addEventListener('click', function () {
+      var D = S(), real = Object.keys(s.fileObjs).length;
+      if (!real) return fromFiles(EG.sampleScan);
+      ex.disabled = true; $('#scProg').hidden = false;
+      EGPdf.read(s.fileObjs, progress).then(function (data) {
+        if (!data.organs.length && !data.items.length) throw new Error('No organ readings or findings were found. Are these the Qest4 PDF exports?');
+        fromFiles(function () { return data; }, data.info);
+      }).catch(function (e) { ex.disabled = false; progress(e.message, 0); U.toast(e.message); });
+    });
+    /* make(client) returns the scan data; info is what the files say about the client. */
+    function fromFiles(make, info) {
       var D = S();
-      /* A typed name becomes a client record first, so the report has somewhere to live. */
+      /* A typed name, or the name in the files, becomes a client record first, so the report has somewhere to live. */
       if (s.newClient === 'new') {
-        var nm = (s.newName || '').trim();
-        if (!nm) { U.toast('Type the client’s name first.'); var f = $('#scNewName'); if (f) f.focus(); return; }
+        var nm = (s.newName || '').trim() || (info && info.name) || '';
+        if (!nm) { U.toast('Type the client’s name first.'); var f = $('#scNewName'); if (f) f.focus(); var e1 = $('#scExtract'); if (e1) e1.disabled = false; return; }
         var nc = { id: 'c' + (D.nextClient++), name: nm, email: '', phone: '', goals: [], diet: 'omnivore', plan: 'client', joined: U.today(), ltv: 0, autoship: false,
-          allergies: [], consent: false, intake: false, videos: {}, notes: [], videosOwned: [], forms: {}, packs: [], docs: [], practitioner: 'Deana', card: 'No card on file yet', dob: '', address: '', fresh: true };
+          allergies: [], consent: false, intake: false, videos: {}, notes: [], videosOwned: [], forms: {}, packs: [], docs: [], practitioner: 'Deana', card: 'No card on file yet', dob: (info && info.dob) || '', address: '', fresh: true };
         D.clients.unshift(nc); U.activity(nm + ' added from the Client Report Creator.'); s.newClient = nc.id; s.newName = '';
       }
       var c = U.client(s.newClient);
       /* Attach the files to the scan already on record, or start a new one. */
       var sc = D.scans.filter(function (x) { return x.client === c.id && !x.data && x.status !== 'published'; })[0];
       if (!sc) { sc = { id: 's' + Date.now(), client: c.id, date: U.today(), status: 'uploaded', data: null }; D.scans.push(sc); }
-      ex.disabled = true; $('#scProg').hidden = false;
-      var steps = ['Reading RR: ' + (s.files.RR || 'RR'), 'Lifting organ readings and write-ups', 'Reading RC, SS and IMB findings', 'Applying dilution notes and ranking remedies', 'Checking wording for claim language'];
+      if (info && info.date) sc.date = info.date;
+      var ex1 = $('#scExtract'); if (ex1) ex1.disabled = true; $('#scProg').hidden = false;
+      /* The sample run walks through the same stages the real reader does. */
+      var steps = info ? [] : ['Reading RR: ' + (s.files.RR || 'RR'), 'Lifting organ readings and write-ups', 'Reading RC, SS and IMB findings', 'Applying dilution notes and ranking remedies', 'Checking wording for claim language'];
       var chain = Promise.resolve();
-      steps.forEach(function (t, i) { chain = chain.then(function () { var l = $('#scProgLabel'), bar = $('#scProgBar'); if (l) l.textContent = t; if (bar) bar.style.width = ((i + 1) / steps.length * 100) + '%'; return wait(450); }); });
+      steps.forEach(function (t, i) { chain = chain.then(function () { progress(t, (i + 1) / steps.length); return wait(450); }); });
       chain.then(function () {
-        sc.data = EG.sampleScan(c); sc.status = 'review'; sc.files = Object.keys(s.files).map(function (k) { return s.files[k]; });
-        if (window.EGAuto) sc.data.limit = EGAuto.setting('scans', 'top');
-        U.activity('Scan files for ' + c.name + ' read: 8 organ readings, ' + sc.data.items.length + ' findings. Waiting for practitioner review.');
-        s.open = sc.id; s.files = {}; s.signed = false; s.editing = null;
+        sc.data = make(c); sc.status = 'review'; sc.files = Object.keys(s.files).map(function (k) { return s.files[k]; });
+        if (window.EGAuto && !info) sc.data.limit = EGAuto.setting('scans', 'top');
+        U.activity('Scan files for ' + c.name + ' read: ' + sc.data.organs.length + ' organ readings, ' + sc.data.items.length + ' findings. Waiting for practitioner review.');
+        s.open = sc.id; s.files = {}; s.fileObjs = {}; s.signed = false; s.editing = null;
         U.save(); go('review');
       });
-    });
+    }
     var list = $('#scList'); if (list) list.addEventListener('click', function () { s.open = null; go('list'); });
     $$('#scBack').forEach(function (b) { b.addEventListener('click', function () { s.open = null; go('list'); }); });
     if (!sc) return;
@@ -249,7 +293,13 @@
       U.activity('Scan report for ' + c.name + ' signed off by Deana and published to the client app. Client emailed; ' + remedies(d).slice(0, d.limit).length + ' remedies ready to order.');
       U.save(); App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
     });
-    var pdf = $('#scPdf'); if (pdf) pdf.addEventListener('click', function () { U.toast('PDF saved to ' + c.name + '’s record (simulated)'); });
+    var pdf = $('#scPdf');
+    if (pdf) pdf.addEventListener('click', function () {
+      var name = c.name + ' - Root Cause Resonance Map - ' + sc.date + '.pdf';
+      pdf.disabled = true; pdf.textContent = 'Making the PDF…';
+      EGPdf.save(reportHtml(sc, false), name).then(function () { U.toast('Saved ' + name); }, function (e) { U.toast('The PDF could not be made here: ' + e.message); })
+        .then(function () { pdf.disabled = false; pdf.textContent = 'Download PDF'; });
+    });
     var np = $('#scProto'); if (np) np.addEventListener('click', function () { App.ui.pc = { client: c.id, draft: null, mode: 'edit' }; App.go('protocols'); });
     var dc = $('#scDocs'); if (dc) dc.addEventListener('click', function () { EGPortal.open(c.id, 'docs'); });
     var see = $('#scSeeApp');

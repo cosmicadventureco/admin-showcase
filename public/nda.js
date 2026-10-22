@@ -3,8 +3,8 @@
  * Nobody sees the demo until they agree. The visitor reads a short
  * agreement, types their name as their signature and ticks to agree; the
  * signature goes to /api/nda, which emails it to the owner. The browser
- * remembers the signature for this version of the agreement, so it is asked
- * once. If the email cannot be sent (offline, or a preview with no server),
+ * remembers the signature for this version of the agreement, and the server
+ * remembers the IP it came from, so it is asked once per device or IP. If the email cannot be sent (offline, or a preview with no server),
  * the visitor still gets in and the signature is retried on their next visit.
  */
 (function () {
@@ -20,7 +20,7 @@
     ['Keep it confidential', 'You will keep the demo and what you learn from it confidential, including its design, features, workflows, written content and any pricing. You may share it only with people in your own organization who need to see it to evaluate working with ' + OWNER + ', and only if they agree to these same terms.'],
     ['No copying or reuse', 'You will not copy, download, save, record, scrape, screenshot for distribution or otherwise reproduce the demo or its source code. You will not use the demo, in whole or in part, as a model, template or framework for any other app, product or project, whether you build it yourself or have someone else build it.'],
     ['No license', 'Viewing the demo gives you no ownership and no license. Any right to use the software comes only from a separate agreement signed by ' + OWNER + '.'],
-    ['Remedies and term', 'A breach could cause harm that money alone cannot repair, so ' + OWNER + ' may seek an injunction as well as any other remedy available by law. This agreement is governed by the laws of the State of Utah. It lasts three years from the date you sign, except that the source code stays confidential indefinitely. It does not cover information that was already public, or that you already knew or developed independently without using the demo.']
+    ['If the agreement is broken, and how long it lasts', 'If these terms are broken, ' + OWNER + ' may ask a court to order the copying or use to stop, and may use any other remedy the law allows. This agreement is governed by the laws of the State of Utah. It lasts three years from the date you sign, except that the source code stays confidential indefinitely. It does not cover information that was already public, or that you already knew or developed independently without using the demo.']
   ];
   window.RCCNDA = { version: VERSION, terms: TERMS, signed: false };
 
@@ -79,6 +79,15 @@
       var p = get(PENDING); if (p) { try { send(JSON.parse(p)).then(function () { set(PENDING, null); }, function () {}); } catch (e) { set(PENDING, null); } }
       return;
     }
-    gate();
+    /* Asked once per IP too: if someone at this address has signed, let them in.
+       The check gives up after a moment and shows the agreement. */
+    document.body.classList.add('nda-open', 'nda-wait');
+    var asked = false;
+    function ask() { if (!asked) { asked = true; document.body.classList.remove('nda-wait'); gate(); } }
+    setTimeout(ask, 1500);
+    fetch('/api/nda', { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (res) {
+      if (asked) return;
+      if (res && res.signed) { asked = true; document.body.classList.remove('nda-wait'); set(KEY, JSON.stringify({ byIp: true, at: new Date().toISOString() })); done(); } else ask();
+    }, ask);
   });
 })();
