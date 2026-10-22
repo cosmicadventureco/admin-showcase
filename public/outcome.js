@@ -32,14 +32,14 @@
   function view() {
     var before = JOBS.reduce(function (t, j) { return t + j[3]; }, 0), after = JOBS.reduce(function (t, j) { return t + j[4]; }, 0);
     return '<p class="eyebrow">Summary</p><h1 class="h1">The Outcome</h1><p class="lede">Seven tools that carry the practice day to day, so the admin no longer rests on one person. Everything else can be added when it is needed.</p>' +
-      '<div class="grid g3" style="margin-bottom:1.6rem" data-tour="purposes">' + [
+      '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin-bottom:1.6rem" data-tour="purposes">' + [
         ['Client Portal', 'One page per client: details, bookings and packages, billing, protocols, messages, notes, forms and documents.'],
         ['Shop', 'Orders wait for a person, then fill the supplier cart in one go. Prices stay behind login, as Physica requires.'],
         ['Client Report Creator', 'Upload the four scan files and get a finished report the same day, with claim language flagged and a practitioner sign-off.'],
+        ['Protocol Creator', 'Suggested from the report. You set what, how much and when; the client gets a schedule and reminders.'],
         ['Booking Calendar', 'Clients book open times online; each Zoom meeting, invite and reminder goes out on its own.'],
         ['Packages', 'Recorded Review, Bioresonance Scan and the 12 Week Package, with the appointments each includes.'],
-        ['Waivers & Forms', 'Write each waiver once. The right clients sign it in their portal and the copy is filed.'],
-        ['Protocol Creator', 'Suggested from the report. You set what, how much and when; the client gets a schedule and reminders.']
+        ['Waivers & Forms', 'Write each waiver once. The right clients sign it in their portal and the copy is filed.']
       ].map(function (x) { return '<div class="card"><h3 class="h3" style="font-size:1.05rem">' + x[0] + '</h3><p class="small muted" style="margin:0">' + x[1] + '</p></div>'; }).join('') + '</div>' +
       '<h2 class="h2">Time back: about ' + before + ' hours a week of admin becomes ' + after + '</h2><div class="card"><p class="small muted" style="margin-top:0">Estimates for this pitch; we confirm them with the team before building.</p><div class="tablewrap"><table data-tour="jobs"><thead><tr><th>Job</th><th>How often</th><th>After the build</th><th class="r">Hours a week now</th><th class="r">After</th></tr></thead><tbody>' +
         JOBS.map(function (j) { return '<tr><td><b>' + esc(j[0]) + '</b><br><span class="small muted">' + esc(j[5]) + '</span></td><td>' + j[1] + '</td><td><span class="pill ' + HOW[j[2]][0] + '">' + HOW[j[2]][1] + '</span></td><td class="r">' + j[3] + '</td><td class="r">' + j[4] + '</td></tr>'; }).join('') +
