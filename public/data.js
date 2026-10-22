@@ -142,14 +142,33 @@
     return c && c.member ? Math.round(p * (1 - SESSION.premiumOff) * 100) / 100 : p;
   }
 
+  /* Appointment types. The first four are what clients and the team book;
+     the rest are kept only for older records. */
   var SERVICES = [
-    { id: 'initial', label: 'Initial Wellness Consultation', mins: 60, price: 145 },
+    { id: 'review60', label: '1 Hour Practitioner Review', mins: 60, price: 148, desc: 'One-to-one with a Certified Practitioner by Zoom, going over your report, protocol and progress.' },
+    { id: 'recorded', label: 'Recorded Review', mins: 30, price: 99, recorded: true, desc: 'Your practitioner reviews your report and protocol and records a video walkthrough for you to watch any time.' },
+    { id: 'pkg1', label: '12 Week Package 1/2', mins: 75, price: 0, pkg: 'twelve', desc: 'Your first 12 Week Package session: bioresonance scan and planning.' },
+    { id: 'pkg2', label: '12 Week Package 2/2', mins: 60, price: 0, pkg: 'twelve', desc: 'Your second 12 Week Package session: retest and next steps.' },
+    { id: 'initial', label: 'Initial Wellness Consultation', mins: 60, price: 145, legacy: true },
     { id: 'followup', label: 'Follow-up Coaching', mins: 30, price: 75 },
     { id: 'energetics', label: 'Energetics Assessment', mins: 75, price: 0 },
     { id: 'breathwork', label: 'Group Breathwork Workshop', mins: 75, price: 35 },
     { id: 'corporate', label: 'Retreat Partner Session', mins: 60, price: 0 },
     { id: 'session30', label: 'Practitioner session (30 min)', mins: 30, price: 99 },
     { id: 'session60', label: 'Practitioner session (1 hour)', mins: 60, price: 148 }
+  ];
+
+  /* What clients buy. Each package can include appointment credits. */
+  var PACKAGES = [
+    { id: 'recorded', name: 'Recorded Review', price: 99, credits: { recorded: 1 }, active: true,
+      desc: 'A practitioner reviews your latest report and protocol and records a personal video walkthrough.',
+      includes: ['1 Recorded Review appointment', 'Video walkthrough in your portal within 3 business days', 'Follow-up questions by message'] },
+    { id: 'scan', name: 'Bioresonance Scan', price: 195, credits: { recorded: 1 }, active: true,
+      desc: 'An in-house bioresonance scan, your Resonance Map report, and a recorded review of the results.',
+      includes: ['In-house bioresonance scan', 'Resonance Map client report', '1 Recorded Review of your results'] },
+    { id: 'twelve', name: '12 Week Package', price: 6995, plan: '3 payments of $2,395', credits: { pkg1: 1, pkg2: 1 }, active: true,
+      desc: 'The Premium Course: twelve weeks with a practitioner, built around your scan.',
+      includes: ['12 Week Package 1/2: scan and planning', '12 Week Package 2/2: retest and next steps', 'Your personal protocol with reminders', 'Weekly live Zoom and course videos', '20% off remedies, free shipping'] }
   ];
 
   var PLANS = { free: 'Free account', newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: 'Premium Course' };
@@ -317,21 +336,24 @@
     clients[7].notes.push({ at: iso(-20), text: 'On warfarin. Fish oil and D3 held until her doctor signs off.' });
 
     var bookings = [
-      { id: 'b1', service: 'initial', date: iso(0), time: '09:30', guests: ['c9'], where: 'Video call' },
-      { id: 'b2', service: 'followup', date: iso(0), time: '13:00', guests: ['c2'], where: 'Studio' },
-      { id: 'b3', service: 'breathwork', date: iso(1), time: '18:00', guests: ['c1', 'c5', 'c10', 'c12', 'c13'], where: 'Studio' },
-      { id: 'b4', service: 'energetics', date: iso(2), time: '10:00', guests: ['c3'], where: 'Video call' },
-      { id: 'b5', service: 'corporate', date: iso(4), time: '12:00', guests: ['c4', 'c11', 'c13', 'c9'], where: 'Video call', name: 'Stillwater Retreats guest briefing' },
-      { id: 'b6', service: 'followup', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call' },
-      { id: 'b7', service: 'initial', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio' },
-      { id: 'b8', service: 'followup', date: iso(11), time: '09:00', guests: ['c6'], where: 'Video call' },
-      { id: 'b9', service: 'breathwork', date: iso(15), time: '18:00', guests: ['c12', 'c8', 'c3'], where: 'Studio' },
-      { id: 'b10', service: 'energetics', date: iso(19), time: '14:00', guests: ['c11'], where: 'Studio' },
-      { id: 'b11', service: 'followup', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call' },
-      { id: 'b12', service: 'initial', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Studio' },
-      { id: 'b13', service: 'session60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 148 },
-      { id: 'b14', service: 'session30', date: iso(5), time: '15:30', guests: ['c5'], where: 'Video call', with: 'Theo Marsh', paid: 99 }
+      { id: 'b1', service: 'review60', date: iso(0), time: '09:30', guests: ['c9'], where: 'Video call', with: 'Lena Ortiz' },
+      { id: 'b2', service: 'recorded', date: iso(0), time: '13:00', guests: ['c2'], where: 'Recorded', with: 'Theo Marsh' },
+      { id: 'b3', service: 'recorded', date: iso(3), time: '10:00', guests: ['c1'], where: 'Recorded', with: 'Theo Marsh' },
+      { id: 'b4', service: 'pkg1', date: iso(2), time: '10:00', guests: ['c3'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b5', service: 'review60', date: iso(4), time: '12:00', guests: ['c11'], where: 'Video call', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b6', service: 'review60', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call', with: 'Theo Marsh' },
+      { id: 'b7', service: 'pkg1', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b8', service: 'recorded', date: iso(11), time: '09:00', guests: ['c6'], where: 'Recorded', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b9', service: 'pkg2', date: iso(15), time: '15:00', guests: ['c12'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b10', service: 'review60', date: iso(19), time: '14:00', guests: ['c13'], where: 'Video call', with: 'Lena Ortiz' },
+      { id: 'b11', service: 'review60', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh' },
+      { id: 'b12', service: 'review60', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Video call', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b13', service: 'review60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 148 },
+      { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Theo Marsh', paid: 99 },
+      { id: 'b15', service: 'pkg2', date: iso(14), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' }
     ];
+
 
     var orders = [
       { id: 'EG-10482', client: 'c12', at: iso(-6), items: [['PE-RLX', 1], ['PE-ADM', 1], ['EG-MAG', 1]], stage: 4, tracking: '1Z84F2A10398', sub: true, discount: 0.2, approvedBy: 'Maya Lindqvist' },
@@ -399,9 +421,17 @@
       c.card = ['Visa', 'Mastercard', 'Amex'][i % 3] + ' \u2022\u2022\u2022\u2022 ' + (4242 + i * 111) % 10000;
       c.packs = []; c.docs = [];
     });
-    clients[0].packs = [{ name: '3 \u00d7 30-minute sessions', used: 1, total: 3, bought: iso(-30), paid: 279 }];
-    clients[1].packs = [{ name: '3 \u00d7 30-minute sessions', used: 1, total: 3, bought: iso(-40), paid: 279 }];
-    clients[10].packs = [{ name: '5 \u00d7 1-hour sessions', used: 3, total: 5, bought: iso(-70), paid: 695 }];
+    /* Packages each client has bought; credits are used as appointments are booked. */
+    clients[0].packs = [{ pkg: 'recorded', bought: iso(-5), paid: 99, used: { recorded: 1 } }];
+    clients[1].packs = [{ pkg: 'scan', bought: iso(-40), paid: 195, used: { recorded: 1 } }];
+    clients[10].packs = [{ pkg: 'recorded', bought: iso(-12), paid: 99, used: {} }];
+    enrollments.forEach(function (e) {
+      var c = clients.filter(function (x) { return x.id === e.client; })[0];
+      var has = function (t) { return bookings.some(function (b) { return b.service === t && b.guests[0] === c.id; }); };
+      var used = {}; if (has('pkg1') || /Complete|Retest/.test(e.assess)) used.pkg1 = 1; if (has('pkg2')) used.pkg2 = 1;
+      c.packs.unshift({ pkg: 'twelve', bought: e.start, paid: 6995, used: used });
+    });
+    bookings.forEach(function (b) { if (b.service === 'pkg1' || b.service === 'pkg2') b.pkg = 'twelve'; if (b.service === 'recorded' && (b.guests[0] === 'c1' || b.guests[0] === 'c2')) b.pkg = b.guests[0] === 'c1' ? 'recorded' : 'scan'; });
     clients[0].docs = [{ name: 'Blood panel (from her doctor).pdf', at: iso(-50), kind: 'Upload' }];
     clients[4].videosOwned = ['v11'];
     /* Auto-ship credit already earned: $5 a refill, spent on sessions and courses. */
@@ -489,9 +519,7 @@
       zoom: true, remind24: true, remind1: true, sms: false, gcal: true, buffer: 15, notice: 12, window: 30,
       hours: { p1: ['09:00', '17:00'], p2: ['10:00', '18:00'], p3: ['08:00', '15:00'] },
       days: { p1: [1, 2, 3, 4, 5], p2: [1, 3, 5], p3: [2, 3, 4, 6] },
-      types: [
-        { id: 'session30', on: true }, { id: 'session60', on: true }, { id: 'initial', on: true }, { id: 'followup', on: true }, { id: 'energetics', on: false }
-      ]
+      types: [{ id: 'review60', on: true }, { id: 'recorded', on: true }, { id: 'pkg1', on: true }, { id: 'pkg2', on: true }]
     };
 
     /* What the system did on its own, newest first. */
@@ -510,7 +538,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 15, forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 16, packages: JSON.parse(JSON.stringify(PACKAGES)), forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };
@@ -657,7 +685,7 @@
   }
 
   window.EG = {
-    BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES,
+    BRAND: BRAND, GOALS: GOALS, PRODUCTS: PRODUCTS, VIDEOS: VIDEOS, SERVICES: SERVICES, PACKAGES: PACKAGES,
     SUPPLIERS: SUPPLIERS, PATHS: PATHS, PLANS: PLANS, STAGES: STAGES, LINES: LINES,
     PROGRAM: PROGRAM, PRACTITIONERS: PRACTITIONERS, MODULES: MODULES, trackFor: trackFor,
     SCAN_SLOTS: SCAN_SLOTS, SCAN_SECTIONS: SCAN_SECTIONS, sampleScan: sampleScan, comparePotency: comparePotency, claimWords: claimWords,

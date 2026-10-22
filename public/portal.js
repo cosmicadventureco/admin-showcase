@@ -13,13 +13,14 @@
   function st() { if (!App.ui.cp) App.ui.cp = { id: null, tab: 'info', q: '', booking: false, note: '' }; return App.ui.cp; }
   function unreadBy() { var o = {}; (S().messages || []).forEach(function (m) { if (m.from === 'client' && !m.read) o[m.client] = (o[m.client] || 0) + 1; }); return o; }
   function thread(id) { return (S().messages || []).filter(function (m) { return m.client === id; }); }
-  function tier(c) { return c.member ? 'Premium Course' : c.plan === 'free' || c.plan === 'newsletter' ? 'Free account' : EG.PLANS[c.plan]; }
+  function tier(c) { return c.member ? 'Premium Course' : c.plan === 'free' || c.plan === 'newsletter' || !EG.PLANS[c.plan] ? 'Client' : EG.PLANS[c.plan]; }
   var ICONS = {
     portal: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
     shop: '<path d="M3 7h18l-1.5 12a2 2 0 0 1-2 1.8h-11a2 2 0 0 1-2-1.8z"/><path d="M8.5 7a3.5 3.5 0 0 1 7 0"/>',
     reports: '<circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/>',
     protocols: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    packages: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
     forms: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'
   };
   function icon(k, size) { return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + '</svg>'; }
@@ -32,12 +33,14 @@
     var active = D.protocols.filter(function (p) { return p.status === 'active'; }).length;
     var weekCount = D.bookings.filter(function (b) { return b.date >= t && b.date <= EG.iso(7); }).length;
     var unsigned = D.clients.reduce(function (n, c) { return n + EGForms.outstanding(c).length; }, 0);
+    var toBook = D.clients.reduce(function (n, c) { return n + EGPkg.holdings(c).reduce(function (m, x) { return m + Math.max(0, x.left); }, 0); }, 0);
     var doors = [
       ['clients', 'portal', 'Client Portal', 'Every client: details, bookings, billing, protocols, notes, forms and documents.', D.clients.length + ' clients'],
       ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' to approve' : 'All clear'],
       ['scans', 'reports', 'Client Report Creator', 'Upload the four scan files and get a finished client report, signed off by a practitioner.', review ? review + ' to review' : files ? files + ' waiting for files' : 'All clear'],
       ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active'],
       ['calendar', 'calendar', 'Booking Calendar', 'Every practitioner’s week. Clients book online and Zoom links go out on their own.', weekCount + ' this week'],
+      ['packages', 'packages', 'Packages', 'Recorded Review, Bioresonance Scan and the 12 Week Package, and who has what.', toBook + ' to book'],
       ['forms', 'forms', 'Waivers & Forms', 'Write each waiver and form once. The right clients sign it in their portal.', unsigned ? unsigned + ' unsigned' : 'All signed']
     ];
     var todo = [], unread = unreadBy();
@@ -45,7 +48,7 @@
     if (approve) todo.push(['shop', approve + ' order' + (approve > 1 ? 's' : '') + ' waiting for approval']);
     D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', (x.data ? 'Review the report for ' : 'Upload the scan files for ') + U.client(x.client).name]); });
     D.clients.filter(function (c) { return c.member && !EGProto.activeFor(c.id); }).slice(0, 2).forEach(function (c) { todo.push(['protocols:' + c.id, c.name + ' has no protocol yet']); });
-    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Everything you need to run the practice, in six places.</p>' +
+    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Everything you need to run the practice, in seven places.</p>' +
       '<div class="doors" data-tour="doors">' + doors.map(function (d) {
         return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting|unsigned/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
       }).join('') + '</div>' +
@@ -79,12 +82,23 @@
     });
   }
 
+  /* ------------------------------------------------------ Add a client */
+  function addForm() {
+    return '<div class="card" style="margin-bottom:1rem" data-tour="addclient"><h3 class="h3" style="margin-top:0">Add a client to the portal</h3><div class="fields">' +
+      '<div><label for="ncName">Full name</label><input id="ncName" type="text" autocomplete="off"></div><div><label for="ncEmail">Email</label><input id="ncEmail" type="email" autocomplete="off"></div>' +
+      '<div><label for="ncPhone">Phone</label><input id="ncPhone" type="tel" autocomplete="off"></div><div><label for="ncPrac">Practitioner</label><select id="ncPrac">' + EG.CERTIFIED.map(function (p) { return '<option>' + esc(p.name) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="wide"><label for="ncPkg">Package (optional)</label><select id="ncPkg"><option value="">None yet</option>' + S().packages.filter(function (p) { return p.active; }).map(function (p) { return '<option value="' + p.id + '">' + esc(p.name) + ' (' + money(p.price, false) + ')</option>'; }).join('') + '</select></div></div>' +
+      '<p class="small muted" style="margin:.7rem 0">They get an email invite to set a password for their client portal. Forms and waivers that apply to them are listed on their page, ready to send.</p>' +
+      '<div class="row"><button class="btn" id="ncSave">Add and send portal invite</button><button class="btn ghost" id="ncCancel">Cancel</button></div><p class="small" id="ncErr" style="color:var(--bad);margin:.4rem 0 0"></p></div>';
+  }
+
   /* ------------------------------------------------------ Client list */
   function list() {
     var cp = st(), q = cp.q.trim().toLowerCase(), t = U.today();
     var rows = S().clients.filter(function (c) { return !q || (c.name + ' ' + c.email + ' ' + tier(c)).toLowerCase().indexOf(q) >= 0; });
     return '<p class="eyebrow">Client Portal</p><h1 class="h1">Clients</h1><p class="lede">Open a client to see everything about them in one place.</p>' +
-      '<input type="search" id="cpQ" placeholder="Search by name, email or plan" value="' + esc(cp.q) + '" style="max-width:24rem;margin-bottom:1rem">' +
+      '<div class="row" style="justify-content:space-between;margin-bottom:1rem"><input type="search" id="cpQ" placeholder="Search by name, email or plan" value="' + esc(cp.q) + '" style="max-width:24rem;margin:0"><button class="btn" id="cpAdd">+ Add client</button></div>' +
+      (cp.adding ? addForm() : '') +
       '<div class="card"><div class="tablewrap"><table data-tour="clientlist"><thead><tr><th>Client</th><th>Plan</th><th>Next booking</th><th>Protocol</th><th>Forms</th></tr></thead><tbody>' +
       rows.map(function (c) {
         var nb = S().bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.date >= t; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
@@ -106,7 +120,8 @@
     D.orders.filter(function (o) { return o.client === c.id; }).forEach(function (o) { out.push([o.at, 'Order ' + o.id + ' (' + o.items.length + ' item' + (o.items.length > 1 ? 's' : '') + ')', U.orderTotal(o), o.stage === 0 ? 'Authorised' : 'Paid']); });
     (c.videosOwned || []).forEach(function (vid) { var v = EG.video(vid); out.push([c.joined, 'Short course: ' + v.title, v.price, 'Paid']); });
     D.bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.paid; }).forEach(function (b) { out.push([b.date, 'Session with ' + b.with, b.paid, 'Paid']); });
-    (c.packs || []).forEach(function (p) { out.push([p.bought, 'Package: ' + p.name, p.paid, 'Paid']); });
+    /* The 12 Week Package is billed through the course enrolment above. */
+    (c.packs || []).forEach(function (h) { if (h.pkg !== 'twelve' || !e) out.push([h.bought, 'Package: ' + EGPkg.pkg(h.pkg).name, h.paid, 'Paid']); });
     return out.sort(function (a, b) { return a[0] < b[0] ? 1 : -1; });
   }
 
@@ -126,13 +141,13 @@
       var e = U.enrollment(c.id), owned = (c.videosOwned || []).map(EG.video);
       return '<div class="split"><div class="card"><div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">Bookings</h3><button class="btn small" id="cpBook">Book a session</button></div>' +
         (cp.booking ? '<div class="fields" style="margin-top:.8rem"><div><label for="cbDate">Date</label><input id="cbDate" type="date" value="' + EG.iso(3) + '"></div><div><label for="cbTime">Time</label><select id="cbTime">' + ['09:00', '10:30', '13:00', '15:30', '17:00'].map(function (x) { return '<option value="' + x + '">' + U.fmtTime(x) + '</option>'; }).join('') + '</select></div>' +
-          '<div><label for="cbWho">With</label><select id="cbWho">' + EG.CERTIFIED.map(function (p) { return '<option>' + esc(p.name) + '</option>'; }).join('') + '</select></div><div><label for="cbLen">Length</label><select id="cbLen"><option value="30">30 minutes ($99)</option><option value="60">1 hour ($148)</option></select></div></div><div class="row" style="margin-top:.6rem"><button class="btn small" id="cbSave">Save booking</button><span class="small muted">' + esc(U.first(c.name)) + ' gets the invite and Zoom link.</span></div>' : '') +
+          '<div><label for="cbWho">With</label><select id="cbWho">' + EG.CERTIFIED.map(function (p) { return '<option>' + esc(p.name) + '</option>'; }).join('') + '</select></div><div><label for="cbType">Appointment type</label><select id="cbType">' + D.bookcfg.types.map(function (t) { var sv = EG.SERVICES.filter(function (x) { return x.id === t.id; })[0], cov = EGPkg.creditFor(c, t.id); return '<option value="' + sv.id + '">' + esc(sv.label) + (cov ? ' (package credit)' : sv.price ? ' (' + money(sv.price, false) + ')' : '') + '</option>'; }).join('') + '</select></div></div><div class="row" style="margin-top:.6rem"><button class="btn small" id="cbSave">Save booking</button><span class="small muted">' + esc(U.first(c.name)) + ' gets the invite; Zoom links are created automatically.</span></div>' : '') +
         '<div class="list" style="margin-top:.6rem">' + (bs.length ? bs.map(function (b) { var sv = EG.SERVICES.filter(function (s) { return s.id === b.service; })[0]; return '<div class="li"><span class="pill num' + (b.date >= t ? ' honey' : '') + '">' + U.fmtDate(b.date, { month: 'short', day: 'numeric' }) + '</span><div class="grow"><div class="title">' + esc(b.name || sv.label) + (b.with ? ' with ' + esc(b.with) : '') + '</div><div class="meta">' + U.fmtTime(b.time) + ' &middot; ' + esc(b.where) + '</div></div><span class="small muted">' + (b.date >= t ? 'Upcoming' : 'Done') + '</span></div>'; }).join('') : '<p class="small muted">No bookings yet.</p>') + '</div></div>' +
         '<div class="card"><h3 class="h3">Packages</h3><div class="list">' +
-        (e ? '<div class="li"><div class="grow"><div class="title">Premium Course &middot; ' + money(EG.PROGRAM.price, false) + '</div><div class="meta">Week ' + e.week + ' of 12 &middot; energetics ' + esc(e.assess.toLowerCase()) + ' &middot; ' + e.zoom + ' Zoom sessions attended</div><div class="bar" style="margin-top:.4rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div></div></div>' : '') +
-        (c.packs || []).map(function (p) { return '<div class="li"><div class="grow"><div class="title">' + esc(p.name) + '</div><div class="meta">' + p.used + ' of ' + p.total + ' used &middot; bought ' + U.fmtDate(p.bought) + '</div></div><span class="pill">' + (p.total - p.used) + ' left</span></div>'; }).join('') +
+        EGPkg.holdings(c).map(function (x) { return '<div class="li"><div class="grow"><div class="title">' + esc(x.p.name) + ' &middot; ' + money(x.h.paid, false) + '</div><div class="meta">Bought ' + U.fmtDate(x.h.bought) + (x.p.id === 'twelve' && e ? ' &middot; week ' + e.week + ' of 12' : '') + '</div>' + (x.p.id === 'twelve' && e ? '<div class="bar" style="margin-top:.4rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' : '') + '</div>' + (x.total ? '<span class="pill' + (x.left ? ' ok' : '') + '">' + x.used + ' of ' + x.total + ' booked</span>' : '') + '</div>'; }).join('') +
+        '<button class="linkish" id="cpPkgs" style="margin-top:.4rem">Add a package in Packages</button>' +
         owned.map(function (v) { return '<div class="li"><div class="grow"><div class="title">Short course: ' + esc(v.title) + '</div><div class="meta">' + v.lessons + ' lessons &middot; owned</div></div></div>'; }).join('') +
-        (!e && !(c.packs || []).length && !owned.length ? '<p class="small muted" style="margin:0">No packages yet.</p>' : '') + '</div></div></div>';
+        (!(c.packs || []).length && !owned.length ? '<p class="small muted" style="margin:0">No packages yet.</p>' : '') + '</div></div></div>';
     }
     if (tab === 'billing') {
       var pays = payments(c), e2 = U.enrollment(c.id), paid = pays.filter(function (p) { return p[3] === 'Paid'; }).reduce(function (s, p) { return s + p[2]; }, 0);
@@ -162,9 +177,10 @@
     }
     if (tab === 'forms') {
       var fl = D.forms.filter(function (f) { return EGForms.applies(f, c) || f.who === 'optional'; });
-      return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:.4rem"><h3 class="h3" style="margin:0">Forms &amp; waivers</h3><button class="linkish" id="cpForms">Edit templates in Waivers &amp; Forms</button></div><div class="list" data-tour="forms">' + fl.map(function (f) {
+      var owe = fl.filter(function (f) { return EGForms.applies(f, c) && !(c.forms && c.forms[f.id]); });
+      return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:.4rem"><h3 class="h3" style="margin:0">Forms &amp; waivers</h3><span class="row">' + (owe.length ? '<button class="btn small" id="cpSendAll">Send ' + owe.length + ' to sign</button>' : '') + '<button class="linkish" id="cpForms">Edit templates</button></span></div><div class="list" data-tour="forms">' + fl.map(function (f) {
         var done = c.forms && c.forms[f.id], need = EGForms.applies(f, c);
-        return '<div class="li"><div class="grow"><div class="title">' + esc(f.title) + '</div><div class="meta">' + esc(f.kind) + ' &middot; ' + (done ? 'Signed ' + U.fmtDate(done) + ' in the client portal' : need ? 'Needed: ' + esc(EGForms.whoLabel(f.who).toLowerCase()) : 'Optional') + '</div></div>' +
+        return '<div class="li"><div class="grow"><div class="title">' + esc(f.title) + '</div><div class="meta">' + esc(f.kind) + ' &middot; ' + (done ? 'Signed ' + U.fmtDate(done) + ' in the client portal' : need ? (c.formsSent ? 'Sent ' + U.fmtDate(c.formsSent) + ', waiting for ' + esc(U.first(c.name)) : 'Needed: ' + esc(EGForms.whoLabel(f.who).toLowerCase())) : 'Optional') + '</div></div>' +
           (done ? '<span class="pill ok">Signed</span><button class="btn ghost small" data-viewform="' + f.id + '">View</button>' : '<span class="pill' + (need ? ' warn' : '') + '">' + (need ? 'Outstanding' : 'Not sent') + '</span><button class="btn small" data-sendform="' + esc(f.title) + '">Send link</button>') + '</div>';
       }).join('') + '</div></div>' + (cp.doc ? '<div style="margin-top:1rem">' + cp.doc + '</div>' : '');
     }
@@ -199,6 +215,21 @@
     function keep() { var y = window.scrollY; App.render(); window.scrollTo(0, y); }
     if (!c) {
       var q = $('#cpQ'); q.addEventListener('input', function () { cp.q = q.value; App.render(); var n = $('#cpQ'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
+      $('#cpAdd').addEventListener('click', function () { cp.adding = !cp.adding; App.render(); var n = $('#ncName'); if (n) n.focus(); });
+      var nc = $('#ncCancel'); if (nc) nc.addEventListener('click', function () { cp.adding = false; App.render(); });
+      var ns = $('#ncSave');
+      if (ns) ns.addEventListener('click', function () {
+        var name = $('#ncName').value.trim(), email = $('#ncEmail').value.trim(), D = S();
+        if (!name || !email) { $('#ncErr').textContent = 'Add a name and email so we can send the invite.'; return; }
+        var c = { id: 'c' + (D.nextClient++), name: name, email: email, phone: $('#ncPhone').value.trim(), goals: [], diet: 'omnivore', plan: 'client', joined: U.today(), ltv: 0, autoship: false,
+          allergies: [], consent: false, intake: false, videos: {}, notes: [], videosOwned: [], forms: {}, packs: [], docs: [], practitioner: $('#ncPrac').value, card: 'No card on file yet', dob: '', address: '', fresh: true };
+        D.clients.unshift(c);
+        D.emails.unshift({ at: U.today(), to: c.id, kind: 'Portal invite', subject: 'Welcome to your Evergrove client portal' });
+        U.activity(name + ' added to the client portal. Invite emailed to ' + email + '.');
+        var pk = $('#ncPkg').value; if (pk) EGPkg.sell(c, pk, 'team');
+        cp.adding = false; cp.id = c.id; cp.tab = 'forms'; U.save(); App.render(); window.scrollTo(0, 0);
+        U.toast('Added. ' + U.first(name) + ' has their portal invite.');
+      });
       $$('[data-cp]').forEach(function (r) { r.addEventListener('click', function () { cp.id = r.getAttribute('data-cp'); cp.tab = 'info'; cp.doc = null; App.render(); window.scrollTo(0, 0); }); });
       return;
     }
@@ -212,11 +243,10 @@
     var np = $('#cpNewProto'); if (np) np.addEventListener('click', toProto);
     $$('[data-ci]').forEach(function (inp) { inp.addEventListener('input', function () { c[inp.getAttribute('data-ci')] = inp.value; U.save(); }); });
     var bk = $('#cpBook'); if (bk) bk.addEventListener('click', function () { cp.booking = !cp.booking; keep(); });
+    var pg = $('#cpPkgs'); if (pg) pg.addEventListener('click', function () { App.ui.pk = { tab: 'clients', edit: null }; App.go('packages'); });
     var bs = $('#cbSave');
     if (bs) bs.addEventListener('click', function () {
-      var long = $('#cbLen').value === '60';
-      S().bookings.push({ id: 'b' + Date.now(), service: long ? 'session60' : 'session30', date: $('#cbDate').value, time: $('#cbTime').value, guests: [c.id], where: 'Video call', with: $('#cbWho').value, paid: long ? 148 : 99 });
-      U.activity('Session booked for ' + c.name + ' with ' + $('#cbWho').value + '. Invite and Zoom link sent.');
+      EGCal.book({ client: c.id, service: $('#cbType').value, date: $('#cbDate').value, time: $('#cbTime').value, with: $('#cbWho').value, byTeam: true });
       cp.booking = false; U.save(); keep(); U.toast('Booked. ' + U.first(c.name) + ' has the invite.');
     });
     [['#cpPayLink', 'Card-update link sent'], ['#cpPayLink2', 'Payment link sent to ' + c.email + ' (simulated)'], ['#cpRefund', 'Refunds open a short form with the amount and reason (simulated)'], ['#cpProtoPdf', 'PDF downloaded (simulated)']].forEach(function (x) { var b = $(x[0]); if (b) b.addEventListener('click', function () { U.toast(x[1]); }); });
@@ -240,6 +270,13 @@
     $$('[data-delnote]').forEach(function (b) { b.addEventListener('click', function () { c.notes.splice(+b.getAttribute('data-delnote'), 1); U.save(); keep(); }); });
     $$('[data-sendform]').forEach(function (b) { b.addEventListener('click', function () { U.activity(b.getAttribute('data-sendform') + ' link sent to ' + c.name + '.'); U.save(); U.toast('Link sent to ' + c.email); }); });
     $$('[data-viewform]').forEach(function (b) { b.addEventListener('click', function () { cp.doc = EGForms.render(EGForms.form(b.getAttribute('data-viewform')), false); keep(); }); });
+    var sa = $('#cpSendAll');
+    if (sa) sa.addEventListener('click', function () {
+      var owe = S().forms.filter(function (f) { return EGForms.applies(f, c) && !(c.forms && c.forms[f.id]); });
+      c.formsSent = U.today();
+      U.activity(owe.map(function (f) { return f.title; }).join(', ') + ' sent to ' + c.name + ' to sign in their portal.');
+      U.save(); keep(); U.toast('Sent. ' + U.first(c.name) + ' signs them in their portal.');
+    });
     var tf = $('#cpForms'); if (tf) tf.addEventListener('click', function () { App.go('forms'); });
     $$('[data-opendoc]').forEach(function (b) {
       b.addEventListener('click', function () {

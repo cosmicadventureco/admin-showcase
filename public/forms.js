@@ -38,7 +38,7 @@
         if (x.type === 'long') return '<div class="fd-q">' + lab + '<textarea rows="2" data-ff="' + x.id + '"' + dis + '></textarea></div>';
         if (x.type === 'date') return '<div class="fd-q">' + lab + '<input type="date" data-ff="' + x.id + '"' + dis + '></div>';
         if (x.type === 'yesno') return '<div class="fd-q">' + lab + '<div class="row"><label class="check"><input type="radio" name="r' + x.id + '"' + dis + '> Yes</label><label class="check"><input type="radio" name="r' + x.id + '"' + dis + '> No</label></div></div>';
-        if (x.type === 'choice') return '<div class="fd-q">' + lab + '<div class="chips">' + (x.options.length ? x.options : ['Option 1', 'Option 2']).map(function (o) { return '<span class="chip">' + esc(o) + '</span>'; }).join('') + '</div></div>';
+        if (x.type === 'choice') return '<div class="fd-q">' + lab + '<div class="chips">' + (x.options.length ? x.options : ['Option 1', 'Option 2']).map(function (o) { return live ? '<button type="button" class="chip" data-fchip="' + esc(o) + '">' + esc(o) + '</button>' : '<span class="chip">' + esc(o) + '</span>'; }).join('') + '</div></div>';
         if (x.type === 'check') return '<div class="fd-q"><label class="check"><input type="checkbox" data-ff="' + x.id + '"' + dis + '> ' + esc(x.label) + (x.req ? ' <span class="fd-req">*</span>' : '') + '</label></div>';
         return '<div class="fd-q">' + lab + '<input type="text" class="fd-sign" placeholder="Type your full name to sign" data-ffsign="' + x.id + '"' + dis + '></div>';
       }).join('') + '</div>';

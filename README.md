@@ -53,7 +53,7 @@ video library, work queue, automation settings, clinic batching, Shopify,
 quotes) is still in the code but hidden, and listed on the Outcome page as
 "ready to add later".
 
-**Practice side** (Home shows six big buttons, a Checklist and Upcoming
+**Practice side** (Home shows seven big buttons, a Checklist and Upcoming
 Appointments for the week; The Outcome sits apart at the bottom of the menu):
 
 1. **Client Portal:** the client list, and one page per client with tabs:
@@ -73,18 +73,30 @@ Appointments for the week; The Outcome sits apart at the bottom of the menu):
    of day (morning, midday, evening, bedtime). Publishing puts the schedule and
    reminders in the client's app and the PDF in their documents. "Order these
    remedies" sends one order to the Shop, sized for the length of the protocol.
+   The Client Portal list has **+ Add client** (name, email, practitioner,
+   optional package; sends the portal invite), and each client's Forms &
+   Waivers tab can send everything outstanding in one click.
 5. **Booking Calendar:** a week view of every practitioner's appointments
    (colour-coded, filterable). Click an appointment for its Zoom meeting and
    the automatic invite and reminders; click an empty time to book. Booking
    settings: Zoom auto-create, 24-hour and 1-hour reminders, text reminders,
    Google Calendar sync, gap between sessions, minimum notice, which sessions
    clients can book, and each practitioner's days and hours.
-6. **Waivers & Forms:** templates for every waiver and form (wording,
+   Appointment types: 1 Hour Practitioner Review, Recorded Review, 12 Week
+   Package 1/2 and 12 Week Package 2/2. Appointments the team books wait for
+   the client to confirm in their portal.
+6. **Packages:** Recorded Review ($99), Bioresonance Scan ($195) and the 12
+   Week Package ($6,995), each with what it includes and its appointment
+   credits (prices other than the 12 Week Package are placeholders). Edit or
+   create packages, choose which show in the client portal, see every client
+   package and how many of its appointments are booked, and add one for a
+   client with a payment link. Credits are used up as appointments are booked.
+7. **Waivers & Forms:** templates for every waiver and form (wording,
    questions of seven types, who has to sign it) with a live preview of what
    the client sees and a count of who has signed. Clients sign in their
    portal; the signed copy is filed in their Documents.
 
-**Client view** (`/app`): the client portal for signed-in clients, loosely
+**Client** (`/app`, the Provider / Client switch at the top): the client portal for signed-in clients, loosely
 modelled on Practice Better but simpler. It shows in a desktop browser window
 or on a phone (Desktop / Mobile switch). There is no free sign-up or
 snapshot: clients get their sign-in after booking.
@@ -96,13 +108,15 @@ snapshot: clients get their sign-in after booking.
   Above them, any waiver still to sign; below, a preview of the latest report
   (dials and top remedies) and today's protocol, the next appointment with
   its Zoom link, and the latest message from their practitioner.
-- **Packages:** the Premium Course (week, what is included) and session packs
-  (sessions left), plus packages to add (3 x 30 min $279, 5 x 1 hour $695).
+- **Packages:** their packages and the appointments left to book in each
+  (Book goes straight to booking that type), plus packages to add.
+- **Appointments:** booking by appointment type; a package credit covers the
+  matching type, otherwise it is paid at booking. Appointments the team
+  booked show a Confirm button.
 - **Client Reports:** every signed-off scan report. **Protocols:** today's
   doses to tick off, reminders and the protocol report. **Shop:** their
   remedies (member pricing for Premium), every order approved by a person.
-  **Appointments:** upcoming sessions with Join Zoom, past sessions, booking
-  ($99 / 30 min, +$49 for an hour). **Billing & Payments:** paid so far, next
+  **Appointments:** upcoming sessions with Join Zoom, past sessions, booking. **Billing & Payments:** paid so far, next
   payment, card on file, history with receipts.
 - **More:** Messages (replies come from the Messages tab in the Client
   Portal), course videos for Premium members, and Account.
@@ -115,13 +129,16 @@ account and two Premium members.
 
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 9
-  chapters in about 8 minutes at normal speed: Home, Client Portal,
-  Booking Calendar, Waivers & Forms, Client Report Creator, Protocol Creator,
-  The client portal, Shop, The Outcome.
+- **Play Showcase** (top right): restores the sample data, then walks one new
+  client, Olivia Bennett, from start to finish in about four minutes at normal
+  speed. Provider side: add a client to the portal, create a package, send
+  forms and waivers, book an appointment, create a client report, create a
+  protocol, approve the order in the Shop. Client side: fill in the health
+  questionnaire, sign a waiver, confirm the appointment, look at the client
+  report, the protocol and the shop.
   - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
-  - **» 1×** (or F) speeds up: 1×, 2× (about 4.5 minutes), 4×.
+  - **» 1×** (or F) speeds up: 1×, 2× (about 2 minutes), 4×.
 - Open `/?play` (or `/#play`) to start the tour on load.
 - Deep links: `/#dashboard`, `/#clients`, `/#shop`, `/#scans`, `/#protocols`,
   `/#outcome`, `/#client`.
@@ -214,6 +231,7 @@ public/app.js          core, Shop, and the hidden extra screens
 public/portal.js       Home and the Client Portal
 public/calendar.js     Booking Calendar and automatic Zoom booking
 public/forms.js        Waivers & Forms
+public/packages.js     Packages and appointment credits
 public/scans.js        client report creator
 public/protocols.js    protocol creator and the protocol document
 public/client.js       the client app

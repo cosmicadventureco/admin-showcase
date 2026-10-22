@@ -29,11 +29,15 @@
 
   /* Book a session: one place, used by the calendar and the client portal. */
   function book(o) {
-    var b = { id: 'b' + Date.now(), service: o.service, date: o.date, time: o.time, guests: [o.client], where: 'Video call', with: o.with, paid: o.paid };
-    var cfg = S().bookcfg, c = U.client(o.client);
-    if (cfg.zoom) b.zoom = zoomId();
+    var s = EG.SERVICES.filter(function (x) { return x.id === o.service; })[0], cfg = S().bookcfg, c = U.client(o.client);
+    var b = { id: 'b' + Date.now(), service: o.service, date: o.date, time: o.time, guests: [o.client], where: s.recorded ? 'Recorded' : s.pkg ? 'Studio' : 'Video call', with: o.with, paid: o.paid };
+    if (o.byTeam) b.confirmed = false;
+    /* A package credit covers it when the client has one for this type. */
+    var used = !o.paid && window.EGPkg ? EGPkg.useCredit(c, o.service) : null;
+    if (used) b.pkg = used.id;
+    if (cfg.zoom && b.where === 'Video call') b.zoom = zoomId();
     S().bookings.push(b);
-    U.activity(svc(b).label + ' booked for ' + c.name + ' with ' + o.with + ' on ' + U.fmtDate(o.date) + ' at ' + U.fmtTime(o.time) + '.' + (cfg.zoom ? ' Zoom meeting created and invite sent.' : '') + (cfg.remind24 || cfg.remind1 ? ' Reminders scheduled.' : ''));
+    U.activity(svc(b).label + ' booked for ' + c.name + ' with ' + o.with + ' on ' + U.fmtDate(o.date) + ' at ' + U.fmtTime(o.time) + '.' + (used ? ' Used a ' + used.name + ' credit.' : '') + (b.zoom ? ' Zoom meeting created and invite sent.' : b.where === 'Recorded' ? ' The video review goes to their portal.' : ' Confirmation sent.') + (cfg.remind24 || cfg.remind1 ? ' Reminders scheduled.' : '') + (o.byTeam ? ' Waiting for ' + U.first(c.name) + ' to confirm.' : ''));
     return b;
   }
 
@@ -65,6 +69,9 @@
     return '<div class="card" data-tour="caldetail"><div class="row" style="justify-content:space-between"><span class="pill' + (b.zoom ? ' ok' : '') + '">' + (b.zoom ? 'Zoom' : esc(b.where)) + '</span><button class="linkish" id="calClose">Close</button></div>' +
       '<h3 class="h3" style="margin:.5rem 0 .2rem">' + esc(label(b)) + '</h3><p class="small muted" style="margin:0">' + U.fmtDate(b.date, { weekday: 'long', month: 'long', day: 'numeric' }) + ' &middot; ' + U.fmtTime(b.time) + ' &middot; ' + s.mins + ' min</p>' +
       '<table class="small" style="margin-top:.7rem"><tbody><tr><th style="width:6.5rem">Client</th><td>' + esc(who(b)) + '</td></tr><tr><th>Practitioner</th><td>' + esc(prac(b)) + '</td></tr>' + (b.paid ? '<tr><th>Paid</th><td>' + money(b.paid) + '</td></tr>' : '') + '</tbody></table>' +
+      (b.where === 'Recorded' ? '<div class="zoombox"><b class="small">Recorded review</b><div class="small muted">' + esc(prac(b)) + ' records the review at this time. The video goes to the client&rsquo;s portal and they are emailed.</div></div>' : '') +
+      (b.confirmed === false ? '<p class="small" style="margin:.6rem 0 0"><span class="pill warn">Waiting for the client to confirm</span></p>' : b.confirmedAt ? '<p class="small" style="margin:.6rem 0 0"><span class="pill ok">Confirmed by the client</span></p>' : '') +
+      (b.pkg ? '<p class="small" style="margin:.6rem 0 0"><span class="pill ok">' + esc(EGPkg.pkg(b.pkg).name) + ' credit</span></p>' : '') +
       (b.zoom ? '<div class="zoombox"><b class="small">Zoom meeting, created automatically</b><div class="num small">zoom.us/j/' + b.zoom.replace(/ /g, '') + '</div><div class="small muted">Meeting ID ' + b.zoom + '</div></div>' : '') +
       '<ul class="autolist small">' + [b.zoom ? 'Calendar invite with the Zoom link sent' : 'Calendar invite sent', cfg.remind24 ? 'Reminder email 24 hours before' : '', cfg.remind1 ? 'Reminder 1 hour before' + (cfg.sms ? ', by text' : ', by email') : '', cfg.gcal ? 'Added to ' + esc(prac(b).split(',')[0]) + '’s Google Calendar' : ''].filter(Boolean).map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' +
       '<div class="row" style="margin-top:.8rem"><button class="btn small" data-calclient="' + c.id + '">Open client</button><button class="btn ghost small" id="calMove">Reschedule</button><button class="btn ghost small" id="calCancel">Cancel</button></div></div>';
@@ -94,7 +101,7 @@
         '<div><label for="cfgNotice">Minimum notice</label><select id="cfgNotice">' + [2, 12, 24, 48].map(function (n) { return '<option value="' + n + '"' + (n === cfg.notice ? ' selected' : '') + '>' + n + ' hours</option>'; }).join('') + '</select></div></div></div>' +
       '<div class="card" style="margin-top:1rem"><h3 class="h3">Sessions clients can book</h3>' + cfg.types.map(function (t, i) {
         var s = EG.SERVICES.filter(function (x) { return x.id === t.id; })[0];
-        return '<label class="tog"><input type="checkbox" data-ctype="' + i + '"' + (t.on ? ' checked' : '') + '><span class="grow"><b>' + esc(s.label) + '</b><span class="small muted">' + s.mins + ' min' + (s.price ? ' &middot; ' + money(s.price, false) : ' &middot; included in the course') + '</span></span></label>';
+        return '<label class="tog"><input type="checkbox" data-ctype="' + i + '"' + (t.on ? ' checked' : '') + '><span class="grow"><b>' + esc(s.label) + '</b><span class="small muted">' + s.mins + ' min' + (s.price ? ' &middot; ' + money(s.price, false) : ' &middot; included in the 12 Week Package') + '</span></span></label>';
       }).join('') + '</div></div>' +
       '<div class="card" data-tour="avail"><h3 class="h3">When each practitioner is available</h3>' + EG.CERTIFIED.map(function (p) {
         var h = cfg.hours[p.id], ds = cfg.days[p.id];
@@ -132,7 +139,7 @@
     });
     var sv = $('#calSave');
     if (sv) sv.addEventListener('click', function () {
-      var s = $('#calType').value, b = book({ client: $('#calClient').value, service: s, date: cal.add.date, time: cal.add.time, with: $('#calWith').value });
+      var s = $('#calType').value, b = book({ client: $('#calClient').value, service: s, date: cal.add.date, time: cal.add.time, with: $('#calWith').value, byTeam: true });
       cal.add = null; cal.sel = b.id; U.save(); keep(); U.toast(cfg.zoom ? 'Booked. Zoom link sent to the client.' : 'Booked.');
     });
     /* settings */
