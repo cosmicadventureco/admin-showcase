@@ -36,7 +36,7 @@
     var toBook = D.clients.reduce(function (n, c) { return n + EGPkg.holdings(c).reduce(function (m, x) { return m + Math.max(0, x.left); }, 0); }, 0);
     var doors = [
       ['clients', 'portal', 'Client Portal', 'Every client: details, bookings, billing, protocols, notes, forms and documents.', D.clients.length + ' clients'],
-      ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' Order' + (approve > 1 ? 's' : '') + ' to Approve' : 'All clear'],
+      ['shop', 'shop', 'Shop Fulfillment', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' Order' + (approve > 1 ? 's' : '') + ' to Approve' : 'All clear'],
       ['scans', 'reports', 'Client Report Creator', 'Upload the four scan files and get a finished client report, signed off by a practitioner.', review ? review + ' to review' : files ? files + ' waiting for files' : 'All clear'],
       ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active'],
       ['calendar', 'calendar', 'Booking Calendar', 'Every practitioner’s week. Clients book online and Zoom links go out on their own.', weekCount + ' this week'],

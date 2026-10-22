@@ -602,7 +602,7 @@
     var month = S.orders.reduce(function (t, o) { return t + orderTotal(o); }, 0);
     var cost = S.orders.reduce(function (t, o) { return t + orderCost(o); }, 0);
     var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
-    return head('Orders, products and suppliers', 'Shop',
+    return head('Orders, products and suppliers', 'Shop Fulfillment',
       'Orders drop-ship from the supplier, but only after a person on your team approves each one.') +
       pitch('new', 'Proposed drop-ship automation with a human checkpoint: every order, including auto-ship refills, waits in an approval queue. Once approved, routing, tracking emails and refill reminders run on their own.') +
       '<div class="grid g4" style="margin-bottom:1rem">' + stat(waiting, 'Waiting for approval', waiting ? 'needs a person' : 'all clear') + stat(money(month, false), 'Product revenue this week', '') + stat(Math.round((1 - cost / month) * 100) + '%', 'Gross margin after supplier cost', '') + stat('2.6 days', 'Approval to doorstep', '') + '</div>' +
