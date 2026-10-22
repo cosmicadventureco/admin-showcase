@@ -18,7 +18,9 @@
     portal: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
     shop: '<path d="M3 7h18l-1.5 12a2 2 0 0 1-2 1.8h-11a2 2 0 0 1-2-1.8z"/><path d="M8.5 7a3.5 3.5 0 0 1 7 0"/>',
     reports: '<circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/>',
-    protocols: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'
+    protocols: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    forms: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'
   };
   function icon(k, size) { return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + '</svg>'; }
 
@@ -28,23 +30,27 @@
     var approve = D.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
     var review = D.scans.filter(function (x) { return x.data && x.status === 'review'; }).length, files = D.scans.filter(function (x) { return !x.data && x.status === 'uploaded'; }).length;
     var active = D.protocols.filter(function (p) { return p.status === 'active'; }).length;
+    var weekCount = D.bookings.filter(function (b) { return b.date >= t && b.date <= EG.iso(7); }).length;
+    var unsigned = D.clients.reduce(function (n, c) { return n + EGForms.outstanding(c).length; }, 0);
     var doors = [
       ['clients', 'portal', 'Client Portal', 'Every client: details, bookings, billing, protocols, notes, forms and documents.', D.clients.length + ' clients'],
       ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' to approve' : 'All clear'],
       ['scans', 'reports', 'Client Report Creator', 'Upload the four scan files and get a finished client report, signed off by a practitioner.', review ? review + ' to review' : files ? files + ' waiting for files' : 'All clear'],
-      ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active']
+      ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active'],
+      ['calendar', 'calendar', 'Booking Calendar', 'Every practitioner’s week. Clients book online and Zoom links go out on their own.', weekCount + ' this week'],
+      ['forms', 'forms', 'Waivers & Forms', 'Write each waiver and form once. The right clients sign it in their portal.', unsigned ? unsigned + ' unsigned' : 'All signed']
     ];
     var todo = [], unread = unreadBy();
     Object.keys(unread).forEach(function (id) { todo.push(['msg:' + id, 'Reply to ' + U.client(id).name + ' (' + unread[id] + ' new message' + (unread[id] > 1 ? 's' : '') + ')']); });
     if (approve) todo.push(['shop', approve + ' order' + (approve > 1 ? 's' : '') + ' waiting for approval']);
     D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', (x.data ? 'Review the report for ' : 'Upload the scan files for ') + U.client(x.client).name]); });
     D.clients.filter(function (c) { return c.member && !EGProto.activeFor(c.id); }).slice(0, 2).forEach(function (c) { todo.push(['protocols:' + c.id, c.name + ' has no protocol yet']); });
-    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Four places to run the practice from.</p>' +
+    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Everything you need to run the practice, in six places.</p>' +
       '<div class="doors" data-tour="doors">' + doors.map(function (d) {
-        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
+        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting|unsigned/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
       }).join('') + '</div>' +
-      '<div class="homecols"><div><h2 class="h2">Checklist</h2><div class="card" data-tour="today">' + (todo.length ? todo.slice(0, 7).map(function (x) { return '<div class="todo"><span class="dotmark"></span><span class="grow">' + esc(x[1]) + '</span><button class="btn ghost small" data-todo="' + x[0] + '">Open</button></div>'; }).join('') : '<p class="muted" style="margin:0">Nothing needs you right now.</p>') + '</div></div>' +
-      '<div><h2 class="h2">Upcoming Appointments</h2><div class="card" data-tour="appts">' + appointments() + '</div></div></div>';
+      '<div class="homecols"><div><div class="row" style="justify-content:space-between;align-items:baseline"><h2 class="h2">Checklist</h2></div><div class="card" data-tour="today">' + (todo.length ? todo.slice(0, 7).map(function (x) { return '<div class="todo"><span class="dotmark"></span><span class="grow">' + esc(x[1]) + '</span><button class="btn ghost small" data-todo="' + x[0] + '">Open</button></div>'; }).join('') : '<p class="muted" style="margin:0">Nothing needs you right now.</p>') + '</div></div>' +
+      '<div><div class="row" style="justify-content:space-between;align-items:baseline"><h2 class="h2">Upcoming Appointments</h2><button class="linkish" data-door="calendar">Open the calendar</button></div><div class="card" data-tour="appts">' + appointments() + '</div></div></div>';
   }
   function svcLabel(b) { var sv = EG.SERVICES.filter(function (x) { return x.id === b.service; })[0]; return b.name || (sv ? sv.label : 'Session'); }
   function appointments() {
@@ -55,7 +61,7 @@
       var day = b.date === t ? 'Today' : b.date === EG.iso(1) ? 'Tomorrow' : U.fmtDate(b.date, { weekday: 'long', month: 'short', day: 'numeric' });
       var head = day !== last ? '<div class="appt-day">' + day + '</div>' : ''; last = day;
       var who = b.guests.length > 2 ? U.client(b.guests[0]).name + ' + ' + (b.guests.length - 1) + ' more' : b.guests.map(function (g) { return U.client(g).name; }).join(', ');
-      return head + '<div class="appt"><div class="appt-d"><b>' + U.fmtTime(b.time) + '</b>' + esc(b.where) + '</div><div class="grow"><div class="small"><b>' + esc(svcLabel(b)) + '</b></div><div class="small muted">' + esc(who) + (b.with ? ' &middot; with ' + esc(b.with) : '') + '</div></div><button class="btn ghost small" data-todo="appt:' + b.guests[0] + '">Client</button></div>';
+      return head + '<div class="appt"><div class="appt-d"><b>' + U.fmtTime(b.time) + '</b></div><div class="grow"><div class="small"><b>' + esc(svcLabel(b)) + '</b></div><div class="small muted">' + esc(who) + ' &middot; ' + (b.zoom ? 'Zoom' : esc(b.where)) + (b.with ? ' &middot; with ' + esc(b.with) : '') + '</div></div><button class="btn ghost small" data-todo="appt:' + b.guests[0] + '">Client</button></div>';
     }).join('');
   }
   function bindHome() {
@@ -83,7 +89,7 @@
       rows.map(function (c) {
         var nb = S().bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.date >= t; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
         return '<tr class="clickable" data-cp="' + c.id + '"><td><div class="row" style="flex-wrap:nowrap"><span class="av">' + U.initials(c.name) + '</span><span><b>' + esc(c.name) + '</b><br><span class="small muted">' + esc(c.email) + '</span></span></div></td><td>' + esc(tier(c)) + '</td>' +
-          '<td class="num">' + (nb ? U.fmtDate(nb.date) : '<span class="muted">&mdash;</span>') + '</td><td>' + (EGProto.activeFor(c.id) ? '<span class="pill ok">Active</span>' : '<span class="muted">&mdash;</span>') + '</td><td>' + (c.consent && c.intake ? '<span class="pill ok">Complete</span>' : '<span class="pill warn">Missing</span>') + '</td></tr>';
+          '<td class="num">' + (nb ? U.fmtDate(nb.date) : '<span class="muted">&mdash;</span>') + '</td><td>' + (EGProto.activeFor(c.id) ? '<span class="pill ok">Active</span>' : '<span class="muted">&mdash;</span>') + '</td><td>' + (EGForms.outstanding(c).length ? '<span class="pill warn">' + EGForms.outstanding(c).length + ' to sign</span>' : '<span class="pill ok">Complete</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
   }
 
@@ -155,22 +161,17 @@
         (c.notes.length ? c.notes.map(function (n, i) { return '<div class="note"><div class="row" style="justify-content:space-between"><span class="small muted">' + U.fmtDate(n.at, { month: 'short', day: 'numeric', year: 'numeric' }) + ' &middot; ' + esc(n.by || c.practitioner) + '</span><button class="linkish" data-delnote="' + i + '">Delete</button></div><p style="margin:.2rem 0 0">' + esc(n.text) + '</p></div>'; }).join('') : '<p class="small muted" style="margin:0">No notes yet. Only the team sees these.</p>') + '</div>';
     }
     if (tab === 'forms') {
-      var forms = [
-        ['Wellness consent', c.consent, c.consent ? 'Signed ' + U.fmtDate(c.joined) + ' with a drawn signature' : 'Not signed yet'],
-        ['Intake questionnaire', c.intake, c.intake ? 'Goals, diet, allergies and health screening' : 'Not started'],
-        ['Health screening', c.intake, c.intake ? ([c.pregnant, c.bloodthinner, c.thyroid].some(Boolean) ? 'Flags noted: a practitioner reviews orders' : 'No flags') : 'Part of the questionnaire'],
-        ['Premium Course agreement', c.member ? true : null, c.member ? 'Signed online at enrolment' : 'Only for Premium Course clients'],
-        ['Photo and testimonial release', false, 'Optional. Not sent yet']
-      ];
-      return '<div class="card"><div class="list" data-tour="forms">' + forms.map(function (f, i) {
-        return '<div class="li"><div class="grow"><div class="title">' + f[0] + '</div><div class="meta">' + esc(f[2]) + '</div></div>' + (f[1] === true ? '<span class="pill ok">Complete</span><button class="btn ghost small" data-viewform="' + i + '">View</button>' : f[1] === null ? '<span class="pill">Not needed</span>' : '<span class="pill warn">Outstanding</span><button class="btn small" data-sendform="' + esc(f[0]) + '">Send link</button>') + '</div>';
-      }).join('') + '</div></div>';
+      var fl = D.forms.filter(function (f) { return EGForms.applies(f, c) || f.who === 'optional'; });
+      return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:.4rem"><h3 class="h3" style="margin:0">Forms &amp; waivers</h3><button class="linkish" id="cpForms">Edit templates in Waivers &amp; Forms</button></div><div class="list" data-tour="forms">' + fl.map(function (f) {
+        var done = c.forms && c.forms[f.id], need = EGForms.applies(f, c);
+        return '<div class="li"><div class="grow"><div class="title">' + esc(f.title) + '</div><div class="meta">' + esc(f.kind) + ' &middot; ' + (done ? 'Signed ' + U.fmtDate(done) + ' in the client portal' : need ? 'Needed: ' + esc(EGForms.whoLabel(f.who).toLowerCase()) : 'Optional') + '</div></div>' +
+          (done ? '<span class="pill ok">Signed</span><button class="btn ghost small" data-viewform="' + f.id + '">View</button>' : '<span class="pill' + (need ? ' warn' : '') + '">' + (need ? 'Outstanding' : 'Not sent') + '</span><button class="btn small" data-sendform="' + esc(f.title) + '">Send link</button>') + '</div>';
+      }).join('') + '</div></div>' + (cp.doc ? '<div style="margin-top:1rem">' + cp.doc + '</div>' : '');
     }
     var docs = [];
     D.scans.filter(function (x) { return x.client === c.id && x.status === 'published'; }).forEach(function (x) { docs.push(['Resonance Map report', x.date, 'Client report', 'report:' + x.id]); });
     D.protocols.filter(function (p) { return p.client === c.id; }).forEach(function (p) { docs.push(['Protocol (' + (p.status === 'active' ? 'active' : 'replaced') + ')', p.start, 'Protocol', 'proto']); });
-    if (c.consent) docs.push(['Signed wellness consent.pdf', c.joined, 'Form', '']);
-    if (c.member) docs.push(['Premium Course agreement.pdf', (U.enrollment(c.id) || {}).start || c.joined, 'Agreement', '']);
+    D.forms.forEach(function (f) { if (c.forms && c.forms[f.id]) docs.push([f.title + ' (signed).pdf', c.forms[f.id], f.kind, 'form:' + f.id]); });
     (c.docs || []).forEach(function (d) { docs.push([d.name, d.at, d.kind, '']); });
     docs.sort(function (a, b) { return a[1] < b[1] ? 1 : -1; });
     return '<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:.4rem"><h3 class="h3" style="margin:0">Documents</h3><label class="btn ghost small" style="margin:0;text-transform:none;letter-spacing:.06em">Upload a file<input type="file" id="cpUpload" hidden></label></div><div class="list" data-tour="docs">' +
@@ -181,7 +182,7 @@
   function page(c) {
     var cp = st();
     return '<button class="back" id="cpBack">&larr; All clients</button>' +
-      '<div class="row cphead" data-tour="clienthead"><span class="av" style="width:3.2rem;height:3.2rem;font-size:1rem">' + U.initials(c.name) + '</span><div class="grow"><h1 class="h1" style="margin:0">' + esc(c.name) + '</h1><div class="pills"><span class="pill honey">' + esc(tier(c)) + '</span><span class="pill">' + esc(c.practitioner) + '</span>' + (c.consent && c.intake ? '' : '<span class="pill warn">Forms outstanding</span>') + '</div></div>' +
+      '<div class="row cphead" data-tour="clienthead"><span class="av" style="width:3.2rem;height:3.2rem;font-size:1rem">' + U.initials(c.name) + '</span><div class="grow"><h1 class="h1" style="margin:0">' + esc(c.name) + '</h1><div class="pills"><span class="pill honey">' + esc(tier(c)) + '</span><span class="pill">' + esc(c.practitioner) + '</span>' + (EGForms.outstanding(c).length ? '<span class="pill warn">Forms outstanding</span>' : '') + '</div></div>' +
       '<div class="row"><button class="btn ghost small" id="cpApp">View their app</button><button class="btn small" id="cpProto">Protocol</button></div></div>' +
       '<div class="tabs ctabs" data-tour="clienttabs">' + TABS.map(function (t) { var n = t[0] === 'messages' ? unreadBy()[c.id] : 0; return '<button class="tab' + (cp.tab === t[0] ? ' is-on' : '') + '" data-cptab="' + t[0] + '">' + t[1] + (n ? '<span class="unread">' + n + '</span>' : '') + '</button>'; }).join('') + '</div>' +
       tabBody(c, cp.tab);
@@ -238,11 +239,13 @@
     }
     $$('[data-delnote]').forEach(function (b) { b.addEventListener('click', function () { c.notes.splice(+b.getAttribute('data-delnote'), 1); U.save(); keep(); }); });
     $$('[data-sendform]').forEach(function (b) { b.addEventListener('click', function () { U.activity(b.getAttribute('data-sendform') + ' link sent to ' + c.name + '.'); U.save(); U.toast('Link sent to ' + c.email); }); });
-    $$('[data-viewform]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Opens the signed PDF (simulated)'); }); });
+    $$('[data-viewform]').forEach(function (b) { b.addEventListener('click', function () { cp.doc = EGForms.render(EGForms.form(b.getAttribute('data-viewform')), false); keep(); }); });
+    var tf = $('#cpForms'); if (tf) tf.addEventListener('click', function () { App.go('forms'); });
     $$('[data-opendoc]').forEach(function (b) {
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-opendoc');
         if (k.indexOf('report:') === 0) { var sc = S().scans.filter(function (x) { return x.id === k.slice(7); })[0]; cp.doc = EGScan.reportHtml(sc, false); }
+        else if (k.indexOf('form:') === 0) { cp.doc = EGForms.render(EGForms.form(k.slice(5)), false); }
         else if (k === 'proto') { var p = EGProto.activeFor(c.id) || S().protocols.filter(function (x) { return x.client === c.id; })[0]; cp.doc = EGProto.doc(p, false); }
         else { U.toast('Opens the PDF (simulated)'); return; }
         keep();
@@ -254,5 +257,5 @@
 
   App.register('dashboard', home, bindHome);
   App.register('clients', view, bind);
-  window.EGPortal = { open: function (id, tab) { st().id = id; st().tab = tab || 'info'; App.go('clients'); } };
+  window.EGPortal = { payments: payments, open: function (id, tab) { st().id = id; st().tab = tab || 'info'; App.go('clients'); } };
 })();

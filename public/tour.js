@@ -83,7 +83,7 @@
     return el;
   }
   /* The caption sits beside the phone in the client app, under everything else. */
-  function inView(r) { return r.top >= 70 && r.bottom <= window.innerHeight - (document.body.classList.contains('clientmode') ? 16 : 170); }
+  function inView(r) { var side = document.body.classList.contains('clientmode') && !document.body.classList.contains('clientdesk'); return r.top >= 70 && r.bottom <= window.innerHeight - (side ? 16 : 170); }
   async function reveal(el) {
     var r = el.getBoundingClientRect();
     if (!inView(r)) {
@@ -209,7 +209,7 @@
   var CHAPTERS = [
     { name: 'Home', run: async function () {
       App.go('dashboard'); await sleep(600);
-      say('Four tools run the practice', 'Client Portal, Shop, Client Report Creator and Protocol Creator. Everything else can be added later, when it is needed.');
+      say('Six places run the practice', 'Client Portal, Shop, Client Report Creator, Protocol Creator, Booking Calendar and Waivers & Forms. Everything else can be added later.');
       await spot('[data-tour="doors"]', 4200, 6);
       say('Checklist', 'Messages to answer, orders to approve, scan files to upload. One list, so nothing depends on one person remembering.');
       await spot('[data-tour="today"]', 3400);
@@ -244,6 +244,35 @@
       await click('[data-cptab="docs"]', { after: 700 });
       say('Documents', 'Scan reports, protocols and anything uploaded, kept together.');
       await spot('[data-tour="docs"]', 2800);
+    } },
+    { name: 'Booking Calendar', run: async function () {
+      App.ui.cal = null; App.go('calendar'); await sleep(600);
+      say('Booking Calendar', 'Every practitioner’s week in one place, colour-coded. Clients book open times from their portal.');
+      await spot('[data-tour="calweek"]', 3200, 4);
+      var zb = App.state().bookings.filter(function (b) { return b.zoom && document.querySelector('[data-cev="' + b.id + '"]'); })[0];
+      if (zb) {
+        await click('[data-cev="' + zb.id + '"]', { after: 800 });
+        say('Zoom links make themselves', 'Each video session gets its own Zoom meeting. The invite, reminders and calendar sync all go out automatically.');
+        await spot('[data-tour="caldetail"]', 3600);
+      }
+      await click('[data-caltab="settings"]', { after: 800 });
+      say('The rules it books by', 'Which sessions clients can book, when each practitioner is free, gaps between sessions and minimum notice.');
+      await spot('[data-tour="bookauto"]', 2800);
+      await spot('[data-tour="avail"]', 2600);
+    } },
+    { name: 'Waivers & Forms', run: async function () {
+      App.ui.fm = null; App.go('forms'); await sleep(600);
+      say('Waivers & Forms', 'Each template knows who has to sign it, and shows how many have.');
+      await spot('[data-tour="formlist"]', 2600);
+      await click('#fmNewW', { after: 700 });
+      say('Write a new waiver in a minute', 'The wording, the questions, and who signs it. The preview shows exactly what the client sees.');
+      await type('#fmTitle', 'Retreat liability waiver', 40);
+      await type('#fmBody', 'I take part in retreat activities at my own risk and will tell the team about any injury or condition.', 14);
+      await click('[data-fadd="yesno"]', { after: 500 });
+      var lab = document.querySelectorAll('[data-flabel]');
+      if (lab.length) await type(lab[lab.length - 1], 'Do you have any injuries we should know about?', 22);
+      await spot('[data-tour="formpreview"]', 3000);
+      await click('#fmSave', { after: 1200 });
     } },
     { name: 'Client Report Creator', run: async function () {
       App.ui.sc = null; App.go('scans'); await sleep(600);
@@ -290,23 +319,43 @@
       var act = App.state().protocols.filter(function (p) { return p.client === 'c7' && p.status === 'active'; })[0];
       if (act) { await click('[data-pview="' + act.id + '"]', { after: 900 }); await spot('#pcReport [data-tour="protodoc"]', 2800); }
     } },
-    { name: 'What the client sees', run: async function () {
-      App.ui.ca = null; App.go('client'); await sleep(400);
+    { name: 'The client portal', run: async function () {
+      App.ui.ca = null; App.go('client'); App.ui.ca.device = 'desktop'; App.render(); await sleep(500);
       await choose('#caAs', 'c7');
-      say('Aiko’s app shows today’s protocol', 'What to take at each time of day. She ticks things off as she goes.');
-      await spot('[data-tour="ca-today"]', 2600);
+      say('The client portal, on a computer', 'Aiko signs in and sees the four things that matter: Client Reports, Protocols, Appointments and Billing.');
+      await spot('[data-tour="ca-nav"]', 2600);
+      var sg = document.querySelector('[data-csign]');
+      if (sg) {
+        say('Forms are signed right here', 'A waiver she still needs to sign comes first. The signed copy goes to her documents.');
+        await click(sg, { after: 700 });
+        await type('.ca-sheet [data-ffsign]', 'Aiko Tanaka', 50);
+        await click('#caSignForm', { after: 900 });
+      }
+      await click('[data-ctab="reports"]', { after: 700 });
+      say('Client Reports', 'Every scan report once a practitioner has signed it off, including the one published a minute ago.');
+      var rp = document.querySelector('[data-crep]');
+      if (rp) { await click(rp, { after: 900 }); await spot('#caBody [data-tour="report"] .rr-banner', 2200); }
+      await click('[data-ctab="protocol"]', { after: 700 });
+      say('Protocols', 'Today’s doses to tick off, with reminders, and the full protocol report.');
+      await spot('[data-tour="ca-protocol"]', 2800);
+      await click('[data-ctab="appts"]', { after: 700 });
+      say('Appointments', 'Her sessions with the Zoom link to join, and booking an open time with her practitioner.');
+      await spot('[data-tour="ca-appts"]', 2800);
+      await click('[data-ctab="billing"]', { after: 700 });
+      say('Billing', 'What she has paid, what is due next, receipts and her card on file.');
+      await spot('[data-tour="ca-billing"]', 2800);
+      await click('[data-cdev="mobile"]', { after: 900 });
+      await click('[data-ctab="home"]', { after: 600 });
+      say('The same portal on her phone', 'Today’s protocol on the home screen. She ticks things off as she goes.');
       var t = document.querySelector('[data-ctake]');
       if (t) await click(t, { after: 600 });
-      await click('[data-ctab="protocol"]', { after: 700 });
-      say('Her full protocol, and reordering', 'The whole schedule and the PDF, with one button to order her remedies again.');
-      await spot('[data-tour="ca-protocol"]', 3200);
       await click('#caMsgs', { after: 700 });
-      say('A direct line to her practitioner', 'She asks a question from the app. It lands on her page in the Client Portal and on the Checklist.');
+      say('A direct line to her practitioner', 'She asks a question. It lands on her page in the Client Portal and on the Checklist.');
       await type('#caMsg', 'Can I take the evening drops with dinner?', 30);
       await click('#caMsgSend', { after: 1200 });
     } },
     { name: 'Free accounts', run: async function () {
-      App.ui.ca = null; App.go('client'); await sleep(600);
+      App.ui.ca = null; App.go('client'); App.ui.ca.device = 'mobile'; App.render(); await sleep(600);
       say('Anyone can start free', 'A short questionnaire gives a wellness snapshot, free classes, short courses and session booking.');
       await click('#caStart', { after: 600 });
       await click('[data-cgoal="sleep"]', { after: 250 });
@@ -345,9 +394,9 @@
     } },
     { name: 'The Outcome', run: async function () {
       App.go('outcome'); await sleep(600);
-      say('Four tools as the backbone', 'Enough to run the practice day to day, without the admin resting on one person.');
+      say('Six tools as the backbone', 'Enough to run the practice day to day, without the admin resting on one person.');
       await spot('[data-tour="purposes"]', 3200);
-      say('Time back, job by job', 'About 20 hours a week of admin becomes about 3. Estimates to confirm with the team.');
+      say('Time back, job by job', 'About 22 hours a week of admin becomes about 3. Estimates to confirm with the team.');
       await spot('[data-tour="jobs"]', 3600);
       say('The rest, when you want it', 'Newsletters, a video library, a Shopify store and more are already sketched, and switched off for now.');
       await spot('[data-tour="later"]', 3200);
@@ -419,7 +468,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Four tools that carry the practice: the Client Portal, the Shop, the Client Report Creator and the Protocol Creator. Plus a simple app for clients and the $6,995 Premium Course.</p>', 2800);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>Six tools that carry the practice: the Client Portal, Shop, Client Report Creator, Protocol Creator, Booking Calendar and Waivers &amp; Forms. Plus a simple app for clients and the $6,995 Premium Course.</p>', 2800);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     clockStart = performance.now(); pausedTotal = 0;
@@ -470,8 +519,8 @@
     if (!completed) { stopped = false; return; }
     stopped = false;
     card('<p class="k">Showcase complete</p><h2>The backbone of the practice</h2>' +
-      '<p>Four tools to start with. Everything else is added when the business needs it.</p>' +
-      '<ul><li>Client Portal</li><li>Shop with approved drop-shipping</li><li>Client Report Creator</li><li>Protocol Creator &amp; schedules</li><li>Client messages</li><li>Client app</li><li>$6,995 Premium Course</li></ul>' +
+      '<p>Six tools to start with. Everything else is added when the business needs it.</p>' +
+      '<ul><li>Client Portal</li><li>Shop with approved drop-shipping</li><li>Client Report Creator</li><li>Protocol Creator &amp; schedules</li><li>Booking Calendar with Zoom</li><li>Waivers &amp; Forms</li><li>Client portal, desktop &amp; mobile</li><li>Client app</li><li>$6,995 Premium Course</li></ul>' +
       '<div class="row" style="justify-content:center;gap:.6rem"><button class="btn" id="endOutcome">See The Outcome</button><button class="btn ghost" id="endExplore">Explore it yourself</button><button class="btn ghost" id="endReplay">Replay</button></div>', 0)
       .then(function (c) {
         c.querySelector('#endExplore').addEventListener('click', function () { c.remove(); App.go('dashboard'); });

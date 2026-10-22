@@ -15,7 +15,7 @@
 
   function S() { return App.state(); }
   function st() {
-    if (!App.ui.ca) App.ui.ca = { as: '', tab: 'home', cart: {}, sub: false, step: 1, quiz: { goals: [], allergies: [] }, sheet: null, filter: 'all', line: 'all', book: { who: 'p1', long: false, day: 0, time: '' } };
+    if (!App.ui.ca) App.ui.ca = { device: window.innerWidth >= 1000 ? 'desktop' : 'mobile', rep: null, as: '', tab: 'home', cart: {}, sub: false, step: 1, quiz: { goals: [], allergies: [] }, sheet: null, filter: 'all', line: 'all', book: { who: 'p1', long: false, day: 0, time: '' } };
     return App.ui.ca;
   }
   /* Auto-ship credit per refill, set on the Auto-ship refills automation. */
@@ -88,11 +88,14 @@
     var e = U.enrollment(c.id), mod = e ? EG.MODULES[e.week - 1] : null, pr = EGProto.activeFor(c.id), picks = suggested(c).slice(0, 3);
     var head = '<p class="eyebrow" style="margin:0">Good morning</p><h2 class="ca-title" style="margin-top:.1rem">' + esc(U.first(c.name)) + '</h2>' +
       '<div class="pills" style="margin-bottom:1rem">' + (c.member ? '<span class="pill ok">Premium member &middot; week ' + e.week + ' of 12</span>' : '<span class="pill">Free account</span>') + '</div>';
+    var due = window.EGForms ? EGForms.outstanding(c) : [], next = upcoming(c)[0];
+    head += due.map(function (f) { return '<div class="ca-card ca-due row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-form"><span class="small"><b>' + esc(f.title) + '</b><br><span class="muted">' + esc(f.kind) + ' to sign before your next session</span></span><button class="btn honey small" data-csign="' + f.id + '">Sign</button></div>'; }).join('') +
+      (next ? '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="small"><b>Next: ' + esc(EGCal.label(next)) + '</b><br><span class="muted">' + U.fmtDate(next.date, { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(next.time) + (next.zoom ? ' &middot; Zoom' : ' &middot; ' + esc(next.where)) + '</span></span><button class="btn small" data-ctab="appts">View</button></div>' : '');
     if (c.member) {
       var sc = scanFor(c);
       return head +
         (pr ? '<div class="ca-card" data-tour="ca-today"><div class="row" style="justify-content:space-between"><b>Today&rsquo;s protocol</b><button class="linkish" data-ctab="protocol">Open</button></div>' + todayList(pr, true) + '</div>' : '<div class="ca-card"><b>Your protocol</b><p class="small muted" style="margin:.2rem 0 0">Your practitioner is preparing it' + (sc && sc.status === 'published' ? ' from your scan report' : ' after your scan') + '.</p></div>') +
-        (sc && sc.status === 'published' ? '<div class="ca-card ca-scan" data-tour="ca-scan"><span class="grow small"><b>Your scan report</b><br><span class="muted">Resonance Map &middot; ' + U.fmtDate(sc.date, { month: 'short', day: 'numeric' }) + '</span></span><button class="btn small" data-ctab="report">Open</button></div>' : '') +
+        (sc && sc.status === 'published' ? '<div class="ca-card ca-scan" data-tour="ca-scan"><span class="grow small"><b>Your scan report</b><br><span class="muted">Resonance Map &middot; ' + U.fmtDate(sc.date, { month: 'short', day: 'numeric' }) + '</span></span><button class="btn small" data-ctab="reports">Open</button></div>' : '') +
         '<div class="ca-card ca-prog" data-tour="ca-week"><div class="row" style="justify-content:space-between"><b>This week</b><span class="small muted num">' + Math.round(e.week / 12 * 100) + '%</span></div><div class="bar" style="margin:.4rem 0 .6rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' +
         '<div class="small">Week ' + e.week + ': ' + esc(mod.track ? EG.trackFor(c.goals) : mod.title) + '</div><button class="btn small" data-ctab="videos" style="margin-top:.6rem">Continue</button></div>' +
         '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-msgcard"><span class="small"><b>Message ' + esc(U.first(c.practitioner)) + '</b><br><span class="muted">Questions about your protocol, an order or a class</span></span><button class="btn small" data-ctab="msg">Message</button></div>' +
@@ -125,23 +128,59 @@
       return '<div class="ca-slot' + (done ? ' done' : '') + '"><button class="ca-tick" data-ctake="' + t[0] + '" aria-label="Mark ' + t[1] + ' as taken">' + (done ? '&#10003;' : '') + '</button><div class="grow small"><b>' + t[1] + '</b> <span class="muted">' + t[2] + '</span><br>' + rows.map(function (x) { return esc(EG.product(x.sku).name) + ' <span class="muted">' + esc(x.dose) + '</span>'; }).join(short ? ', ' : '<br>') + '</div></div>';
     }).join('');
   }
+  /* Appointments: what is coming up, with the Zoom link, then booking. */
+  function upcoming(c) { var t = U.today(); return S().bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.date >= t; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
+  function apptRow(b, past) {
+    return '<div class="ca-card ca-appt"><div class="ca-adate"><b>' + U.fmtDate(b.date, { day: 'numeric' }) + '</b>' + U.fmtDate(b.date, { month: 'short' }) + '</div><div class="grow small"><b>' + esc(EGCal.label(b)) + '</b><br><span class="muted">' + U.fmtDate(b.date, { weekday: 'long' }) + ' at ' + U.fmtTime(b.time) + ' &middot; with ' + esc(EGCal.prac(b)) + '</span>' +
+      (!past && b.zoom ? '<br><span class="muted">Zoom ' + b.zoom + '</span>' : !past ? '<br><span class="muted">' + esc(b.where) + '</span>' : '') + '</div>' +
+      (past ? '<span class="pill">Done</span>' : b.zoom ? '<button class="btn small" data-czoom="' + b.id + '">Join Zoom</button>' : '') + '</div>';
+  }
+  function apptsScreen(c) {
+    var t = U.today(), up = upcoming(c), past = S().bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.date < t; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    return '<h2 class="ca-title">Appointments</h2><div data-tour="ca-appts">' + (up.length ? up.map(function (b) { return apptRow(b, false); }).join('') : '<p class="small muted">Nothing booked yet.</p>') + '</div>' +
+      (past.length ? '<h3 class="ca-h">Past</h3>' + past.slice(0, 3).map(function (b) { return apptRow(b, true); }).join('') : '') +
+      '<div class="ca-split">' + book(c) + '</div>';
+  }
+
+  /* Billing: every payment, what is due next, and the card on file. */
+  function billingScreen(c) {
+    var pays = EGPortal.payments(c), paid = pays.filter(function (p) { return p[3] === 'Paid'; }).reduce(function (t, p) { return t + p[2]; }, 0);
+    var due = pays.filter(function (p) { return p[3] === 'Scheduled' || p[3] === 'Failed'; }), e = U.enrollment(c.id);
+    return '<h2 class="ca-title">Billing &amp; payments</h2><div class="ca-stats" data-tour="ca-billing"><div class="ca-card"><span class="small muted">Paid so far</span><b class="price">' + money(paid, false) + '</b></div><div class="ca-card"><span class="small muted">' + (due.length ? (due[0][3] === 'Failed' ? 'Payment failed' : 'Next payment ' + U.fmtDate(due[0][0], { month: 'short', day: 'numeric' })) : 'Next payment') + '</span><b class="price">' + (due.length ? money(due[0][2], false) : 'None due') + '</b></div></div>' +
+      (e && e.payIssue ? '<div class="ca-note">Your last course payment did not go through. Please update your card.</div>' : '') +
+      '<div class="ca-card row" style="justify-content:space-between"><span class="small"><b>Card on file</b><br><span class="muted">' + esc(c.card) + '</span></span><button class="btn ghost small" id="caCard">Update</button></div>' +
+      (e ? '<div class="ca-card"><b class="small">Premium Course</b><div class="small muted">' + (/Paid in full/.test(e.pay) ? 'Paid in full, ' + money(EG.PROGRAM.price, false) : '3 payments of ' + money(EG.PROGRAM.plan.each, false) + ' &middot; ' + esc(e.pay)) + '</div></div>' : '') +
+      '<h3 class="ca-h">History</h3><div class="ca-card ca-ledger">' + (pays.length ? pays.map(function (p) { return '<div class="ca-lrow"><span class="grow small"><b>' + esc(p[1]) + '</b><br><span class="muted">' + U.fmtDate(p[0]) + '</span></span><span class="small" style="text-align:right"><b class="num">' + money(p[2]) + '</b><br>' + (p[3] === 'Paid' ? '<button class="linkish" data-creceipt="1">Receipt</button>' : '<span class="' + (p[3] === 'Failed' ? 'bad' : 'muted') + '">' + p[3] + '</span>') + '</span></div>'; }).join('') : '<p class="small muted" style="margin:0">No payments yet.</p>') + '</div>';
+  }
+
   function protocolScreen(c) {
     var pr = EGProto.activeFor(c.id);
-    if (!pr) return '<h2 class="ca-title">Your protocol</h2><p class="small muted">Your practitioner is preparing your protocol. It appears here with daily reminders once it is ready.</p>';
-    return '<h2 class="ca-title">Your protocol</h2><p class="small muted" style="margin-top:-.4rem">Reminders at ' + EG.TIMES.map(function (t) { return t[2]; }).join(', ') + '.</p>' +
+    if (!pr) return '<h2 class="ca-title">Protocols</h2><p class="small muted">Your practitioner is preparing your protocol. It appears here with daily reminders once it is ready.</p>';
+    var old = S().protocols.filter(function (p) { return p.client === c.id && p.status !== 'active'; });
+    return '<h2 class="ca-title">Protocols</h2><p class="small muted" style="margin-top:-.4rem">Reminders at ' + EG.TIMES.map(function (t) { return t[2]; }).join(', ') + '.</p>' +
       '<div class="ca-card" data-tour="ca-protocol">' + todayList(pr, false) + '</div>' +
       '<button class="btn honey ca-wide" id="caOrderProto">Order my remedies</button>' +
-      '<div style="margin-top:1rem">' + EGProto.doc(pr, true) + '</div>';
+      '<h3 class="ca-h">Your protocol report</h3><div>' + EGProto.doc(pr, true) + '</div>' +
+      (old.length ? '<h3 class="ca-h">Earlier protocols</h3>' + old.map(function (p) { return '<div class="ca-card small"><b>Protocol from ' + U.fmtDate(p.start) + '</b><br><span class="muted">' + p.items.length + ' remedies &middot; ' + esc(p.by) + '</span></div>'; }).join('') : '');
   }
 
   function scanFor(c) {
     return S().scans.filter(function (x) { return x.client === c.id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null;
   }
-  function reportScreen(c) {
-    var sc = scanFor(c);
+  function reportsScreen(c) {
+    var ca = st(), list = S().scans.filter(function (x) { return x.client === c.id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    var pub = list.filter(function (x) { return x.status === 'published'; });
+    if (ca.rep && pub.some(function (x) { return x.id === ca.rep; })) return reportScreen(c, ca.rep);
+    return '<h2 class="ca-title">Client reports</h2><p class="small muted" style="margin-top:-.4rem">Your energetic scan reports, reviewed and signed off by your practitioner.</p><div data-tour="ca-reports">' +
+      (list.length ? list.map(function (x) {
+        return '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="docicon">RPT</span><span class="grow small"><b>Resonance Map</b><br><span class="muted">' + (x.status === 'published' ? 'Scan of ' + U.fmtDate(x.date, { month: 'short', day: 'numeric', year: 'numeric' }) + ' &middot; signed off by ' + esc(x.by) : x.status === 'booked' ? 'Scan booked for ' + U.fmtDate(x.date) : 'Your practitioner is preparing it') + '</span></span>' + (x.status === 'published' ? '<button class="btn small" data-crep="' + x.id + '">Open</button>' : '<span class="pill">' + (x.status === 'booked' ? 'Booked' : 'In progress') + '</span>') + '</div>';
+      }).join('') : '<p class="small muted">Your reports appear here after your energetic scan.</p>') + '</div>';
+  }
+  function reportScreen(c, id) {
+    var sc = id ? S().scans.filter(function (x) { return x.id === id; })[0] : scanFor(c);
     if (!sc || sc.status !== 'published') return '<h2 class="ca-title">Your scan report</h2><p class="small muted">' + (sc && sc.status === 'booked' ? 'Your energetics scan is booked for ' + U.fmtDate(sc.date) + '. Your report appears here once your practitioner has reviewed it.' : 'Your practitioner is reviewing your scan. We will email you as soon as your report is ready.') + '</p>';
     var rem = EGScan.remedies(sc.data).slice(0, sc.data.limit).filter(function (x) { return EGScan.inShop(x.item); });
-    return '<button class="linkish" data-ctab="home" style="padding-left:0">&larr; Home</button>' + EGScan.reportHtml(sc, true) +
+    return '<button class="linkish" id="caRepBack" style="padding-left:0">&larr; All reports</button>' + EGScan.reportHtml(sc, true) +
       '<div class="ca-card" style="margin-top:1rem"><b>Order your remedies</b><p class="small muted" style="margin:.2rem 0 0">' + rem.length + ' remedies from your report' + (c.member ? ', at your 20% member price with free shipping' : '') + '. Your practitioner checks every order before it ships.</p><button class="btn honey ca-wide" id="caAddRem">Add my remedies to cart</button></div>';
   }
 
@@ -240,6 +279,8 @@
       var w = EG.video(sh.id), a = EG.videoAccess(w, c);
       body = '<div class="player">' + thumb(w, true) + '<div class="bar"><i id="caProg" style="width:4%"></i></div></div><h3 class="ca-title" style="margin-top:.8rem">' + esc(w.title) + '</h3><p class="small muted">Playing (showcase preview) &middot; ' + w.mins + ' min</p>' +
         (a === 'owned' || a === 'included' ? '<button class="btn ghost ca-wide" id="caDownload">Download</button>' : '');
+    } else if (sh.type === 'form') {
+      body = EGForms.render(EGForms.form(sh.id), true) + '<button class="btn honey ca-wide" id="caSignForm" style="margin-top:1rem">Sign and send</button>';
     } else if (sh.type === 'program') {
       body = '<p class="eyebrow">Premium Course</p><h3 class="ca-title">' + esc(EG.PROGRAM.name) + '</h3><p class="small muted">' + money(EG.PROGRAM.price, false) + ' or ' + EG.PROGRAM.plan.n + ' payments of ' + money(EG.PROGRAM.plan.each, false) + '</p>' +
         EG.PROGRAM.includes.map(function (x) { return '<div class="inc small" style="margin-bottom:.6rem"><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><div><b>' + esc(x[0]) + '</b><br><span class="muted">' + esc(x[1]) + '</span></div></div>'; }).join('') +
@@ -249,22 +290,52 @@
   }
 
   /* ------------------------------------------------------------- frame */
+  var ICON = {
+    home: '<path d="M4 11l8-7 8 7v9H4z"/>',
+    reports: '<circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/>',
+    protocol: '<path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/>',
+    appts: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    billing: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',
+    videos: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>',
+    shop: '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
+    msg: '<path d="M4 5h16v11H9l-5 4z"/>',
+    me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'
+  };
+  function svg(k, n) { return '<svg width="' + (n || 20) + '" height="' + (n || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + '</svg>'; }
+  /* The four main sections, plus Home. Courses and the shop sit under More. */
+  function navFor(c) {
+    var main = c.member ? [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['appts', 'Appointments'], ['billing', 'Billing']] : [['home', 'Home'], ['videos', 'Courses'], ['appts', 'Appointments'], ['billing', 'Billing'], ['shop', 'Shop']];
+    var more = c.member ? [['videos', 'Courses'], ['shop', 'Shop'], ['msg', 'Messages'], ['me', 'Account']] : [['msg', 'Messages'], ['me', 'Account']];
+    return { main: main, more: more };
+  }
+  var SHORT = { 'Client Reports': 'Reports', Appointments: 'Appts', Protocols: 'Protocol' };
+
   function view() {
-    var ca0 = st(), c0 = me();
-    if (c0 && ca0.tab === 'msg') thread(c0).forEach(function (m) { if (m.from === 'team') m.seen = true; });
-    var ca = st(), c = me(), tab = c ? ca.tab : (ca.tab === 'quiz' ? 'quiz' : 'home');
-    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'book' ? book(c) : tab === 'report' ? reportScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
-    var n = cartCount();
-    var tabs = [['home', 'Home', '<path d="M4 11l8-7 8 7v9H4z"/>']].concat(c && c.member ? [['protocol', 'Protocol', '<path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/>']] : []).concat([ ['videos', 'Courses', '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>'], ['book', 'Book', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'], ['shop', 'Shop', '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>']]);
-    return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top"><span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>' +
-      (c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>' + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-cartbtn" data-ctab="me" id="caMe" aria-label="My account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></button><button class="ca-cartbtn" id="caCart" aria-label="Cart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>' + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '') + '</div>' +
+    var ca = st(), c0 = me();
+    if (ca.tab === 'report') { ca.tab = 'reports'; }
+    if (ca.tab === 'book') ca.tab = 'appts';
+    if (c0 && ca.tab === 'msg') thread(c0).forEach(function (m) { if (m.from === 'team') m.seen = true; });
+    var c = me(), tab = c ? ca.tab : (ca.tab === 'quiz' ? 'quiz' : 'home'), desk = ca.device === 'desktop';
+    var screen = !c ? (tab === 'quiz' ? quiz() : guestHome()) : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'appts' ? apptsScreen(c) : tab === 'reports' ? reportsScreen(c) : tab === 'billing' ? billingScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
+    var n = cartCount(), nav = c ? navFor(c) : null;
+    var brand = '<span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>';
+    var icons = c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages">' + svg('msg') + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-cartbtn" data-ctab="me" id="caMe" aria-label="My account">' + svg('me') + '</button><button class="ca-cartbtn" id="caCart" aria-label="Cart">' + svg('shop') + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '';
+    var picker = '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>';
+    var device = '<div class="seg" data-tour="device" role="group" aria-label="Device"><button class="' + (desk ? 'is-on' : '') + '" data-cdev="desktop">Desktop</button><button class="' + (!desk ? 'is-on' : '') + '" data-cdev="mobile">Mobile</button></div>';
+    if (desk) {
+      return '<div class="cdesk"><div class="cdesk-bar"><div><p class="eyebrow" style="margin:0">Client view</p><b>The client portal, on a computer</b></div><div class="row">' + device + '<div class="row" style="flex-wrap:nowrap">' + picker + '</div></div></div>' +
+        '<div class="browser" data-tour="phone"><div class="br-chrome"><span class="br-dots"><i></i><i></i><i></i></span><span class="br-url">evergrove.example/portal</span></div>' +
+        '<div class="br-top">' + brand + icons + '</div><div class="br-main">' +
+        (c ? '<nav class="br-nav" data-tour="ca-nav">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0], 18) + t[1] + '</button>'; }).join('') + '<div class="br-sep">More</div>' + nav.more.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0], 18) + t[1] + '</button>'; }).join('') + '</nav>' : '') +
+        '<div class="br-body ph-body" id="caBody"><div class="br-inner">' + screen + '</div></div></div>' + sheet() + '</div></div>';
+    }
+    return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top">' + brand + icons + '</div>' +
       '<div class="ph-body" id="caBody">' + screen + '</div>' +
-      (c ? '<nav class="ph-tabs">' + tabs.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">' + t[2] + '</svg>' + t[1] + '</button>'; }).join('') + '</nav>' : '') +
+      (c ? '<nav class="ph-tabs">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0]) + (SHORT[t[1]] || t[1]) + '</button>'; }).join('') + '</nav>' : '') +
       sheet() + '</div>' +
-      '<aside class="cside"><p class="eyebrow">Client app</p><h1 class="h1">What your clients use</h1><p class="lede" style="margin-bottom:1rem">A separate, simple app for clients, on their phone or computer. It installs to the home screen and lives at <code>evergrove.example/app</code>.</p>' +
-      U.pitch('new', 'Built on the same platform as the console. Everything a client does here, the team sees there: orders land in the approval queue, messages land on the client page, purchases unlock instantly.') +
-      '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>' +
-      '<ul class="cfeat"><li><b>Free account</b> A wellness snapshot from the questionnaire, free classes, short courses and session booking. No product suggestions.</li><li><b>Premium Course members</b> Their protocol with a daily schedule and reminders, their scan report, course week and Zoom.</li><li><b>Shop</b> Open to Premium members and clients who have had a consultation, so a practitioner is always involved.</li><li><b>Messages</b> A direct line to their practitioner. Replies are sent from the Client Portal.</li><li><b>Order tracking</b> Plain-language status for every order.</li></ul></aside></div>';
+      '<aside class="cside"><p class="eyebrow">Client view</p><h1 class="h1">The client portal</h1><p class="lede" style="margin-bottom:1rem">What clients use, on their phone or computer, at <code>evergrove.example/portal</code>. Everything they do here shows up on your side straight away.</p>' +
+      device + picker +
+      '<ul class="cfeat"><li><b>Client Reports</b> Their energetic scan reports, once a practitioner has signed off.</li><li><b>Protocols</b> What to take and when, with tick-offs, reminders and the protocol report.</li><li><b>Appointments</b> Upcoming sessions with the Zoom link, and booking.</li><li><b>Billing</b> Every payment, what is due next, receipts and the card on file.</li><li><b>Free accounts</b> A wellness snapshot, free classes, short courses and booking. No product suggestions.</li></ul></aside></div>';
   }
 
   function bind() {
@@ -272,7 +343,24 @@
     function rerender() { var b = $('#caBody'), top = b ? b.scrollTop : 0; App.render(); var nb = $('#caBody'); if (nb) nb.scrollTop = top; }
     function open(sh) { ca.sheet = sh; rerender(); }
     $('#caAs').addEventListener('change', function (e) { ca.as = e.target.value; ca.tab = 'home'; ca.step = 1; ca.cart = {}; ca.sheet = null; App.render(); });
-    $$('[data-ctab]').forEach(function (b) { b.addEventListener('click', function () { ca.tab = b.getAttribute('data-ctab'); ca.sheet = null; App.render(); }); });
+    $$('[data-ctab]').forEach(function (b) { b.addEventListener('click', function () { ca.tab = b.getAttribute('data-ctab'); ca.sheet = null; ca.rep = null; App.render(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
+    document.body.classList.toggle('clientdesk', ca.device === 'desktop');
+    $$('[data-cdev]').forEach(function (b) { b.addEventListener('click', function () { ca.device = b.getAttribute('data-cdev'); App.render(); }); });
+    $$('[data-crep]').forEach(function (b) { b.addEventListener('click', function () { ca.rep = b.getAttribute('data-crep'); rerender(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
+    var rb = $('#caRepBack'); if (rb) rb.addEventListener('click', function () { ca.rep = null; rerender(); });
+    $$('[data-czoom]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Opening Zoom (simulated)'); }); });
+    $$('[data-creceipt]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Receipt emailed (simulated)'); }); });
+    var cc = $('#caCard'); if (cc) cc.addEventListener('click', function () { U.toast('Opens a secure card form (simulated)'); });
+    $$('[data-csign]').forEach(function (b) { b.addEventListener('click', function () { open({ type: 'form', id: b.getAttribute('data-csign') }); }); });
+    var sf = $('#caSignForm');
+    if (sf) sf.addEventListener('click', function () {
+      var c = me(), f = EGForms.form(ca.sheet.id), name = $('.ca-sheet [data-ffsign]');
+      if (name && !name.value.trim()) { U.toast('Type your name to sign.'); name.focus(); return; }
+      c.forms = c.forms || {}; c.forms[f.id] = U.today();
+      if (f.id === 'f1') c.consent = true; if (f.id === 'f2') c.intake = true;
+      U.activity(c.name + ' signed "' + f.title + '" in the client portal. Saved to their documents.');
+      U.save(); ca.sheet = null; rerender(); U.toast('Signed. A copy is in your email.');
+    });
     var start = $('#caStart'); if (start) start.addEventListener('click', function () { ca.tab = 'quiz'; ca.step = 1; ca.quiz = { goals: [], allergies: [] }; App.render(); });
     /* questionnaire */
     $$('[data-cgoal]').forEach(function (b) {
@@ -366,10 +454,9 @@
     if (bp) bp.addEventListener('click', function () {
       var c = me(), bk = ca.book, pr = EG.CERTIFIED.filter(function (p) { return p.id === bk.who; })[0], date = weekdays()[bk.day], full = EG.sessionPrice(bk.long, c), used = Math.min(c.credit || 0, full), price = full - used;
       c.credit = (c.credit || 0) - used;
-      S().bookings.push({ id: 'b' + Date.now(), service: bk.long ? 'session60' : 'session30', date: date, time: bk.time, guests: [c.id], where: 'Video call', with: pr.name, paid: price });
+      EGCal.book({ client: c.id, service: bk.long ? 'session60' : 'session30', date: date, time: bk.time, with: pr.name, paid: price });
       c.ltv += price;
       S().emails.unshift({ at: U.today(), to: c.id, kind: 'Session booked', subject: 'Your session with ' + pr.name });
-      U.activity(c.name + ' booked ' + (bk.long ? 'a 1-hour' : 'a 30-minute') + ' session with ' + pr.name + ' (' + money(price) + (used ? ', ' + money(used) + ' auto-ship credit used' : '') + ') for ' + U.fmtDate(date) + '. Paid, calendar invite and Zoom link sent.');
       U.save(); ca.book = { who: bk.who, long: false, day: 0, time: '' };
       open({ type: 'booked', who: pr.name, date: date, time: bk.time, long: bk.long, price: price });
     });

@@ -53,7 +53,7 @@ video library, work queue, automation settings, clinic batching, Shopify,
 quotes) is still in the code but hidden, and listed on the Outcome page as
 "ready to add later".
 
-**Practice side** (Home shows four big buttons, a Checklist and Upcoming
+**Practice side** (Home shows six big buttons, a Checklist and Upcoming
 Appointments for the week; The Outcome sits apart at the bottom of the menu):
 
 1. **Client Portal:** the client list, and one page per client with tabs:
@@ -73,8 +73,23 @@ Appointments for the week; The Outcome sits apart at the bottom of the menu):
    of day (morning, midday, evening, bedtime). Publishing puts the schedule and
    reminders in the client's app and the PDF in their documents. "Order these
    remedies" sends one order to the Shop, sized for the length of the protocol.
+5. **Booking Calendar:** a week view of every practitioner's appointments
+   (colour-coded, filterable). Click an appointment for its Zoom meeting and
+   the automatic invite and reminders; click an empty time to book. Booking
+   settings: Zoom auto-create, 24-hour and 1-hour reminders, text reminders,
+   Google Calendar sync, gap between sessions, minimum notice, which sessions
+   clients can book, and each practitioner's days and hours.
+6. **Waivers & Forms:** templates for every waiver and form (wording,
+   questions of seven types, who has to sign it) with a live preview of what
+   the client sees and a count of who has signed. Clients sign in their
+   portal; the signed copy is filed in their Documents.
 
-**Client view** (`/app`):
+**Client view** (`/app`): the client portal, shown either in a desktop
+browser window or on a phone (Desktop / Mobile switch). Members get four main
+sections, Client Reports, Protocols, Appointments (with Zoom links, and
+booking) and Billing (payments, what is due, receipts, card on file), plus
+Courses, Shop, Messages and Account. Waivers still to sign appear first on
+Home.
 
 - **Free account:** a short questionnaire gives a wellness snapshot (no product
   suggestions: those are what the Premium Course is for), free classes, short
@@ -93,13 +108,13 @@ account and two Premium members.
 
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 8
-  chapters in about 6 minutes at normal speed: Home, Client Portal, Client
-  Report Creator, Protocol Creator, What the client sees, Free accounts, Shop,
-  The Outcome.
+- **Play Showcase** (top right): restores the sample data, then plays 10
+  chapters in about 9 minutes at normal speed: Home, Client Portal,
+  Booking Calendar, Waivers & Forms, Client Report Creator, Protocol Creator,
+  The client portal, Free accounts, Shop, The Outcome.
   - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
-  - **» 1×** (or F) speeds up: 1×, 2× (about 3 minutes), 4×.
+  - **» 1×** (or F) speeds up: 1×, 2× (about 4.5 minutes), 4×.
 - Open `/?play` (or `/#play`) to start the tour on load.
 - Deep links: `/#dashboard`, `/#clients`, `/#shop`, `/#scans`, `/#protocols`,
   `/#outcome`, `/#client`.
@@ -167,7 +182,7 @@ PDF layout.
 ### Outcome (last page)
 
 The case for the build, kept off the working screens: the four tools, the
-admin hours they replace (about 20 a week to 3, estimates to confirm with the
+admin hours they replace (about 22 a week to 3, estimates to confirm with the
 team), and what can be added later. The tour ends here.
 
 ### Drop-shipping always needs a person
@@ -190,6 +205,8 @@ public/app.css         styles
 public/data.js         sample data, suppliers, suggestion rules
 public/app.js          core, Shop, and the hidden extra screens
 public/portal.js       Home and the Client Portal
+public/calendar.js     Booking Calendar and automatic Zoom booking
+public/forms.js        Waivers & Forms
 public/scans.js        client report creator
 public/protocols.js    protocol creator and the protocol document
 public/client.js       the client app

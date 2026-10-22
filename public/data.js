@@ -455,6 +455,44 @@
       ['c5', 'team', 'Dr. Ana Whitlock, ND', -2, '14:30', 'Yes, it is under lesson 1 as a download. Let me know if you cannot find it.', true]
     ].map(function (m, i) { return { id: 'msg' + i, client: m[0], from: m[1], by: m[2], at: iso(m[3]), time: m[4], text: m[5], read: m[6] }; });
 
+    /* Waiver and form templates, built in Waivers & Forms. Each client's
+       completed ones are kept on the client as c.forms[id] = date signed. */
+    var F = function (id, type, label, req, options) { return { id: id, type: type, label: label, req: !!req, options: options || [] }; };
+    var forms = [
+      { id: 'f1', title: 'Wellness consent', kind: 'Waiver', who: 'everyone', updated: iso(-40),
+        body: 'I understand that Evergrove Wellness offers education and wellness support, not medical diagnosis or treatment. Energetic scans measure resonance, not disease. I will keep seeing my own doctor for medical care and tell my practitioner about any medication I take.',
+        fields: [F('a1', 'text', 'Full name', true), F('a2', 'date', 'Date of birth', true), F('a3', 'check', 'I have read and agree to the above', true), F('a4', 'sign', 'Signature', true)] },
+      { id: 'f2', title: 'Intake questionnaire', kind: 'Form', who: 'everyone', updated: iso(-40), body: '',
+        fields: [F('b1', 'choice', 'What would you most like help with?', true, ['Sleep', 'Stress', 'Digestion', 'Energy', 'Immunity', 'Hormones']), F('b2', 'long', 'Medications and supplements you take now', false), F('b3', 'text', 'Allergies', false), F('b4', 'yesno', 'Are you pregnant or trying to conceive?', true), F('b5', 'yesno', 'Do you take a blood thinner?', true), F('b6', 'yesno', 'Do you have a thyroid condition?', true)] },
+      { id: 'f3', title: 'Premium Course agreement', kind: 'Waiver', who: 'premium', updated: iso(-30),
+        body: 'The Premium Course runs for 12 weeks and includes an energetic assessment and retest, at-home testing chosen by your practitioner, weekly live Zoom sessions and your personal protocol. Payment plans are billed every 30 days. You may cancel within 7 days of enrolling for a full refund.',
+        fields: [F('c1', 'choice', 'Payment', true, ['Paid in full', '3 monthly payments']), F('c2', 'check', 'I agree to the course terms', true), F('c3', 'sign', 'Signature', true)] },
+      { id: 'f4', title: 'Energetic scan waiver', kind: 'Waiver', who: 'scan', updated: iso(-20),
+        body: 'The energetic scan is non-invasive and is used to guide wellness recommendations. It is not a medical test. Please do not have a scan if you have a pacemaker or other implanted electronic device.',
+        fields: [F('d1', 'yesno', 'Do you have a pacemaker or implanted electronic device?', true), F('d2', 'check', 'I understand the scan is not a medical test', true), F('d3', 'sign', 'Signature', true)] },
+      { id: 'f5', title: 'Photo and testimonial release', kind: 'Waiver', who: 'optional', updated: iso(-90),
+        body: 'I give Evergrove Wellness permission to share my testimonial and any photos I provide, using my first name only.',
+        fields: [F('e1', 'yesno', 'May we use your photo?', false), F('e2', 'sign', 'Signature', true)] }
+    ];
+    clients.forEach(function (c) {
+      c.forms = {};
+      if (c.consent) c.forms.f1 = c.joined;
+      if (c.intake) c.forms.f2 = c.joined;
+      if (c.member) c.forms.f3 = c.joined;
+    });
+    scans.forEach(function (sc) { if (sc.status === 'published') clients.filter(function (x) { return x.id === sc.client; })[0].forms.f4 = sc.date; });
+
+    /* Every video booking gets its own Zoom meeting, created automatically. */
+    bookings.forEach(function (b, i) { if (b.where === 'Video call') b.zoom = String(81000000000 + (i + 3) * 2654435761 % 8999999999).replace(/(\d{3})(\d{4})(\d+)/, '$1 $2 $3'); });
+    var bookcfg = {
+      zoom: true, remind24: true, remind1: true, sms: false, gcal: true, buffer: 15, notice: 12, window: 30,
+      hours: { p1: ['09:00', '17:00'], p2: ['10:00', '18:00'], p3: ['08:00', '15:00'] },
+      days: { p1: [1, 2, 3, 4, 5], p2: [1, 3, 5], p3: [2, 3, 4, 6] },
+      types: [
+        { id: 'session30', on: true }, { id: 'session60', on: true }, { id: 'initial', on: true }, { id: 'followup', on: true }, { id: 'energetics', on: false }
+      ]
+    };
+
     /* What the system did on its own, newest first. */
     var activity = [
       [0, '07:00', 'Week 12 unlocked for Nadia Haddad. Email sent.'],
@@ -471,7 +509,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 13, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 14, forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };

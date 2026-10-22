@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v13';
+  var KEY = 'evergrove-showcase-v14';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
@@ -1115,6 +1115,7 @@
     $('#view').innerHTML = VIEWS[v]();
     $$('.nav').forEach(function (n) { n.classList.toggle('is-on', n.getAttribute('data-view') === v); });
     document.body.classList.toggle('clientmode', v === 'client');
+    document.body.classList.toggle('clientdesk', v === 'client' && !!ui.ca && ui.ca.device === 'desktop');
     $$('[data-mode]').forEach(function (b) { b.classList.toggle('is-on', (b.getAttribute('data-mode') === 'client') === (v === 'client')); });
     $$('#view [data-go]').forEach(function (b) {
       b.addEventListener('click', function () { if (b.getAttribute('data-tab')) ui.shopTab = b.getAttribute('data-tab'); go(b.getAttribute('data-go')); });
