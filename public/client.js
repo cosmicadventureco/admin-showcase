@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - the client portal.
+/* Root Cause Clinic showcase - the client portal.
  *
  * What a signed-in client uses, on a computer or a phone. The landing page is
  * five big buttons, Client Reports, Protocols, Shop, Appointments and
@@ -12,7 +12,7 @@
 
   var U = App.util, esc = U.esc, money = U.money;
   var STAGES = ['Being checked by our team', 'Sent to the pharmacy', 'Being packed', 'On its way', 'Delivered'];
-  var PREVIEW = [['c1', 'Jane Smith (Premium Course)'], ['c7', 'Aiko Tanaka (Premium Course)'], ['c2', 'Marcus Bell (Monthly coaching)']];
+  var PREVIEW = [['c1', 'Jane Smith (WPMP Course)'], ['c11', 'Mark Johnson (Recorded Review)']];
 
   function S() { return App.state(); }
   function st() {
@@ -59,6 +59,7 @@
     return [
       ['reports', 'Client Reports', pubs.length ? pubs.length + ' report' + (pubs.length > 1 ? 's' : '') + ', latest ' + U.fmtDate(pubs[pubs.length - 1].date, { month: 'short', day: 'numeric' }) : 'Appears after your scan'],
       ['protocol', 'Protocols', pr ? 'Next: ' + slot[1].toLowerCase() + ', ' + slot[2] : 'Being prepared'],
+      ['course', 'WPMP Course', U.enrollment(c.id) ? 'Week ' + U.enrollment(c.id).week + ' of 12' : 'Twelve weeks with a practitioner'],
       ['shop', 'Shop', orders ? orders + ' order' + (orders > 1 ? 's' : '') + ' on the way' : c.member ? '20% member pricing' : 'Your remedies'],
       ['appts', 'Appointments', next ? U.fmtDate(next.date, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + U.fmtTime(next.time) : 'Book a session'],
       ['packages', 'Packages', packs(c).length ? packs(c).map(function (p) { return p.short; }).join(' \u00b7 ') : 'Recorded Review, scan, 12 weeks'],
@@ -72,7 +73,7 @@
     var out = '<div class="ca-pair">';
     if (sc) {
       var organs = sc.data.organs.filter(function (o) { return o.include; }).slice(0, 3), rem = EGScan.remedies(sc.data).slice(0, 3);
-      out += '<div class="ca-card ca-prev" data-tour="ca-repprev"><div class="ca-prevhead"><span class="small">Latest report</span><b>Evergrove Resonance Map</b><span class="small">' + U.fmtDate(sc.date, { month: 'long', day: 'numeric', year: 'numeric' }) + ' &middot; signed off by ' + esc(sc.by) + '</span></div>' +
+      out += '<div class="ca-card ca-prev" data-tour="ca-repprev"><div class="ca-prevhead"><span class="small">Latest report</span><b>Root Cause Resonance Map</b><span class="small">' + U.fmtDate(sc.date, { month: 'long', day: 'numeric', year: 'numeric' }) + ' &middot; signed off by ' + esc(sc.by) + '</span></div>' +
         '<div class="ca-gauges">' + organs.map(function (o) { return '<div>' + EGScan.gauge(o.score) + '<span class="small">' + esc(o.organ) + '</span></div>'; }).join('') + '</div>' +
         '<p class="label" style="margin-top:.4rem;margin-bottom:.2rem">Top remedies</p>' + rem.map(function (x, i) { return '<div class="small">' + (i + 1) + '. <b>' + esc(x.item) + '</b> <span class="muted">' + esc(x.dil) + '</span></div>'; }).join('') +
         '<button class="btn small" data-crep="' + sc.id + '" style="margin-top:.7rem">Open full report</button></div>';
@@ -89,20 +90,21 @@
     return '<p class="eyebrow" style="margin:0">' + (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + '</p><h2 class="ca-title" style="margin-top:.1rem">' + esc(U.first(c.name)) + '</h2>' +
       due.map(function (f) { return '<div class="ca-card ca-due row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-form"><span class="small"><b>' + esc(f.title) + '</b><br><span class="muted">' + esc(f.kind) + ' to sign before your next session</span></span><button class="btn honey small" data-csign="' + f.id + '">Sign</button></div>'; }).join('') +
       upcoming(c).filter(function (b) { return b.confirmed === false; }).map(function (b) { return '<div class="ca-card ca-due row" style="justify-content:space-between;flex-wrap:nowrap" data-tour="ca-confirm"><span class="small"><b>Confirm: ' + esc(EGCal.label(b)) + '</b><br><span class="muted">' + U.fmtDate(b.date, { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(b.time) + ' with ' + esc(EGCal.prac(b)) + '</span></span><button class="btn honey small" data-cconfirm="' + b.id + '">Confirm</button></div>'; }).join('') +
+      reviews(c).map(function (b) { return '<div class="ca-card ca-due row" style="justify-content:space-between;flex-wrap:nowrap"><span class="small"><b>Your Recorded Review is ready</b><br><span class="muted">From ' + esc(EGCal.prac(b)) + ', ' + U.fmtDate(b.date, { month: 'short', day: 'numeric' }) + '</span></span><button class="btn honey small" data-creview="' + b.id + '">Watch</button></div>'; }).join('') +
       '<div class="ca-tiles" data-tour="ca-tiles">' + tiles(c).map(function (t) {
         return '<button class="ca-tile" data-ctab="' + t[0] + '"><span class="ca-ti">' + svg(t[0], 22) + '</span><b>' + t[1] + '</b><span class="small muted">' + esc(t[2]) + '</span></button>';
       }).join('') + '</div>' +
       previews(c) +
       '<div class="ca-pair">' +
       (next ? '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Next appointment</p><b class="small">' + esc(EGCal.label(next)) + '</b><div class="small muted">' + U.fmtDate(next.date, { weekday: 'long', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(next.time) + ' &middot; with ' + esc(EGCal.prac(next)) + '</div>' + (next.zoom ? '<button class="btn small" data-czoom="' + next.id + '" style="margin-top:.6rem">Join Zoom</button>' : '<div class="small muted">' + esc(next.where) + '</div>') + '</div>' : '') +
-      '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Messages</p>' + (last ? '<div class="small"><b>' + esc(last.by) + '</b></div><div class="small muted ca-clip">' + esc(last.text) + '</div>' : '<div class="small muted">Questions about your protocol or an order? Message ' + esc(c.practitioner) + '.</div>') + '<button class="btn ghost small" data-ctab="msg" style="margin-top:.6rem">Message ' + esc(U.first(c.practitioner)) + '</button></div></div>';
+      '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Messages</p>' + (last ? '<div class="small"><b>' + esc(last.by) + '</b></div><div class="small muted ca-clip">' + esc(last.text) + '</div>' : '<div class="small muted">Questions about your protocol or an order? Message ' + esc(c.practitioner) + '.</div>') + '<button class="btn ghost small" data-ctab="msg" style="margin-top:.6rem">Message Practitioner</button></div></div>';
   }
   /* The thread with their practitioner. Replies come from the Client Portal. */
   function thread(c) { return (S().messages || []).filter(function (m) { return m.client === c.id; }); }
   function unseen(c) { return thread(c).filter(function (m) { return m.from === 'team' && m.seen === false; }).length; }
   function messages(c) {
     var th = thread(c);
-    return '<h2 class="ca-title">Messages</h2><p class="small muted" style="margin-top:-.4rem">With ' + esc(c.practitioner) + ' and the Evergrove team. We usually reply within a day.</p>' +
+    return '<h2 class="ca-title">Messages</h2><p class="small muted" style="margin-top:-.4rem">With ' + esc(c.practitioner) + ' and the Root Cause team. We usually reply within a day.</p>' +
       '<div class="thread" data-tour="ca-thread">' + (th.length ? th.map(function (m) { return '<div class="bub ' + (m.from === 'client' ? 'me' : 'them') + '">' + esc(m.text) + '<span class="bub-m">' + (m.from === 'client' ? 'You' : esc(m.by)) + ' &middot; ' + U.fmtDate(m.at, { month: 'short', day: 'numeric' }) + '</span></div>'; }).join('') : '<p class="small muted">No messages yet. Ask anything about your protocol, an order or a class.</p>') + '</div>' +
       '<div class="msgbox"><textarea id="caMsg" rows="2" placeholder="Write a message"></textarea><button class="btn small" id="caMsgSend">Send</button></div>';
   }
@@ -121,7 +123,7 @@
   function apptRow(b, past) {
     return '<div class="ca-card ca-appt"><div class="ca-adate"><b>' + U.fmtDate(b.date, { day: 'numeric' }) + '</b>' + U.fmtDate(b.date, { month: 'short' }) + '</div><div class="grow small"><b>' + esc(EGCal.label(b)) + '</b><br><span class="muted">' + U.fmtDate(b.date, { weekday: 'long' }) + ' at ' + U.fmtTime(b.time) + ' &middot; with ' + esc(EGCal.prac(b)) + '</span>' +
       (!past && b.zoom ? '<br><span class="muted">Zoom ' + b.zoom + '</span>' : !past ? '<br><span class="muted">' + (b.where === 'Recorded' ? 'Recorded: the video review arrives in your portal' : esc(b.where)) + '</span>' : '') + '</div>' +
-      (past ? '<span class="pill">Done</span>' : b.confirmed === false ? '<button class="btn honey small" data-cconfirm="' + b.id + '">Confirm</button>' : b.zoom ? '<button class="btn small" data-czoom="' + b.id + '">Join Zoom</button>' : '') + '</div>';
+      (past && b.video ? '<button class="btn small" data-creview="' + b.id + '">Watch</button>' : past ? '<span class="pill">Done</span>' : b.confirmed === false ? '<button class="btn honey small" data-cconfirm="' + b.id + '">Confirm</button>' : b.zoom ? '<button class="btn small" data-czoom="' + b.id + '">Join Zoom</button>' : '') + '</div>';
   }
   function apptsScreen(c) {
     var t = U.today(), up = upcoming(c), past = S().bookings.filter(function (b) { return b.guests.indexOf(c.id) >= 0 && b.date < t; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
@@ -144,7 +146,7 @@
           (x.p.id === 'twelve' && e ? '<div class="bar" style="margin:.5rem 0"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' : '') +
           types.map(function (t) {
             var sv = EG.SERVICES.filter(function (y) { return y.id === t; })[0], n = x.p.credits[t], u = (x.h.used || {})[t] || 0;
-            return '<div class="ca-lrow"><span class="grow small"><b>' + esc(sv.label) + '</b><br><span class="muted">' + (u >= n ? 'Booked' : (n - u) + ' to book') + '</span></span>' + (u < n ? '<button class="btn small" data-cbookt="' + t + '">Book</button>' : '<span class="pill ok">&#10003;</span>') + '</div>';
+            return '<div class="ca-lrow"><span class="grow small"><b>' + esc(sv.label) + '</b><br><span class="muted">' + (u >= n ? 'Booked' : (n - u) + ' to book') + '</span></span>' + (u < n ? '<button class="btn small" data-cbookt="' + t + '">Book</button>' : t === 'recorded' && reviews(c).length ? '<button class="btn small" data-creview="' + reviews(c)[0].id + '">Watch</button>' : '<span class="pill ok">&#10003;</span>') + '</div>';
           }).join('') +
           '<ul class="ca-ben" style="margin-top:.5rem">' + x.p.includes.filter(function (i) { return !/appointment|1\/2|2\/2/i.test(i); }).map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul></div>';
       }).join('') : '<p class="small muted">No packages yet.</p>') + '</div>' +
@@ -199,10 +201,30 @@
   function videoRow(v, c) {
     return '<div class="ca-vrow" data-vid="' + v.id + '">' + thumb(v) + '<div class="grow"><b class="small">' + esc(v.title) + '</b><div class="small muted">' + (v.lessons ? v.lessons + ' lessons &middot; ' : '') + v.mins + ' min</div>' + accessPill(v, c) + '</div>' + accessBtn(v, c) + '</div>';
   }
-  function videos(c) {
-    return '<h2 class="ca-title">Course videos</h2><div class="ca-note ok">Every lesson in your Premium Course, to watch online or download.</div>' +
-      EG.VIDEOS.map(function (v) { return videoRow(v, c); }).join('');
+  /* The WPMP Course: this week's lessons, the live Zoom, and all twelve weeks. */
+  function courseScreen(c) {
+    var e = U.enrollment(c.id);
+    if (!e) {
+      return '<h2 class="ca-title">WPMP Course</h2><p class="small muted" style="margin-top:-.4rem">Twelve weeks with a practitioner, built around your scan.</p>' +
+        '<div class="ca-card ca-up"><b>What is in the course</b><ul class="ca-ben">' + EG.PROGRAM.includes.slice(0, 6).map(function (x) { return '<li>' + esc(x[0]) + '</li>'; }).join('') + '</ul>' +
+        '<button class="btn honey small" data-ctab="msg">Ask your practitioner about joining</button></div>' +
+        '<h3 class="ca-h">The twelve weeks</h3>' + EG.MODULES.map(function (m) { return '<div class="ca-mod locked"><span class="ca-wk">' + m.w + '</span><span class="grow small"><b>' + esc(m.title) + '</b><br><span class="muted">' + m.vids + ' videos &middot; ' + m.mins + ' min</span></span><span class="small muted">&#128274;</span></div>'; }).join('');
+    }
+    var cur = EG.MODULES[e.week - 1];
+    return '<h2 class="ca-title">WPMP Course</h2><p class="small muted" style="margin-top:-.4rem">Week ' + e.week + ' of 12 &middot; ' + Math.round(e.week / 12 * 100) + '% through</p>' +
+      '<div class="bar" style="margin:0 0 1rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' +
+      '<div class="ca-card ca-prog" data-tour="ca-course"><p class="label" style="margin:0 0 .3rem">This week</p><b>Week ' + e.week + ': ' + esc(cur.track ? EG.trackFor(c.goals) : cur.title) + '</b><div class="small muted">' + cur.vids + ' videos &middot; ' + cur.mins + ' min &middot; workbook to download</div>' +
+        '<div class="row" style="margin-top:.7rem"><button class="btn small" data-cwatch="' + EG.VIDEOS[e.week % EG.VIDEOS.length].id + '">Watch lesson 1</button><button class="btn ghost small" id="caDownload">Download workbook</button></div></div>' +
+      '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="small"><b>Live Zoom</b><br><span class="muted">Thursdays at 6:00pm &middot; ' + e.zoom + ' attended</span></span><button class="btn small" id="caZoom">Join</button></div>' +
+      '<h3 class="ca-h">All twelve weeks</h3>' + EG.MODULES.map(function (m) {
+        var st2 = m.w < e.week ? 'done' : m.w === e.week ? 'now' : 'locked';
+        return '<div class="ca-mod ' + st2 + '"><span class="ca-wk">' + (st2 === 'done' ? '&#10003;' : m.w) + '</span><span class="grow small"><b>' + esc(m.track ? EG.trackFor(c.goals) : m.title) + '</b><br><span class="muted">' + m.vids + ' videos &middot; ' + m.mins + ' min</span></span>' +
+          (st2 === 'locked' ? '<span class="small muted">Week ' + m.w + '</span>' : '<button class="btn ' + (st2 === 'now' ? '' : 'ghost ') + 'small" data-cwatch="' + EG.VIDEOS[m.w % EG.VIDEOS.length].id + '">' + (st2 === 'now' ? 'Continue' : 'Rewatch') + '</button>') + '</div>';
+      }).join('');
   }
+  /* Their Recorded Review videos, once the practitioner has recorded them. */
+  function reviews(c) { return S().bookings.filter(function (b) { return b.guests[0] === c.id && b.service === 'recorded' && b.video; }); }
+
 
 
   /* Next five weekdays, as ISO dates. */
@@ -228,7 +250,7 @@
         return '<button class="ca-type' + (x.s.id === b.type ? ' is-on' : '') + '" data-cappt="' + x.s.id + '"><span class="grow"><b>' + esc(x.s.label) + '</b><span class="small muted">' + esc(x.s.desc) + '</span></span><span class="small ca-aprice">' + (x.cov ? 'Included' : money(x.s.price, false)) + '</span></button>';
       }).join('') + '</div>' +
       '<h3 class="ca-h">Who</h3><div data-tour="ca-who">' + EG.CERTIFIED.map(function (p) {
-        return '<button class="ca-pract' + (p.id === b.who ? ' is-on' : '') + '" data-cwho="' + p.id + '"><span class="av" style="background:hsl(' + p.hue + ' 35% 85%);color:#233027">' + U.initials(p.name.replace('Dr. ', '')) + '</span><span class="small"><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.role) + '</span></span></button>';
+        return '<button class="ca-pract' + (p.id === b.who ? ' is-on' : '') + '" data-cwho="' + p.id + '"><span class="av" style="background:hsl(' + p.hue + ' 35% 85%);color:#233027">' + U.initials(p.name) + '</span><span class="small"><b>' + esc(p.name) + '</b><br><span class="muted">' + esc(p.role) + '</span></span></button>';
       }).join('') + '</div>' +
       '<h3 class="ca-h">When</h3><div class="chips" style="margin-bottom:.5rem">' + days.map(function (d, i) { return '<button class="chip' + (b.day === i ? ' is-on' : '') + '" data-cday="' + i + '">' + U.fmtDate(d, { weekday: 'short', day: 'numeric' }) + '</button>'; }).join('') + '</div>' +
       '<div class="chips">' + SLOTS.map(function (t) { return '<button class="chip' + (b.time === t ? ' is-on' : '') + '" data-ctime="' + t + '">' + U.fmtTime(t) + '</button>'; }).join('') + '</div>' +
@@ -257,7 +279,7 @@
           '<div class="ca-track">' + STAGES.map(function (s, i) { return '<span class="' + (i <= o.stage ? 'on' : '') + '"></span>'; }).join('') + '</div><div class="small"><b>' + STAGES[o.stage] + '</b>' + (o.tracking && o.stage >= 3 ? ' &middot; <span class="num">' + o.tracking + '</span>' : '') + '</div></div>';
       }).join('') : '<p class="small muted">No orders yet.</p>') + '</div>' +
       (c.autoship ? '<h3 class="ca-h">Refills</h3><div class="ca-card row" style="justify-content:space-between"><span class="small"><b>Next refill in 9 days</b><br><span class="muted">' + (c.plan_items || []).length + ' items, every 30 days</span></span><span class="row"><button class="btn ghost small" data-crefill="skip">Skip</button><button class="btn ghost small" data-crefill="pause">Pause</button></span></div>' : '') +
-      '<h3 class="ca-h">Questions?</h3><div class="ca-card row" style="justify-content:space-between"><span class="small">Message ' + esc(c.practitioner) + '</span><button class="btn small" data-ctab="msg">Messages</button></div>' +
+      '<h3 class="ca-h">Questions?</h3><div class="ca-card row" style="justify-content:space-between"><span class="small">Message your practitioner</span><button class="btn small" data-ctab="msg">Messages</button></div>' +
       '<button class="linkish" id="caSignOut" style="margin-top:1rem">Sign out</button>';
   }
 
@@ -281,7 +303,7 @@
         : '<p class="small muted">Nothing here yet.</p>');
     } else if (sh.type === 'placed') {
       body = '<div class="check-badge" style="margin:0 auto .6rem"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div><h3 class="ca-title" style="text-align:center">Order placed</h3>' +
-        '<p class="small muted" style="text-align:center">' + esc(sh.id) + '. A receipt is on its way to your inbox.</p><ol class="ca-steps"><li><b>Our team checks it</b><span>Usually within a few hours.</span></li><li><b>It ships from our pharmacy partner</b><span>Packed with Evergrove branding.</span></li><li><b>Tracking by email</b><span>Follow it any time under Me.</span></li></ol><button class="btn ca-wide" id="caTrack">Track my order</button>';
+        '<p class="small muted" style="text-align:center">' + esc(sh.id) + '. A receipt is on its way to your inbox.</p><ol class="ca-steps"><li><b>Our team checks it</b><span>Usually within a few hours.</span></li><li><b>It ships from our pharmacy partner</b><span>Packed with Root Cause branding.</span></li><li><b>Tracking by email</b><span>Follow it any time under Me.</span></li></ol><button class="btn ca-wide" id="caTrack">Track my order</button>';
     } else if (sh.type === 'booked') {
       body = '<div class="check-badge" style="margin:0 auto .6rem"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div><h3 class="ca-title" style="text-align:center">You&rsquo;re booked</h3>' +
         '<p class="small" style="text-align:center"><b>' + esc(sh.label) + '</b> with ' + esc(sh.who) + '<br>' + U.fmtDate(sh.date, { weekday: 'long', month: 'long', day: 'numeric' }) + ' at ' + U.fmtTime(sh.time) + '</p>' +
@@ -295,6 +317,10 @@
       var w = EG.video(sh.id), a = EG.videoAccess(w, c);
       body = '<div class="player">' + thumb(w, true) + '<div class="bar"><i id="caProg" style="width:4%"></i></div></div><h3 class="ca-title" style="margin-top:.8rem">' + esc(w.title) + '</h3><p class="small muted">Playing (showcase preview) &middot; ' + w.mins + ' min</p>' +
         (a === 'owned' || a === 'included' ? '<button class="btn ghost ca-wide" id="caDownload">Download</button>' : '');
+    } else if (sh.type === 'review') {
+      var rb = S().bookings.filter(function (x) { return x.id === sh.id; })[0];
+      body = '<div class="player">' + thumb({ hue: 160, mins: 24 }, true) + '<div class="bar"><i id="caProg" style="width:4%"></i></div></div><p class="eyebrow" style="margin:.8rem 0 0">Recorded Review</p><h3 class="ca-title">Your review with ' + esc(EGCal.prac(rb)) + '</h3>' +
+        '<p class="small muted">Recorded ' + U.fmtDate(rb.date, { month: 'long', day: 'numeric' }) + '. A walkthrough of your Resonance Map report and your protocol: what stood out, why each remedy was chosen, and what to watch for.</p><button class="btn ghost ca-wide" data-ctab="msg">Ask a follow-up question</button>';
     } else if (sh.type === 'form') {
       var ff = EGForms.form(sh.id);
       body = EGForms.render(ff, true) + '<button class="btn honey ca-wide" id="caSignForm" style="margin-top:1rem">' + (ff.kind === 'Form' ? 'Submit' : 'Sign and send') + '</button>';
@@ -317,16 +343,24 @@
     videos: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>',
     shop: '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
     msg: '<path d="M4 5h16v11H9l-5 4z"/>',
+    course: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/>',
+    more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'
   };
   function svg(k, n) { return '<svg width="' + (n || 20) + '" height="' + (n || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + '</svg>'; }
   /* The six main sections, plus Home. Messages and the course videos sit under More. */
   function navFor(c) {
-    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['shop', 'Shop'], ['appts', 'Appointments'], ['packages', 'Packages'], ['billing', 'Billing & Payments']];
-    var more = [['msg', 'Messages']].concat(c.member ? [['videos', 'Course videos']] : []).concat([['me', 'Account']]);
+    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['course', 'WPMP Course'], ['shop', 'Shop'], ['appts', 'Appointments'], ['packages', 'Packages'], ['billing', 'Billing & Payments']];
+    var more = [['msg', 'Messages'], ['me', 'Account']];
     return { main: main, more: more };
   }
-  var SHORT = { Packages: 'Packages', 'Client Reports': 'Reports', Appointments: 'Appts', Protocols: 'Protocol', 'Billing & Payments': 'Billing' };
+  /* On a phone the bottom bar holds five; the rest sit under More. */
+  var PHONE = ['home', 'reports', 'protocol', 'course', 'more'];
+  function moreScreen(c) {
+    var nav = navFor(c), rest = nav.main.filter(function (t) { return PHONE.indexOf(t[0]) < 0; }).concat(nav.more);
+    return '<h2 class="ca-title">More</h2>' + rest.map(function (t) { return '<button class="ca-card ca-morerow" data-ctab="' + t[0] + '">' + svg(t[0], 20) + '<b class="grow">' + t[1] + '</b><span class="muted">&rsaquo;</span></button>'; }).join('');
+  }
+  var SHORT = { 'WPMP Course': 'Course', Packages: 'Packages', 'Client Reports': 'Reports', Appointments: 'Appts', Protocols: 'Protocol', 'Billing & Payments': 'Billing' };
 
   function view() {
     var ca = st(), c0 = me();
@@ -334,26 +368,26 @@
     if (ca.tab === 'book') ca.tab = 'appts';
     if (c0 && ca.tab === 'msg') thread(c0).forEach(function (m) { if (m.from === 'team') m.seen = true; });
     var c = me(), tab = c ? ca.tab : 'home', desk = ca.device === 'desktop';
-    var screen = !c ? signin() : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'appts' ? apptsScreen(c) : tab === 'reports' ? reportsScreen(c) : tab === 'billing' ? billingScreen(c) : tab === 'packages' ? packagesScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
+    var screen = !c ? signin() : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' || tab === 'course' ? courseScreen(c) : tab === 'more' ? moreScreen(c) : tab === 'appts' ? apptsScreen(c) : tab === 'reports' ? reportsScreen(c) : tab === 'billing' ? billingScreen(c) : tab === 'packages' ? packagesScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
     var n = cartCount(), nav = c ? navFor(c) : null;
-    var brand = '<span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>';
+    var brand = '<span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Root Cause</span>';
     var icons = c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages">' + svg('msg') + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-who" data-ctab="me" id="caMe" aria-label="My account, signed in as ' + esc(c.name) + '"><span class="ca-av">' + U.initials(c.name) + '</span>' + (desk ? '<span class="small">' + esc(c.name) + '</span>' : '') + '</button><button class="ca-cartbtn" id="caCart" aria-label="Cart">' + svg('shop') + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '';
     var picker = '<label for="caAs">Signed in as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>';
     var device = '<div class="seg" data-tour="device" role="group" aria-label="Device"><button class="' + (desk ? 'is-on' : '') + '" data-cdev="desktop">Desktop</button><button class="' + (!desk ? 'is-on' : '') + '" data-cdev="mobile">Mobile</button></div>';
+    /* One heading for both views: what this is, the device switch, and who is signed in. */
+    var head = '<div class="chead"><p class="eyebrow">Client</p><h1 class="h1">The client portal</h1><p class="lede">What clients use, on their phone or computer, at <code>rootcause.example/portal</code>. Everything they do here shows up on your side straight away.</p>' +
+      '<div class="row chead-ctl">' + device + '<div class="row" style="flex-wrap:nowrap;min-width:0">' + picker + '</div></div></div>';
     if (desk) {
-      return '<div class="cdesk"><div class="cdesk-bar"><div><p class="eyebrow" style="margin:0">Client</p><b>The client portal, on a computer</b></div><div class="row">' + device + '<div class="row" style="flex-wrap:nowrap">' + picker + '</div></div></div>' +
-        '<div class="browser" data-tour="phone"><div class="br-chrome"><span class="br-dots"><i></i><i></i><i></i></span><span class="br-url">evergrove.example/portal</span></div>' +
+      return '<div class="cdesk">' + head +
+        '<div class="browser" data-tour="phone"><div class="br-chrome"><span class="br-dots"><i></i><i></i><i></i></span><span class="br-url">rootcause.example/portal</span></div>' +
         '<div class="br-top">' + brand + icons + '</div><div class="br-main">' +
         (c ? '<nav class="br-nav" data-tour="ca-nav">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0], 18) + t[1] + '</button>'; }).join('') + '<div class="br-sep">More</div>' + nav.more.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0], 18) + t[1] + '</button>'; }).join('') + '</nav>' : '') +
         '<div class="br-body ph-body" id="caBody"><div class="br-inner">' + screen + '</div></div></div>' + sheet() + '</div></div>';
     }
-    return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top">' + brand + icons + '</div>' +
+    return '<div class="cmob">' + head + '<div class="phone" data-tour="phone"><div class="ph-top">' + brand + icons + '</div>' +
       '<div class="ph-body" id="caBody">' + screen + '</div>' +
-      (c ? '<nav class="ph-tabs seven">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0]) + (SHORT[t[1]] || t[1]) + '</button>'; }).join('') + '</nav>' : '') +
-      sheet() + '</div>' +
-      '<aside class="cside"><p class="eyebrow">Client</p><h1 class="h1">The client portal</h1><p class="lede" style="margin-bottom:1rem">What clients use, on their phone or computer, at <code>evergrove.example/portal</code>. Everything they do here shows up on your side straight away.</p>' +
-      device + picker +
-      '<ul class="cfeat"><li><b>Client Reports</b> Their energetic scan reports, once a practitioner has signed off.</li><li><b>Protocols</b> What to take and when, with tick-offs, reminders and the protocol report.</li><li><b>Shop</b> Their remedies, at member pricing, with order tracking.</li><li><b>Appointments</b> Upcoming sessions with the Zoom link, and booking.</li><li><b>Packages</b> Recorded Review, Bioresonance Scan and the 12 Week Package: appointments left to book, and adding more.</li><li><b>Billing &amp; Payments</b> Every payment, what is due next, receipts and the card on file.</li></ul></aside></div>';
+      (c ? '<nav class="ph-tabs">' + PHONE.map(function (k) { return nav.main.concat([['more', 'More']]).filter(function (t) { return t[0] === k; })[0]; }).map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0]) + (SHORT[t[1]] || t[1]) + '</button>'; }).join('') + '</nav>' : '') +
+      sheet() + '</div></div>';
   }
 
   function bind() {
@@ -374,6 +408,7 @@
     $$('[data-cbookt]').forEach(function (b) { b.addEventListener('click', function () { ca.book.type = b.getAttribute('data-cbookt'); ca.tab = 'appts'; App.render(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
     var cc = $('#caCard'); if (cc) cc.addEventListener('click', function () { U.toast('Opens a secure card form (simulated)'); });
     $$('[data-csign]').forEach(function (b) { b.addEventListener('click', function () { open({ type: 'form', id: b.getAttribute('data-csign') }); }); });
+    $$('[data-creview]').forEach(function (b) { b.addEventListener('click', function () { open({ type: 'review', id: b.getAttribute('data-creview') }); }); });
     $$('[data-fchip]').forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('is-on'); }); });
     $$('[data-cconfirm]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -442,7 +477,7 @@
       var t = $('#caMsg').value.trim(), c = me(), now = new Date(); if (!t) return;
       S().messages.push({ id: 'msg' + Date.now(), client: c.id, from: 'client', by: c.name, at: U.today(), time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'), text: t, read: false });
       U.activity('New message from ' + c.name + ' in the client app, for ' + c.practitioner + '.');
-      U.save(); rerender(); U.toast('Sent to ' + U.first(c.practitioner));
+      U.save(); rerender(); U.toast('Sent to your practitioner');
     });
     $$('[data-cwho]').forEach(function (b) { b.addEventListener('click', function () { ca.book.who = b.getAttribute('data-cwho'); rerender(); }); });
     $$('[data-cappt]').forEach(function (b) { b.addEventListener('click', function () { ca.book.type = b.getAttribute('data-cappt'); rerender(); }); });

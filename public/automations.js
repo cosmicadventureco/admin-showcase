@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - automations.
+/* Root Cause Clinic showcase - automations.
  *
  * The jobs that run on their own, as working controls: each one can be
  * switched on or off, has its own settings, keeps a log, and can be run by

@@ -1,11 +1,11 @@
-# Evergrove Wellness: platform showcase
+# Root Cause Clinic: platform showcase
 
 An interactive, clickable showcase of the Cosmic Intake platform, rebranded as a
 fictional wellness business. Use it to pitch the custom build: press
 **Play Showcase** and the app tours itself for about 6 minutes with a visible
 demo cursor, or click around freely.
 
-Everything is sample data. "Evergrove Wellness", every client, order, practitioner
+Everything is sample data. "Root Cause Clinic", every client, order, practitioner
 and number is invented. The product names in the shop come from the public
 catalogue of Physica Energetics, the client's main supplier. Their prices are
 practitioner-only, so every price and cost shown is a placeholder. Emails and orders are simulated and never leave the browser.
@@ -96,13 +96,17 @@ Appointments for the week; The Outcome sits apart at the bottom of the menu):
    the client sees and a count of who has signed. Clients sign in their
    portal; the signed copy is filed in their Documents.
 
-**Client** (`/app`, the Provider / Client switch at the top): the client portal for signed-in clients, loosely
+**Client** (`/app`, the Practitioner / Client switch at the top): the client portal for signed-in clients, loosely
 modelled on Practice Better but simpler. It shows in a desktop browser window
 or on a phone (Desktop / Mobile switch). There is no free sign-up or
 snapshot: clients get their sign-in after booking.
 
-- **Signed in as Jane Smith**, a sample Premium Course client (switch to
-  other sample clients with "Signed in as").
+- **Two sample clients** ("Signed in as"): Jane Smith, on the WPMP Course,
+  and Mark Johnson, who bought a Recorded Review (his review video is ready to
+  watch). The heading, Desktop / Mobile switch and "Signed in as" sit above
+  the preview in both views.
+- **WPMP Course:** this week's lessons, the Thursday Zoom and all twelve
+  weeks (a course overview for clients not on it).
 - **Landing page:** six big buttons, Client Reports, Protocols, Shop,
   Appointments, Packages and Billing & Payments, each with a one-line status.
   Above them, any waiver still to sign; below, a preview of the latest report
@@ -130,8 +134,8 @@ account and two Premium members.
 ## Presenting
 
 - **Play Showcase** (top right): restores the sample data, then walks one new
-  client, Olivia Bennett, from start to finish in about four minutes at normal
-  speed. Provider side: add a client to the portal, create a package, send
+  client, Emma Jones, from start to finish in about four minutes at normal
+  speed. Practitioner side: add a client to the portal, create a package, send
   forms and waivers, book an appointment, create a client report, create a
   protocol, approve the order in the Shop. Client side: fill in the health
   questionnaire, sign a waiver, confirm the appointment, look at the client
@@ -199,7 +203,7 @@ connects that flow to everything else:
    remedies are one tap from the cart (still through the order approval).
 
 The extraction is simulated with invented sample data and an invented report
-name ("Evergrove Resonance Map"). Building it for real needs one or two sets
+name ("Root Cause Resonance Map"). Building it for real needs one or two sets
 of real exports with names removed, to confirm the parser against the actual
 PDF layout.
 

@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - the "Play Showcase" player.
+/* Root Cause Clinic showcase - the "Play Showcase" player.
  *
  * Drives the real console with a visible, obviously simulated cursor: it moves,
  * clicks, types and signs exactly as a person would, so every screen it shows
@@ -207,22 +207,22 @@
 
   /* ------------------------------------------------------------- script */
   /* The client the tour adds in step 1 and follows to the end. */
-  var NEW_NAME = 'Olivia Bennett';
+  var NEW_NAME = 'Emma Jones';
   function newId() { var c = App.state().clients.filter(function (x) { return x.name === NEW_NAME; })[0]; return c ? c.id : 'c1'; }
 
   var CHAPTERS = [
-    { name: 'Provider 1/7 · Add a client', run: async function () {
+    { name: 'Practitioner 1/7 · Add a client', run: async function () {
       App.ui.cp = null; App.go('clients'); await sleep(500);
       say('Add a client to the portal', 'Name, email, their practitioner and, if they have bought one, a package.');
       await click('#cpAdd', { after: 500 });
       await type('#ncName', NEW_NAME, 45);
-      await type('#ncEmail', 'olivia.bennett@example.com', 22);
+      await type('#ncEmail', 'emma.jones@example.com', 22);
       await choose('#ncPkg', 'scan');
       await click('#ncSave', { after: 900 });
-      say('Her portal invite goes out on its own', 'Olivia’s page opens, ready for the next steps.');
+      say('Her portal invite goes out on its own', 'Emma’s page opens, ready for the next steps.');
       await spot('[data-tour="clienthead"]', 2200);
     } },
-    { name: 'Provider 2/7 · Create a package', run: async function () {
+    { name: 'Practitioner 2/7 · Create a package', run: async function () {
       App.ui.pk = null; App.go('packages'); await sleep(500);
       say('Create a package', 'Name it, price it, and choose which appointments come with it.');
       await click('#pkNew', { after: 600 });
@@ -236,13 +236,13 @@
       say('Saved and on sale', 'It now shows in every client’s portal under Packages.');
       await sleep(1600);
     } },
-    { name: 'Provider 3/7 · Send forms & waivers', run: async function () {
+    { name: 'Practitioner 3/7 · Send forms & waivers', run: async function () {
       EGPortal.open(newId(), 'forms'); await sleep(500);
       say('Send forms and waivers', 'Her page lists what she needs to sign. One click sends them to her portal.');
       await spot('[data-tour="forms"]', 2200);
       await click('#cpSendAll', { after: 900 });
     } },
-    { name: 'Provider 4/7 · Book an appointment', run: async function () {
+    { name: 'Practitioner 4/7 · Book an appointment', run: async function () {
       App.ui.cal = null; App.go('calendar'); await sleep(500);
       say('Book an appointment', 'Click an open time, then pick the client and the appointment type.');
       var t = App.util.today(), pick = function () { return Array.prototype.filter.call(document.querySelectorAll('[data-cslot]'), function (e) { var p = e.getAttribute('data-cslot').split('|'); return p[0] > t && p[1] === '14:00'; })[0]; };
@@ -251,10 +251,10 @@
       await choose('#calClient', newId());
       await choose('#calType', 'review60');
       await click('#calSave', { after: 900 });
-      say('Zoom link and invite, automatically', 'Olivia is asked to confirm it in her portal.');
+      say('Zoom link and invite, automatically', 'Emma is asked to confirm it in her portal.');
       await spot('[data-tour="caldetail"]', 2600);
     } },
-    { name: 'Provider 5/7 · Create a client report', run: async function () {
+    { name: 'Practitioner 5/7 · Create a client report', run: async function () {
       App.ui.sc = null; App.go('scans'); await sleep(500);
       say('Create a client report', 'Pick the client and upload the four scan files from the scanner.');
       await choose('#scClient', newId());
@@ -269,7 +269,7 @@
       await click('#scSign', { after: 300 });
       await click('#scPublish', { after: 1000 });
     } },
-    { name: 'Provider 6/7 · Create a protocol', run: async function () {
+    { name: 'Practitioner 6/7 · Create a protocol', run: async function () {
       if (document.querySelector('#scProto')) await click('#scProto', { after: 800 });
       else { App.ui.pc = { client: newId(), draft: null, mode: 'edit' }; App.go('protocols'); await sleep(500); }
       say('Create a protocol', 'Suggestions come from her report. Add them, set the times of day, and publish.');
@@ -279,20 +279,20 @@
       say('Order her remedies in one click', 'The order goes to the Shop to be approved.');
       await click('#pcOrder', { after: 1000 });
     } },
-    { name: 'Provider 7/7 · Approve the order', run: async function () {
+    { name: 'Practitioner 7/7 · Approve the order', run: async function () {
       App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(500);
       say('Approve the order in the Shop', 'Nothing reaches a supplier until someone approves it.');
       var mine = App.state().orders.filter(function (o) { return o.source === 'Protocol'; }).pop();
       var b = mine && document.querySelector('[data-approve="' + mine.id + '"]:not([disabled])');
       if (b) {
         await click(b, { after: 700 });
-        say('Approved, then checked out in one go', 'The supplier cart fills in your own logged-in tab. Tracking goes to Olivia when it ships.');
+        say('Approved, then checked out in one go', 'The supplier cart fills in your own logged-in tab. Tracking goes to Emma when it ships.');
         await click('[data-confirm="' + mine.id + '"]', { after: 1400 });
       }
     } },
     { name: 'Client 1/6 · Health questionnaire', run: async function () {
       App.ui.ca = null; App.go('client'); App.ui.ca.as = newId(); App.ui.ca.device = window.innerWidth >= 1000 ? 'desktop' : 'mobile'; App.render(); await sleep(600);
-      say('Now Olivia’s side', 'She signs in to her portal. What she needs to do is at the top.');
+      say('Now Emma’s side', 'She signs in to her portal. What she needs to do is at the top.');
       await sleep(1800);
       await click('[data-csign="f2"]', { after: 700 });
       say('Basic health questions', 'Her intake questionnaire: goals, medications, allergies and a few yes/no questions.');
@@ -332,6 +332,7 @@
       await spot('[data-tour="ca-protocol"]', 2000);
     } },
     { name: 'Client 6/6 · Shop', run: async function () {
+      if (!document.querySelector('[data-ctab="shop"]')) await click('[data-ctab="more"]', { after: 600 });
       await click('[data-ctab="shop"]', { after: 700 });
       say('The shop', 'Her remedies, ready to reorder. Every order is checked by her practitioner before it ships.');
       var a = document.querySelector('[data-cadd]');
@@ -405,7 +406,7 @@
     cur.x = window.innerWidth * 0.6; cur.y = window.innerHeight * 0.45; place();
     els.cap.hidden = true; els.cursor.style.opacity = 0;
     try {
-      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Evergrove Wellness</h2><p>A quick look at the basics: seven steps on the provider side, then the same client&rsquo;s view of her portal.</p></p>', 2800);
+      await card('<p class="k">Platform showcase &middot; sample data</p><h2>Root Cause Clinic</h2><p>A quick look at the basics: seven steps on the practitioner side, then the same client&rsquo;s view of her portal.</p></p>', 2800);
     } catch (e) { if (e === STOP) return finish(false); skip = false; }
     els.cap.hidden = false; els.cursor.style.opacity = 1;
     clockStart = performance.now(); pausedTotal = 0;

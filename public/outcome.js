@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - Outcome.
+/* Root Cause Clinic showcase - Outcome.
  *
  * The case for the build, kept apart from the working screens: the four
  * functions it starts with, the admin time they give back, and what can be

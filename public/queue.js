@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - the Work queue.
+/* Root Cause Clinic showcase - the Work queue.
  *
  * The answer to "someone is leaving and they did all the admin". Everything
  * that still needs a person sits in one list anyone on the team can work
@@ -61,7 +61,7 @@
     } else if (wq.tab === 'log') {
       body = '<div class="card"><div class="list" data-tour="activity">' + D.activity.slice(0, 25).map(function (a) { return '<div class="li"><span class="pill num">' + U.fmtDate(a.at, { month: 'short', day: 'numeric' }) + ' ' + a.time + '</span><span class="grow small">' + esc(a.text) + '</span></div>'; }).join('') + '</div></div>';
     } else if (wq.tab === 'team') {
-      var roles = [['Owner', 'Maya Lindqvist'], ['Practitioner', 'Theo Marsh, Dr. Ana Whitlock'], ['Assistant', 'Any new hire']];
+      var roles = [['Owner', 'Maya Brooks'], ['Practitioner', 'Theo Marsh, Anna Moore'], ['Assistant', 'Any new hire']];
       var perms = [['Approve orders', 1, 1, 1], ['Review screening flags', 1, 1, 0], ['Answer client questions', 1, 1, 1], ['Manage program members', 1, 1, 1], ['Edit products and prices', 1, 0, 0], ['Refunds, revenue and payouts', 1, 0, 0]];
       var list2 = [['Supplier logins moved to the team vault', 1], ['Email wording moved into templates', 1], ['Refill schedules imported', 1], ['Program members and payment plans imported', 1], ['15-minute walkthrough of the Work queue for the assistant', 0], ['Retire the old spreadsheet', 0]];
       body = '<div class="split"><div class="card"><h3 class="h3">Who can do what</h3><div class="tablewrap"><table data-tour="roles"><thead><tr><th></th>' + roles.map(function (r) { return '<th>' + r[0] + '<br><span class="small muted" style="text-transform:none;letter-spacing:0;font-weight:400">' + esc(r[1]) + '</span></th>'; }).join('') + '</tr></thead><tbody>' +

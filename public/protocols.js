@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - protocols.
+/* Root Cause Clinic showcase - protocols.
  *
  * A protocol is what a client takes, how much and when, for how long. The
  * creator suggests remedies from the client's latest report and their goals;
@@ -27,7 +27,7 @@
       return '<div class="pd-slot"><div class="pd-time"><b>' + t[1] + '</b><span>' + t[2] + '</span></div>' +
         (rows.length ? rows.map(function (x) { return '<div class="pd-take"><span>' + esc(EG.product(x.sku).name) + '</span><b>' + esc(x.dose) + '</b></div>'; }).join('') : '<div class="pd-none">Nothing</div>') + '</div>';
     }).join('');
-    return '<div class="pdoc' + (compact ? ' compact' : '') + '" data-tour="protodoc"><div class="pd-head"><div><div class="pd-title">Personal Protocol</div><div class="pd-sub">Evergrove Wellness &middot; sample data</div></div>' +
+    return '<div class="pdoc' + (compact ? ' compact' : '') + '" data-tour="protodoc"><div class="pd-head"><div><div class="pd-title">Personal Protocol</div><div class="pd-sub">Root Cause Clinic &middot; sample data</div></div>' +
       '<div class="pd-meta">' + [['Client', c.name], ['Practitioner', p.by], ['Starts', U.fmtDate(p.start, { month: 'short', day: 'numeric', year: 'numeric' })], ['Review', U.fmtDate(endDate(p.start, weeks), { month: 'short', day: 'numeric' })]].map(function (m) { return '<div><span>' + m[0] + '</span><b>' + esc(m[1]) + '</b></div>'; }).join('') + '</div></div>' +
       '<div class="pd-body"><div class="pd-h">Your day</div><div class="pd-grid">' + grid + '</div>' +
       '<div class="pd-h">Your remedies</div><div class="tablewrap"><table class="pd-table"><thead><tr><th>Remedy</th><th>Dose</th><th>When</th>' + (compact ? '' : '<th>How</th>') + '<th class="r">Weeks</th></tr></thead><tbody>' +

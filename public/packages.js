@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - Packages.
+/* Root Cause Clinic showcase - Packages.
  *
  * The packages the practice sells (Recorded Review, Bioresonance Scan, the
  * 12 Week Package), what each includes, and which appointment credits come

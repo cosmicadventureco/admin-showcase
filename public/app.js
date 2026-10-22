@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - the console.
+/* Root Cause Clinic showcase - the console.
  *
  * One page, nine views. Every view reads and writes the same small store, kept
  * in this browser's localStorage, so a booking made on one screen shows up on
@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v17';
+  var KEY = 'rootcause-showcase-v19';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
@@ -120,7 +120,7 @@
     var waiting = S.orders.filter(function (o) { return o.stage === 0 && !o.held && !o.batched; }).length;
     if (waiting) todos.unshift({ kind: 'bad', text: '<b>' + waiting + ' order' + (waiting > 1 ? 's' : '') + ' waiting for your approval.</b> Nothing goes to a supplier until someone approves it.', go: 'queue' });
 
-    return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Evergrove',
+    return head('Good morning, ' + first(EG.BRAND.owner), 'Today at Root Cause',
       'Everything that needs you, in one place: consultations, intake paperwork, orders on their way and quotes waiting on a signature.') +
       '<div class="grid g4" data-tour="stats">' +
       stat(active, 'Coaching clients', '+3 this month') +
@@ -177,11 +177,11 @@
     var when = date ? ' on ' + fmtDate(date, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
     var sv = service(svc).label;
     switch (kind) {
-      case 'reminder': return { subject: 'A quick reminder before your ' + sv, body: 'Hi ' + n + ',\n\nWe are looking forward to your ' + sv + when + '. Your intake questionnaire is still open. It takes about four minutes and lets Maya prepare a plan before you arrive.\n\n[Finish my intake]\n\nWarmly,\nThe Evergrove team' };
+      case 'reminder': return { subject: 'A quick reminder before your ' + sv, body: 'Hi ' + n + ',\n\nWe are looking forward to your ' + sv + when + '. Your intake questionnaire is still open. It takes about four minutes and lets Maya prepare a plan before you arrive.\n\n[Finish my intake]\n\nWarmly,\nThe Root Cause team' };
       case 'plan': return { subject: 'Your personalised wellness plan', body: 'Hi ' + n + ',\n\nThank you for sharing your goals with us. Based on your intake, here is the plan Maya put together, with the three products and videos we think will help most.\n\n[See my plan]\n\nTurn on auto-ship and your refills arrive every 30 days, before you run out. Each one adds credit toward a session or short course.\n\nWarmly,\nMaya' };
-      case 'refill': return { subject: 'Running low? Your refill ships in 5 days', body: 'Hi ' + n + ',\n\nYour next auto-ship leaves our partner warehouse in 5 days. Need to skip, swap or pause? One tap below.\n\n[Manage my refill]\n\nThe Evergrove team' };
+      case 'refill': return { subject: 'Running low? Your refill ships in 5 days', body: 'Hi ' + n + ',\n\nYour next auto-ship leaves our partner warehouse in 5 days. Need to skip, swap or pause? One tap below.\n\n[Manage my refill]\n\nThe Root Cause team' };
       case 'review': return { subject: 'How did your session feel?', body: 'Hi ' + n + ',\n\nThank you for joining us for ' + sv + '. If it helped, a short review means a lot to a small studio like ours.\n\n[Leave a review]\n\nWith gratitude,\nMaya' };
-      default: return { subject: 'Before your ' + sv + ' with Maya', body: 'Hi ' + n + ',\n\nWe are so glad you booked your ' + sv + when + '. Before we meet, please complete two quick steps:\n\n1. Sign the wellness consent\n2. Tell us about your goals (about 4 minutes)\n\n[Start my intake]\n\nYour answers shape the personalised supplement and video plan you will receive afterwards.\n\nWarmly,\nMaya Lindqvist\nEvergrove Wellness' };
+      default: return { subject: 'Before your ' + sv + ' with Maya', body: 'Hi ' + n + ',\n\nWe are so glad you booked your ' + sv + when + '. Before we meet, please complete two quick steps:\n\n1. Sign the wellness consent\n2. Tell us about your goals (about 4 minutes)\n\n[Start my intake]\n\nYour answers shape the personalised supplement and video plan you will receive afterwards.\n\nWarmly,\nMaya Brooks\nRoot Cause Clinic' };
     }
   }
   VIEWS.messages = function () {
@@ -211,8 +211,8 @@
   }
   function mailPreview(from, to, subject, body) {
     var html = esc(body).replace(/\[([^\]]+)\]/g, '<a class="cta" href="#intake">$1</a>').replace(/\n/g, '<br>');
-    return '<div class="mail"><div class="hd"><span><b>From</b> Maya at Evergrove &lt;' + esc(from) + '&gt;</span><span><b>To</b> ' + esc(to || 'client@example.com') + '</span><span><b>Subject</b> ' + esc(subject) + '</span></div>' +
-      '<div class="bd"><h3>Evergrove Wellness</h3>' + html + '</div></div>';
+    return '<div class="mail"><div class="hd"><span><b>From</b> Maya at Root Cause &lt;' + esc(from) + '&gt;</span><span><b>To</b> ' + esc(to || 'client@example.com') + '</span><span><b>Subject</b> ' + esc(subject) + '</span></div>' +
+      '<div class="bd"><h3>Root Cause Clinic</h3>' + html + '</div></div>';
   }
   function bindMessages() {
     var kind = $('#mKind'), to = $('#mTo'), svc = $('#mSvc'), date = $('#mDate'), who = $('#mWho'), subj = $('#mSubject'), body = $('#mBody');
@@ -244,7 +244,7 @@
     return head('What your client sees', 'Wellness intake',
       'Consent, health screening and goals in one short form that works on a phone, even offline. The moment it is submitted, the client gets a personalised plan.') +
       pitch('proven', 'The current app runs this flow for every guest: signed consent with a drawn signature, a tailored questionnaire, a PDF copy, and offline saving for weak signal. The personalised plan at the end is the new part.') +
-      '<div class="guestframe"><div class="guestbar"><span>Guest link</span><code>evergrove.example/intake?consult=initial</code><span class="pill ok">Works offline</span></div>' +
+      '<div class="guestframe"><div class="guestbar"><span>Guest link</span><code>rootcause.example/intake?consult=initial</code><span class="pill ok">Works offline</span></div>' +
       '<form class="guest" id="iForm" novalidate>' +
       '<p class="eyebrow">Before your consultation</p><h2 class="h1">Let&rsquo;s get to know you</h2><p class="muted" style="margin:0 0 1.2rem">About four minutes. Your answers are private and only seen by your practitioner.</p>' +
       '<div class="steps" id="iSteps"><span class="is-on"></span><span></span><span></span><span></span></div>' +
@@ -266,7 +266,7 @@
       '<label class="check"><input type="checkbox" id="iBlood"> I take a blood thinner (for example warfarin)</label>' +
       '<label class="check"><input type="checkbox" id="iThy"> I have a thyroid condition or take thyroid medication</label>' +
       '</div></section>' +
-      '<section class="block"><h3 class="h3">Consent</h3><div class="consent">Evergrove Wellness provides education, coaching and dietary supplements. Our guidance does not replace care from your physician. You agree to tell your practitioner about medications and conditions, and to stop any supplement and contact your doctor if you notice an adverse reaction. Your information is stored securely and never sold. You may request a copy or deletion at any time. Sessions cancelled with less than 24 hours notice may be charged at 50%.</div>' +
+      '<section class="block"><h3 class="h3">Consent</h3><div class="consent">Root Cause Clinic provides education, coaching and dietary supplements. Our guidance does not replace care from your physician. You agree to tell your practitioner about medications and conditions, and to stop any supplement and contact your doctor if you notice an adverse reaction. Your information is stored securely and never sold. You may request a copy or deletion at any time. Sessions cancelled with less than 24 hours notice may be charged at 50%.</div>' +
       '<label class="check" style="margin-bottom:.8rem"><input type="checkbox" id="iAgree"> I have read and agree to the wellness consent</label>' +
       '<div class="row" style="justify-content:space-between"><span class="label" style="margin:0">Sign here</span><button type="button" class="linkish" id="iClear">Clear</button></div>' +
       '<canvas class="sig" id="iSig"></canvas>' +
@@ -362,7 +362,7 @@
   }
   function intakeResult(id) {
     var c = client(id), r = EG.recommend(c);
-    return '<div class="guestframe"><div class="guestbar"><span>Guest view</span><code>evergrove.example/plan/' + esc(c.id) + '</code></div>' +
+    return '<div class="guestframe"><div class="guestbar"><span>Guest view</span><code>rootcause.example/plan/' + esc(c.id) + '</code></div>' +
       '<div class="guest" data-tour="result"><div class="result-hero"><div class="check-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div>' +
       '<div><p class="eyebrow" style="margin:0">All set, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">Your personalised plan</h2></div></div>' +
       '<p class="muted">Built from your goals: ' + c.goals.map(function (g) { return esc(EG.goalLabel(g).toLowerCase()); }).join(', ') + '. ' + (r.needsReview ? 'Because of your health screening, Maya will review these picks before anything ships.' : 'Everything below is safe to start today.') + '</p>' +
@@ -619,10 +619,10 @@
     var cartSkus = Object.keys(st.cart);
     var sub = cartSkus.reduce(function (t, k) { return t + EG.product(k).price * st.cart[k]; }, 0);
     var disc = member ? sub * EG.PROGRAM.discount : 0;
-    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/shop</code>' +
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>rootcause.example/shop</code>' +
       '<label for="stAs" style="margin:0 0 0 auto">Shopping as</label><select id="stAs" style="width:auto">' + S.clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === st.as ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (program member)' : '') + '</option>'; }).join('') + '</select></div>' +
       '<div class="store">' +
-      '<div class="storemain"><div class="storehead"><div><p class="eyebrow" style="margin:0">Evergrove apothecary</p><h2 class="h1" style="margin:0">Remedies &amp; supplements</h2><p class="small muted" style="margin:.2rem 0 0">Featuring the Physica Energetics range. Placeholder prices.</p></div>' +
+      '<div class="storemain"><div class="storehead"><div><p class="eyebrow" style="margin:0">Root Cause apothecary</p><h2 class="h1" style="margin:0">Remedies &amp; supplements</h2><p class="small muted" style="margin:.2rem 0 0">Featuring the Physica Energetics range. Placeholder prices.</p></div>' +
       (member ? '<span class="pill ok" id="stMember">Premium member: 20% off and free shipping</span>' : '<span class="pill">Premium Course members get 20% off and free shipping</span>') + '</div>' +
       '<div class="chips" style="margin:1rem 0">' + [['all', 'All'], ['milieu', 'Milieu'], ['code', 'Codes'], ['tox', 'Tox'], ['desbio', 'DesBio'], ['nutri', 'Nutritionals']].map(function (l) { return '<button class="chip' + (st.line === l[0] ? ' is-on' : '') + '" data-line="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>' +
       '<div class="pgrid">' + list.map(function (p) {
@@ -851,18 +851,18 @@
         activity(o.id + ' approved by ' + EG.BRAND.owner + '. Supplier cart filled and checked out with ' + Object.keys(by).map(function (k) { return EG.SUPPLIERS[k].name; }).join(' and ') + '. Client emailed.');
         Object.keys(by).forEach(function (k) {
           var sup = EG.SUPPLIERS[k], n = by[k].length + ' line' + (by[k].length > 1 ? 's' : '');
-          if (sup.path === 'cart') logLine(esc(sup.short) + ': the Evergrove extension filled the cart in ' + esc(EG.BRAND.owner) + '&rsquo;s logged-in tab (' + n + ', ship-to ' + esc(c.name) + ').');
+          if (sup.path === 'cart') logLine(esc(sup.short) + ': the Root Cause extension filled the cart in ' + esc(EG.BRAND.owner) + '&rsquo;s logged-in tab (' + n + ', ship-to ' + esc(c.name) + ').');
           else if (sup.path === 'link') logLine(esc(sup.short) + ': cart link opened in ' + esc(EG.BRAND.owner) + '&rsquo;s account (' + n + ', ship-to ' + esc(c.name) + ').');
           else logLine(esc(sup.short) + ': purchase order emailed (' + n + ', drop-ship to ' + esc(c.name) + ').');
           if (sup.path !== 'email') logLine(esc(EG.BRAND.owner) + ' checked out on the ' + esc(sup.short) + ' site. Confirmation number saved to the order.', true);
         });
         logLine('Email to ' + esc(c.email) + ': "Your order is confirmed"');
       },
-      function () { logLine('Supplier confirmed. Packing slip printed with Evergrove branding.', true); },
+      function () { logLine('Supplier confirmed. Packing slip printed with Root Cause branding.', true); },
       function () {
         o.tracking = '1Z84F2A' + Math.floor(10000 + Math.random() * 89999); logLine('UPS tracking ' + o.tracking + ' read from the supplier\u2019s shipping email.', true);
         if (window.EGAuto && !EGAuto.on('tracking')) { logLine('Tracking emails are switched off, so the client was not emailed.'); return; }
-        logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Evergrove order is on its way' });
+        logLine('Email to ' + esc(c.email) + ': "Your order is on its way"'); S.emails.unshift({ at: today(), to: c.id, kind: 'Order shipped', subject: 'Your Root Cause order is on its way' });
       },
       function () { logLine('Delivered. Refill reminder scheduled for day 25. Review request queued for day 7.', true); activity('Tracking ' + o.tracking + ' emailed to ' + c.name + '. Refill reminder set for day 25.'); }
     ];
@@ -931,13 +931,13 @@
   }
   function quoteDoc(a) {
     var total = a.lines.reduce(function (t, l) { return t + lineTotal(l); }, 0);
-    return '<div class="doc" data-tour="quote"><div class="lh"><div><b>Evergrove Wellness</b><br><span class="small muted">' + esc(EG.BRAND.email) + '</span></div><div style="text-align:right"><span class="eyebrow">Quote</span><br><span class="small muted">Sent ' + fmtDate(a.sent) + '</span></div></div>' +
+    return '<div class="doc" data-tour="quote"><div class="lh"><div><b>Root Cause Clinic</b><br><span class="small muted">' + esc(EG.BRAND.email) + '</span></div><div style="text-align:right"><span class="eyebrow">Quote</span><br><span class="small muted">Sent ' + fmtDate(a.sent) + '</span></div></div>' +
       '<h3 class="h3" style="font-size:1.5rem">' + esc(a.title) + '</h3><p class="small muted" style="margin-top:0">Prepared for ' + esc(a.client) + ' &middot; ' + esc(a.contact) + '</p>' +
       '<div class="tablewrap"><table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>' +
       a.lines.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td class="r">' + (Number(l[1]) || 1) + '</td><td class="r">' + money(l[2]) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>'; }).join('') +
       '<tr class="total"><td colspan="3">Total</td><td class="r" id="qTotal">' + money(total) + '</td></tr></tbody></table></div>' +
       '<p class="small muted" style="margin-top:1rem">' + esc(a.terms) + '</p>' +
-      '<div class="sigline"><div>' + (a.status === 'Signed' ? '<div class="signed">' + esc(a.contact.split(',')[0].split('@')[0]) + '</div>' : '<div class="signed"></div>') + 'Client signature' + (a.status === 'Signed' ? ' &middot; signed online' : '') + '</div><div><div class="signed">Maya Lindqvist</div>Evergrove Wellness</div></div></div>';
+      '<div class="sigline"><div>' + (a.status === 'Signed' ? '<div class="signed">' + esc(a.contact.split(',')[0].split('@')[0]) + '</div>' : '<div class="signed"></div>') + 'Client signature' + (a.status === 'Signed' ? ' &middot; signed online' : '') + '</div><div><div class="signed">Maya Brooks</div>Root Cause Clinic</div></div></div>';
   }
   function bindAgreements() {
     var a = S.agreements.filter(function (x) { return x.id === ui.quoteId; })[0] || S.agreements[0];
@@ -989,7 +989,7 @@
 
   function programSales() {
     var P = EG.PROGRAM;
-    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/restore</code></div>' +
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>rootcause.example/restore</code></div>' +
       '<div class="guest sales" data-tour="sales"><p class="eyebrow">' + esc(P.sub) + '</p><h2 class="h1" style="font-size:2.3rem">' + esc(P.name) + '</h2>' +
       '<p class="muted" style="margin:0 0 1.2rem">Twelve weeks with our practitioners, built around your assessment, your test results and your goals.</p>' +
       '<div class="pricebox"><div><b class="bigprice">' + money(P.price, false) + '</b><span class="small muted"> all inclusive</span><br><span class="small muted">or ' + P.plan.n + ' monthly payments of ' + money(P.plan.each, false) + '</span></div>' +
@@ -1008,7 +1008,7 @@
 
   function enrollResult(id) {
     var c = client(id), P = EG.PROGRAM, mods = EG.MODULES;
-    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>evergrove.example/restore/welcome</code></div>' +
+    return '<div class="guestframe"><div class="guestbar"><span>Client view</span><code>rootcause.example/restore/welcome</code></div>' +
       '<div class="guest" data-tour="welcome"><div class="result-hero"><div class="check-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div>' +
       '<div><p class="eyebrow" style="margin:0">Welcome, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">You&rsquo;re enrolled</h2></div></div>' +
       '<p class="muted">Your twelve weeks start now. Week 1 is unlocked, and your course will be shaped by your assessment and goals. Your track: <b>' + esc(EG.trackFor(c.goals)) + '</b>.</p>' +
@@ -1100,8 +1100,8 @@
       c.ltv += c.payPlan ? EG.PROGRAM.plan.each : EG.PROGRAM.price;
       if (!enrollment(c.id)) S.enrollments.unshift({ client: c.id, week: 1, assess: 'Booking sent', testing: 'Kit ordered', plan: 'After assessment', pay: c.payPlan ? '1 of 3 paid' : 'Paid in full', zoom: 0, start: today() });
       S.orders.push({ id: 'EG-' + (S.nextOrder++), client: c.id, at: today(), items: [['PE-DRN', 1]], stage: 0, sub: false, discount: EG.PROGRAM.discount });
-      S.emails.unshift({ at: today(), to: c.id, kind: 'Program welcome', subject: 'Welcome to Evergrove Restore' });
-      activity(c.name + ' enrolled in Evergrove Restore. Welcome pack, Zoom invites and week 1 sent.');
+      S.emails.unshift({ at: today(), to: c.id, kind: 'Program welcome', subject: 'Welcome to WPMP Course' });
+      activity(c.name + ' enrolled in WPMP Course. Welcome pack, Zoom invites and week 1 sent.');
       save();
       ui.enrollDone = c.id; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
     });

@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - energetic scans to client reports.
+/* Root Cause Clinic showcase - energetic scans to client reports.
  *
  * The clinic's own report builder, connected to everything else: the four
  * scan files are uploaded, findings are pulled out and ranked, a practitioner
@@ -40,7 +40,7 @@
     var organs = d.organs.filter(function (o) { return o.include; });
     var dob = '04/12/' + (1975 + (c.name.length * 3) % 20);
     return '<div class="rr' + (compact ? ' compact' : '') + '" data-tour="report">' +
-      '<div class="rr-banner"><div class="rr-title">Evergrove Resonance Map</div><div class="rr-sub">Energetic scan report &middot; sample brand, sample data</div>' +
+      '<div class="rr-banner"><div class="rr-title">Root Cause Resonance Map</div><div class="rr-sub">Energetic scan report &middot; sample brand, sample data</div>' +
       '<div class="rr-grid">' + [['Client', c.name], ['Scan date', U.fmtDate(sc.date, { month: 'short', day: 'numeric', year: 'numeric' })], ['Date of birth', dob],
         ['Practitioner', sc.by || 'Theo Marsh'], ['Approx. age imbalances began', d.ageEst], ['Course week', (U.enrollment(c.id) || { week: 1 }).week + ' of 12']].map(function (x) { return '<div><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>' +
       (compact ? '' : '<p class="rr-welcome">This report turns your scan into three parts: which body systems stood out, what the scan linked them to, and the remedies your practitioner chose in priority order. The dials show energetic resonance. They are not a diagnosis and not a measure of how well an organ works.</p>') + '</div>' +
@@ -213,7 +213,7 @@
       if (d.items.some(function (x) { return x.include && x.claims.length; })) { U.toast('Reword the flagged claim language first.'); go('review'); return; }
       sc.status = 'published'; sc.by = 'Theo Marsh';
       var e = U.enrollment(c.id); if (e) e.assess = 'Complete';
-      S().emails.unshift({ at: U.today(), to: c.id, kind: 'Scan report', subject: 'Your Evergrove Resonance Map is ready' });
+      S().emails.unshift({ at: U.today(), to: c.id, kind: 'Scan report', subject: 'Your Root Cause Resonance Map is ready' });
       U.activity('Scan report for ' + c.name + ' signed off by Theo Marsh and published to the client app. Client emailed; ' + remedies(d).slice(0, d.limit).length + ' remedies ready to order.');
       U.save(); App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
     });

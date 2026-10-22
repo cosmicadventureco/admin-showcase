@@ -1,4 +1,4 @@
-# Evergrove Wellness - platform showcase.
+# Root Cause Clinic - platform showcase.
 #
 # A separate Worker from cosmic-intake on purpose. It has no D1 database, no
 # R2 bucket and no email key, so nothing here can read or write the live

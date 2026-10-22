@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - sample data and the small engines behind it.
+/* Root Cause Clinic showcase - sample data and the small engines behind it.
  *
  * Everything here is invented. Names use example.com addresses, suppliers are
  * fictional, and the recommendation rules are demonstration logic only. Dates
@@ -15,10 +15,10 @@
   }
 
   var BRAND = {
-    name: 'Evergrove Wellness',
+    name: 'Root Cause Clinic',
     tagline: 'Videos, coaching and supplements, personalised',
-    owner: 'Maya Lindqvist',
-    email: 'hello@evergrove.example'
+    owner: 'Maya Brooks',
+    email: 'hello@rootcause.example'
   };
 
   var GOALS = [
@@ -134,7 +134,7 @@
   var SESSION = { base: 99, mins: 30, upgrade: 49, upgradeMins: 60, premiumOff: 0.25 };
   var CERTIFIED = [
     { id: 'p1', name: 'Theo Marsh', role: 'Certified Energetics Practitioner', hue: 280 },
-    { id: 'p2', name: 'Dr. Ana Whitlock, ND', role: 'Naturopathic doctor', hue: 160 },
+    { id: 'p2', name: 'Anna Moore', role: 'Certified Practitioner', hue: 160 },
     { id: 'p3', name: 'Lena Ortiz', role: 'Certified Wellness Practitioner', hue: 30 }
   ];
   function sessionPrice(long, c) {
@@ -175,7 +175,7 @@
 
   /* The flagship offer. Fictional practitioners; real structure. */
   var PROGRAM = {
-    name: 'Evergrove Restore',
+    name: 'WPMP Course',
     sub: 'Premium 3-Month Course',
     price: 6995,
     plan: { n: 3, each: 2395 },
@@ -194,9 +194,9 @@
     ]
   };
   var PRACTITIONERS = [
-    { name: 'Maya Lindqvist', role: 'Founder, wellness coach' },
+    { name: 'Maya Brooks', role: 'Founder, wellness coach' },
     { name: 'Theo Marsh', role: 'Energetics practitioner' },
-    { name: 'Dr. Ana Whitlock, ND', role: 'Naturopathic doctor' }
+    { name: 'Anna Moore', role: 'Certified Practitioner' }
   ];
   var MODULES = [
     { w: 1, title: 'Foundations and your energetic baseline', vids: 4, mins: 48 },
@@ -303,19 +303,19 @@
   function seed() {
     var people = [
       ['c1', 'Jane Smith', ['stress', 'sleep', 'focus'], 'vegetarian', 'vip', -142, 1186, true],
-      ['c2', 'Marcus Bell', ['joints', 'energy'], 'omnivore', 'monthly', -96, 642, true],
-      ['c3', 'Elena Fuentes', ['digestion', 'detox'], 'vegan', 'monthly', -63, 418, true],
-      ['c4', 'Jordan Okafor', ['energy', 'focus'], 'omnivore', 'newsletter', -40, 96, false],
-      ['c5', 'Hannah Kowalski', ['sleep'], 'omnivore', 'newsletter', -21, 38, false],
-      ['c6', 'Samuel Trent', ['immunity', 'energy'], 'omnivore', 'monthly', -188, 904, true],
-      ['c7', 'Aiko Tanaka', ['detox', 'digestion', 'stress'], 'pescatarian', 'vip', -230, 1544, true],
-      ['c8', 'Ruth Abernathy', ['joints'], 'omnivore', 'monthly', -75, 377, true],
-      ['c9', 'Dev Malhotra', ['focus', 'stress'], 'vegan', 'newsletter', -12, 0, false],
-      ['c10', 'Grace Whitfield', ['immunity'], 'omnivore', 'newsletter', -5, 21, false],
-      ['c11', 'Tomas Lindgren', ['energy', 'joints', 'sleep'], 'omnivore', 'monthly', -54, 288, false],
-      ['c12', 'Nadia Haddad', ['stress', 'sleep'], 'vegetarian', 'vip', -301, 2210, true],
-      ['c13', 'Owen Castillo', ['digestion'], 'omnivore', 'newsletter', -3, 0, false],
-      ['c14', 'Leila Moreau', ['detox', 'energy'], 'vegan', 'monthly', -33, 214, true]
+      ['c2', 'Mike Brown', ['joints', 'energy'], 'omnivore', 'monthly', -96, 642, true],
+      ['c3', 'Lisa Garcia', ['digestion', 'detox'], 'vegan', 'monthly', -63, 418, true],
+      ['c4', 'John Miller', ['energy', 'focus'], 'omnivore', 'newsletter', -40, 96, false],
+      ['c5', 'Sarah Davis', ['sleep'], 'omnivore', 'newsletter', -21, 38, false],
+      ['c6', 'Tom Wilson', ['immunity', 'energy'], 'omnivore', 'monthly', -188, 904, true],
+      ['c7', 'Amy Clark', ['detox', 'digestion', 'stress'], 'pescatarian', 'vip', -230, 1544, true],
+      ['c8', 'Mary Lewis', ['joints'], 'omnivore', 'monthly', -75, 377, true],
+      ['c9', 'David Hall', ['focus', 'stress'], 'vegan', 'newsletter', -12, 0, false],
+      ['c10', 'Emily Young', ['immunity'], 'omnivore', 'newsletter', -5, 21, false],
+      ['c11', 'Mark Johnson', ['energy', 'joints', 'sleep'], 'omnivore', 'monthly', -54, 288, false],
+      ['c12', 'Karen White', ['stress', 'sleep'], 'vegetarian', 'vip', -301, 2210, true],
+      ['c13', 'Chris Lee', ['digestion'], 'omnivore', 'newsletter', -3, 0, false],
+      ['c14', 'Laura King', ['detox', 'energy'], 'vegan', 'monthly', -33, 214, true]
     ];
     var clients = people.map(function (r, i) {
       var first = r[1].split(' ')[0].toLowerCase();
@@ -338,30 +338,31 @@
     var bookings = [
       { id: 'b1', service: 'review60', date: iso(0), time: '09:30', guests: ['c9'], where: 'Video call', with: 'Lena Ortiz' },
       { id: 'b2', service: 'recorded', date: iso(0), time: '13:00', guests: ['c2'], where: 'Recorded', with: 'Theo Marsh' },
-      { id: 'b3', service: 'recorded', date: iso(3), time: '10:00', guests: ['c1'], where: 'Recorded', with: 'Theo Marsh' },
+      { id: 'b3', service: 'review60', date: iso(3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh', paid: 165 },
       { id: 'b4', service: 'pkg1', date: iso(2), time: '10:00', guests: ['c3'], where: 'Studio', with: 'Theo Marsh' },
-      { id: 'b5', service: 'review60', date: iso(4), time: '12:00', guests: ['c11'], where: 'Video call', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b5', service: 'review60', date: iso(4), time: '12:00', guests: ['c11'], where: 'Video call', with: 'Anna Moore' },
       { id: 'b6', service: 'review60', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call', with: 'Theo Marsh' },
       { id: 'b7', service: 'pkg1', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio', with: 'Theo Marsh' },
-      { id: 'b8', service: 'recorded', date: iso(11), time: '09:00', guests: ['c6'], where: 'Recorded', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b8', service: 'recorded', date: iso(11), time: '09:00', guests: ['c6'], where: 'Recorded', with: 'Anna Moore' },
       { id: 'b9', service: 'pkg2', date: iso(15), time: '15:00', guests: ['c12'], where: 'Studio', with: 'Theo Marsh' },
       { id: 'b10', service: 'review60', date: iso(19), time: '14:00', guests: ['c13'], where: 'Video call', with: 'Lena Ortiz' },
       { id: 'b11', service: 'review60', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh' },
-      { id: 'b12', service: 'review60', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Video call', with: 'Dr. Ana Whitlock, ND' },
+      { id: 'b12', service: 'review60', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Video call', with: 'Anna Moore' },
       { id: 'b13', service: 'review60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 165 },
       { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Theo Marsh', paid: 500 },
       { id: 'b15', service: 'pkg2', date: iso(14), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
-      { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' }
+      { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b17', service: 'recorded', date: iso(-30), time: '10:00', guests: ['c11'], where: 'Recorded', with: 'Anna Moore', video: true }
     ];
 
 
     var orders = [
-      { id: 'EG-10482', client: 'c12', at: iso(-6), items: [['PE-RLX', 1], ['PE-ADM', 1], ['EG-MAG', 1]], stage: 4, tracking: '1Z84F2A10398', sub: true, discount: 0.2, approvedBy: 'Maya Lindqvist' },
-      { id: 'EG-10483', client: 'c7', at: iso(-5), items: [['PE-DRN', 1], ['EG-PRO', 1]], stage: 4, tracking: '9400 1112 0274', sub: true, discount: 0.2, approvedBy: 'Maya Lindqvist' },
+      { id: 'EG-10482', client: 'c12', at: iso(-6), items: [['PE-RLX', 1], ['PE-ADM', 1], ['EG-MAG', 1]], stage: 4, tracking: '1Z84F2A10398', sub: true, discount: 0.2, approvedBy: 'Maya Brooks' },
+      { id: 'EG-10483', client: 'c7', at: iso(-5), items: [['PE-DRN', 1], ['EG-PRO', 1]], stage: 4, tracking: '9400 1112 0274', sub: true, discount: 0.2, approvedBy: 'Maya Brooks' },
       { id: 'EG-10484', client: 'c2', at: iso(-4), items: [['PE-INF', 1], ['EG-OM3', 1]], stage: 3, tracking: '1Z84F2A10411', sub: true, approvedBy: 'Theo Marsh' },
-      { id: 'EG-10485', client: 'c4', at: iso(-3), source: 'Shopify', items: [['PE-MET', 1]], stage: 3, tracking: '9400 1112 0298', sub: false, approvedBy: 'Maya Lindqvist' },
+      { id: 'EG-10485', client: 'c4', at: iso(-3), source: 'Shopify', items: [['PE-MET', 1]], stage: 3, tracking: '9400 1112 0298', sub: false, approvedBy: 'Maya Brooks' },
       { id: 'EG-10486', client: 'c14', at: iso(-2), items: [['PE-MTL', 1], ['EG-BCX', 1]], stage: 2, sub: true, discount: 0.2, approvedBy: 'Theo Marsh' },
-      { id: 'EG-10487', client: 'c6', at: iso(-1), source: 'Shopify', items: [['PE-FLU', 2], ['EG-D3K', 1]], stage: 1, sub: true, approvedBy: 'Maya Lindqvist' },
+      { id: 'EG-10487', client: 'c6', at: iso(-1), source: 'Shopify', items: [['PE-FLU', 2], ['EG-D3K', 1]], stage: 1, sub: true, approvedBy: 'Maya Brooks' },
       { id: 'EG-10488', client: 'c8', at: iso(-1), items: [['PE-INF', 1], ['EG-D3K', 1]], stage: 0, sub: true },
       { id: 'EG-10489', client: 'c10', at: iso(0), source: 'Shopify', items: [['PE-THY', 1]], stage: 0, sub: false }
     ];
@@ -376,7 +377,7 @@
     ].map(function (e) { e.start = iso(-7 * (e.week - 1) - 2); return e; });
 
     var emails = [
-      { at: iso(-1), to: 'c14', kind: 'Order shipped', subject: 'Your Evergrove order is on its way' },
+      { at: iso(-1), to: 'c14', kind: 'Order shipped', subject: 'Your Root Cause order is on its way' },
       { at: iso(-1), to: 'c6', kind: 'Refill reminder', subject: 'Running low on Vitamin D3 + K2?' },
       { at: iso(-2), to: 'c9', kind: 'Intake link', subject: 'Before your consultation with Maya' },
       { at: iso(-3), to: 'c1', kind: 'Session notes', subject: 'Your follow-up notes and plan' },
@@ -405,7 +406,7 @@
         terms: '50% deposit on signing, balance due 14 days before the retreat. Guests complete the consent and questionnaire at least 10 days before arrival. Remedy kits ship to the venue for arrival day. Cancellations more than 30 days out are refunded less the deposit.'
       },
       {
-        id: 'q2', title: 'VIP Concierge Renewal', client: 'Nadia Haddad', contact: 'nadia.haddad@example.com',
+        id: 'q2', title: 'VIP Concierge Renewal', client: 'Karen White', contact: 'nadia.haddad@example.com',
         status: 'Signed', sent: iso(-11),
         lines: [['VIP Concierge (12 months)', 12, 189], ['Quarterly lab review', 4, 60]],
         terms: 'Billed monthly. Cancel any time with 30 days notice.'
@@ -417,21 +418,20 @@
       c.videosOwned = [];
       c.dob = String(1 + (i * 5) % 12).padStart(2, '0') + '/' + String(3 + (i * 7) % 25).padStart(2, '0') + '/' + (1968 + (i * 3) % 30);
       c.address = (120 + i * 37) + ' ' + ['Juniper Way', 'Canyon Rd', 'Sage Ave', 'Aspen Ct'][i % 4] + ', ' + ['Salt Lake City', 'Park City', 'Sandy', 'Provo'][i % 4] + ', UT';
-      c.practitioner = ['Theo Marsh', 'Dr. Ana Whitlock, ND', 'Lena Ortiz'][i % 3];
+      c.practitioner = ['Theo Marsh', 'Anna Moore', 'Lena Ortiz'][i % 3];
       c.card = ['Visa', 'Mastercard', 'Amex'][i % 3] + ' \u2022\u2022\u2022\u2022 ' + (4242 + i * 111) % 10000;
       c.packs = []; c.docs = [];
     });
     /* Packages each client has bought; credits are used as appointments are booked. */
-    clients[0].packs = [{ pkg: 'recorded', bought: iso(-5), paid: 500, used: { recorded: 1 } }];
     clients[1].packs = [{ pkg: 'scan', bought: iso(-40), paid: 350, used: { recorded: 1 } }];
-    clients[10].packs = [{ pkg: 'recorded', bought: iso(-12), paid: 500, used: {} }];
+    clients[10].packs = [{ pkg: 'recorded', bought: iso(-42), paid: 500, used: { recorded: 1 } }];
     enrollments.forEach(function (e) {
       var c = clients.filter(function (x) { return x.id === e.client; })[0];
       var has = function (t) { return bookings.some(function (b) { return b.service === t && b.guests[0] === c.id; }); };
       var used = {}; if (has('pkg1') || /Complete|Retest/.test(e.assess)) used.pkg1 = 1; if (has('pkg2')) used.pkg2 = 1;
       c.packs.unshift({ pkg: 'twelve', bought: e.start, paid: 1200, used: used });
     });
-    bookings.forEach(function (b) { if (b.service === 'pkg1' || b.service === 'pkg2') b.pkg = 'twelve'; if (b.service === 'recorded' && (b.guests[0] === 'c1' || b.guests[0] === 'c2')) b.pkg = b.guests[0] === 'c1' ? 'recorded' : 'scan'; });
+    bookings.forEach(function (b) { if (b.service === 'pkg1' || b.service === 'pkg2') b.pkg = 'twelve'; if (b.service === 'recorded' && (b.guests[0] === 'c11' || b.guests[0] === 'c2')) b.pkg = b.guests[0] === 'c11' ? 'recorded' : 'scan'; });
     clients[0].docs = [{ name: 'Blood panel (from her doctor).pdf', at: iso(-50), kind: 'Upload' }];
     clients[4].videosOwned = ['v11'];
     /* Auto-ship credit already earned: $5 a refill, spent on sessions and courses. */
@@ -440,13 +440,14 @@
     clients[9].videosOwned = ['v14'];
     enrollments[3].payIssue = 'Card declined for payment 2 of 3';
 
-    /* Energetic scans done in the clinic. Jane's is published, Aiko's
-       exports are in and waiting for a practitioner, Leila's is booked. */
+    /* Energetic scans done in the clinic. Jane's is published, Amy's
+       exports are in and waiting for a practitioner, Laura's is booked. */
     var scans = [
       { id: 's1', client: 'c1', date: iso(-58), status: 'published', by: 'Theo Marsh', data: null },
       { id: 's2', client: 'c7', date: iso(-1), status: 'uploaded', data: null },
       { id: 's3', client: 'c12', date: iso(-70), status: 'published', by: 'Theo Marsh', data: null },
-      { id: 's4', client: 'c14', date: iso(8), status: 'booked', data: null }
+      { id: 's4', client: 'c14', date: iso(8), status: 'booked', data: null },
+      { id: 's5', client: 'c11', date: iso(-40), status: 'published', by: 'Anna Moore', data: null }
     ];
     scans.forEach(function (sc) { if (sc.status === 'published') sc.data = sampleScan(clients.filter(function (x) { return x.id === sc.client; })[0]); });
 
@@ -479,11 +480,11 @@
       ['c1', 'client', 'Jane Smith', -3, '08:12', 'Is it okay to take the Adrenal Milieu drops in water, or straight under the tongue?', true],
       ['c1', 'team', 'Theo Marsh', -3, '10:40', 'Either works. Under the tongue is best, but a little water is fine if that is easier to stick with.', true],
       ['c1', 'client', 'Jane Smith', 0, '07:55', 'Thank you! Sleeping much better this week. Should I keep the bedtime dose the same?', false],
-      ['c7', 'team', 'Theo Marsh', -1, '16:20', 'Hi Aiko, your scan went well. I will have your report and protocol to you in a day or two.', true],
-      ['c7', 'client', 'Aiko Tanaka', -1, '18:02', 'Great, thank you. I have a work trip next week. Will that be a problem with timing?', false],
-      ['c3', 'client', 'Elena Fuentes', 0, '09:30', 'Can I take Drainage Milieu with my morning coffee, or should I wait?', false],
-      ['c5', 'client', 'Hannah Kowalski', -2, '12:05', 'Is there a workbook to go with the Sleep Reset course?', true],
-      ['c5', 'team', 'Dr. Ana Whitlock, ND', -2, '14:30', 'Yes, it is under lesson 1 as a download. Let me know if you cannot find it.', true]
+      ['c7', 'team', 'Theo Marsh', -1, '16:20', 'Hi Amy, your scan went well. I will have your report and protocol to you in a day or two.', true],
+      ['c7', 'client', 'Amy Clark', -1, '18:02', 'Great, thank you. I have a work trip next week. Will that be a problem with timing?', false],
+      ['c3', 'client', 'Lisa Garcia', 0, '09:30', 'Can I take Drainage Milieu with my morning coffee, or should I wait?', false],
+      ['c5', 'client', 'Sarah Davis', -2, '12:05', 'Is there a workbook to go with the Sleep Reset course?', true],
+      ['c5', 'team', 'Anna Moore', -2, '14:30', 'Yes, it is under lesson 1 as a download. Let me know if you cannot find it.', true]
     ].map(function (m, i) { return { id: 'msg' + i, client: m[0], from: m[1], by: m[2], at: iso(m[3]), time: m[4], text: m[5], read: m[6] }; });
 
     /* Waiver and form templates, built in Waivers & Forms. Each client's
@@ -491,7 +492,7 @@
     var F = function (id, type, label, req, options) { return { id: id, type: type, label: label, req: !!req, options: options || [] }; };
     var forms = [
       { id: 'f1', title: 'Wellness consent', kind: 'Waiver', who: 'everyone', updated: iso(-40),
-        body: 'I understand that Evergrove Wellness offers education and wellness support, not medical diagnosis or treatment. Energetic scans measure resonance, not disease. I will keep seeing my own doctor for medical care and tell my practitioner about any medication I take.',
+        body: 'I understand that Root Cause Clinic offers education and wellness support, not medical diagnosis or treatment. Energetic scans measure resonance, not disease. I will keep seeing my own doctor for medical care and tell my practitioner about any medication I take.',
         fields: [F('a1', 'text', 'Full name', true), F('a2', 'date', 'Date of birth', true), F('a3', 'check', 'I have read and agree to the above', true), F('a4', 'sign', 'Signature', true)] },
       { id: 'f2', title: 'Intake questionnaire', kind: 'Form', who: 'everyone', updated: iso(-40), body: '',
         fields: [F('b1', 'choice', 'What would you most like help with?', true, ['Sleep', 'Stress', 'Digestion', 'Energy', 'Immunity', 'Hormones']), F('b2', 'long', 'Medications and supplements you take now', false), F('b3', 'text', 'Allergies', false), F('b4', 'yesno', 'Are you pregnant or trying to conceive?', true), F('b5', 'yesno', 'Do you take a blood thinner?', true), F('b6', 'yesno', 'Do you have a thyroid condition?', true)] },
@@ -502,7 +503,7 @@
         body: 'The energetic scan is non-invasive and is used to guide wellness recommendations. It is not a medical test. Please do not have a scan if you have a pacemaker or other implanted electronic device.',
         fields: [F('d1', 'yesno', 'Do you have a pacemaker or implanted electronic device?', true), F('d2', 'check', 'I understand the scan is not a medical test', true), F('d3', 'sign', 'Signature', true)] },
       { id: 'f5', title: 'Photo and testimonial release', kind: 'Waiver', who: 'optional', updated: iso(-90),
-        body: 'I give Evergrove Wellness permission to share my testimonial and any photos I provide, using my first name only.',
+        body: 'I give Root Cause Clinic permission to share my testimonial and any photos I provide, using my first name only.',
         fields: [F('e1', 'yesno', 'May we use your photo?', false), F('e2', 'sign', 'Signature', true)] }
     ];
     clients.forEach(function (c) {
@@ -524,21 +525,21 @@
 
     /* What the system did on its own, newest first. */
     var activity = [
-      [0, '07:00', 'Week 12 unlocked for Nadia Haddad. Email sent.'],
+      [0, '07:00', 'Week 12 unlocked for Karen White. Email sent.'],
       [0, '06:45', 'Zoom reminder sent to 5 program members for Thursday 6:00pm.'],
-      [0, '06:30', 'Refill EG-10488 created for Ruth Abernathy. Held for approval (screening flag).'],
-      [-1, '21:14', 'Hannah Kowalski bought the Sleep Reset short course ($79). Access granted, receipt sent.'],
-      [-1, '18:20', 'Marcus Bell booked a 1-hour session with Lena Ortiz ($148). Calendar invite and Zoom link sent.'],
-      [-1, '17:02', 'Tracking 1Z84F2A10411 emailed to Marcus Bell.'],
-      [-1, '15:40', 'Payment 2 of 3 failed for Elena Fuentes. Card-update link sent. Retry in 3 days.'],
-      [-1, '11:08', 'Grace Whitfield finished the free questionnaire. Plan emailed, added to Immunity newsletter.'],
-      [-2, '19:25', 'Leila Moreau enrolled in Evergrove Restore. Welcome pack, Zoom invites and week 1 sent.'],
+      [0, '06:30', 'Refill EG-10488 created for Mary Lewis. Held for approval (screening flag).'],
+      [-1, '21:14', 'Sarah Davis bought the Sleep Reset short course ($79). Access granted, receipt sent.'],
+      [-1, '18:20', 'Mike Brown booked a 1-hour session with Lena Ortiz ($148). Calendar invite and Zoom link sent.'],
+      [-1, '17:02', 'Tracking 1Z84F2A10411 emailed to Mike Brown.'],
+      [-1, '15:40', 'Payment 2 of 3 failed for Lisa Garcia. Card-update link sent. Retry in 3 days.'],
+      [-1, '11:08', 'Emily Young finished the free questionnaire. Plan emailed, added to Immunity newsletter.'],
+      [-2, '19:25', 'Laura King enrolled in WPMP Course. Welcome pack, Zoom invites and week 1 sent.'],
       [-2, '09:12', 'Reorder reminder sent to 6 auto-ship clients.'],
-      [-3, '14:30', 'Grace Whitfield bought Energetics 101 with Theo Marsh ($119). Access granted.']
+      [-3, '14:30', 'Emily Young bought Energetics 101 with Theo Marsh ($119). Access granted.']
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 17, packages: JSON.parse(JSON.stringify(PACKAGES)), forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 18, packages: JSON.parse(JSON.stringify(PACKAGES)), forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };

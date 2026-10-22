@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - Booking Calendar.
+/* Root Cause Clinic showcase - Booking Calendar.
  *
  * The week at a glance for every practitioner, and the rules the automatic
  * booking runs on: which sessions clients can book, when each practitioner is
@@ -60,7 +60,7 @@
     var side = sel ? detail(sel) : cal.add ? addForm(cal.add) : '<div class="card"><h3 class="h3">This week</h3><p class="small muted" style="margin-top:0">' + list.length + ' appointment' + (list.length === 1 ? '' : 's') + ', ' + list.filter(function (b) { return b.zoom; }).length + ' on Zoom. Click one for details, or click an empty time to book.</p>' +
       EG.CERTIFIED.map(function (p) { var n = list.filter(function (b) { return pr(prac(b)).id === p.id; }).length; return '<div class="row small" style="margin-top:.4rem"><span class="caldot" style="--h:' + p.hue + '"></span><span class="grow">' + esc(p.name) + '</span><b>' + n + '</b></div>'; }).join('') + '</div>';
     return '<div class="row" style="justify-content:space-between;margin-bottom:.8rem"><div class="row"><button class="btn ghost small" id="calPrev" aria-label="Previous week">&larr;</button><b>' + U.fmtDate(days[0], { month: 'short', day: 'numeric' }) + ' &ndash; ' + U.fmtDate(days[6], { month: 'short', day: 'numeric' }) + '</b><button class="btn ghost small" id="calNext" aria-label="Next week">&rarr;</button>' + (cal.week ? '<button class="linkish" id="calToday">This week</button>' : '') + '</div>' +
-      '<div class="chips">' + [['all', 'Everyone']].concat(EG.CERTIFIED.map(function (p) { return [p.id, p.name.replace(', ND', '')]; })).map(function (x) { return '<button class="chip small' + (cal.who === x[0] ? ' is-on' : '') + '" data-cwho2="' + x[0] + '">' + esc(x[1]) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="chips">' + [['all', 'Everyone']].concat(EG.CERTIFIED.map(function (p) { return [p.id, p.name]; })).map(function (x) { return '<button class="chip small' + (cal.who === x[0] ? ' is-on' : '') + '" data-cwho2="' + x[0] + '">' + esc(x[1]) + '</button>'; }).join('') + '</div></div>' +
       '<div class="calsplit">' + grid + '<div>' + side + '</div></div>';
   }
 
@@ -91,7 +91,7 @@
   function settings() {
     var cfg = S().bookcfg;
     var tog = function (k, title, sub) { return '<label class="tog"><input type="checkbox" data-cfg="' + k + '"' + (cfg[k] ? ' checked' : '') + '><span class="grow"><b>' + title + '</b><span class="small muted">' + sub + '</span></span></label>'; };
-    return '<div class="split"><div><div class="card" data-tour="bookauto"><h3 class="h3">What happens when a client books</h3><p class="small muted" style="margin-top:0">Clients book from their portal or your booking link: <code>evergrove.example/book</code></p>' +
+    return '<div class="split"><div><div class="card" data-tour="bookauto"><h3 class="h3">What happens when a client books</h3><p class="small muted" style="margin-top:0">Clients book from their portal or your booking link: <code>rootcause.example/book</code></p>' +
         tog('zoom', 'Create a Zoom meeting', 'A unique meeting for every video session, added to the invite') +
         tog('remind24', 'Reminder 24 hours before', 'Email with the Zoom link and any forms still to sign') +
         tog('remind1', 'Reminder 1 hour before', 'With the Zoom link') +

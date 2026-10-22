@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - Home and Client Portal.
+/* Root Cause Clinic showcase - Home and Client Portal.
  *
  * Home is four doors: Client Portal, Shop, Client Report Creator and
  * Protocol Creator, with a checklist and upcoming appointments. Client Portal
@@ -48,7 +48,7 @@
     if (approve) todo.push(['shop', approve + ' order' + (approve > 1 ? 's' : '') + ' waiting for approval']);
     D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', (x.data ? 'Review the report for ' : 'Upload the scan files for ') + U.client(x.client).name]); });
     D.clients.filter(function (c) { return c.member && !EGProto.activeFor(c.id); }).slice(0, 2).forEach(function (c) { todo.push(['protocols:' + c.id, c.name + ' has no protocol yet']); });
-    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Evergrove Wellness</h1><p class="lede">Everything you need to run the practice, in seven places.</p>' +
+    return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Root Cause Clinic</h1><p class="lede">Everything you need to run the practice, in seven places.</p>' +
       '<div class="doors" data-tour="doors">' + doors.map(function (d) {
         return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting|unsigned/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
       }).join('') + '</div>' +
@@ -224,7 +224,7 @@
         var c = { id: 'c' + (D.nextClient++), name: name, email: email, phone: $('#ncPhone').value.trim(), goals: [], diet: 'omnivore', plan: 'client', joined: U.today(), ltv: 0, autoship: false,
           allergies: [], consent: false, intake: false, videos: {}, notes: [], videosOwned: [], forms: {}, packs: [], docs: [], practitioner: $('#ncPrac').value, card: 'No card on file yet', dob: '', address: '', fresh: true };
         D.clients.unshift(c);
-        D.emails.unshift({ at: U.today(), to: c.id, kind: 'Portal invite', subject: 'Welcome to your Evergrove client portal' });
+        D.emails.unshift({ at: U.today(), to: c.id, kind: 'Portal invite', subject: 'Welcome to your Root Cause client portal' });
         U.activity(name + ' added to the client portal. Invite emailed to ' + email + '.');
         var pk = $('#ncPkg').value; if (pk) EGPkg.sell(c, pk, 'team');
         cp.adding = false; cp.id = c.id; cp.tab = 'forms'; U.save(); App.render(); window.scrollTo(0, 0);

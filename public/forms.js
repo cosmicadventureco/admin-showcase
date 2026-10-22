@@ -1,4 +1,4 @@
-/* Evergrove Wellness showcase - Waivers & Forms.
+/* Root Cause Clinic showcase - Waivers & Forms.
  *
  * Templates for every waiver and form: the wording, the fields, and who has
  * to sign it (everyone, Premium members, anyone booked for a scan, or
@@ -30,7 +30,7 @@
   /* The form as the client sees it. Inputs are live in the client portal. */
   function render(f, live) {
     var dis = live ? '' : ' disabled';
-    return '<div class="fdoc" data-tour="formpreview"><div class="fd-head"><span class="pill' + (f.kind === 'Waiver' ? ' honey' : '') + '">' + esc(f.kind) + '</span><h3 class="fd-title">' + esc(f.title || 'Untitled') + '</h3><div class="small muted">Evergrove Wellness</div></div>' +
+    return '<div class="fdoc" data-tour="formpreview"><div class="fd-head"><span class="pill' + (f.kind === 'Waiver' ? ' honey' : '') + '">' + esc(f.kind) + '</span><h3 class="fd-title">' + esc(f.title || 'Untitled') + '</h3><div class="small muted">Root Cause Clinic</div></div>' +
       (f.body ? '<div class="fd-body">' + esc(f.body) + '</div>' : '') +
       f.fields.map(function (x) {
         var lab = '<div class="fd-label">' + esc(x.label || 'Untitled question') + (x.req ? ' <span class="fd-req">*</span>' : '') + '</div>';
