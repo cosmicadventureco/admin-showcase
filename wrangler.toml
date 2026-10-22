@@ -1,14 +1,26 @@
 # Root Cause Clinic - platform showcase.
 #
-# A separate Worker from cosmic-intake on purpose. It has no D1 database, no
-# R2 bucket and no email key, so nothing here can read or write the live
-# intake records. All sample data lives in the visitor's own browser.
+# A separate Worker from cosmic-intake on purpose. It has no D1 database and
+# no R2 bucket, so nothing here can read or write the live intake records.
+# All sample data lives in the visitor's own browser.
+#
+# Its only server code is src/worker.mjs: POST /api/nda emails each signed
+# demo agreement to the owner. That needs one secret, set once:
+#   npx wrangler secret put RESEND_API_KEY
 name = "wellness-showcase"
+main = "src/worker.mjs"
 compatibility_date = "2026-09-01"
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+# Send /api/* to the Worker; everything else is served straight from ./public.
+run_worker_first = ["/api/*"]
+
+[vars]
+FROM_EMAIL = "hello@cosmicadventureco.net"
+NDA_NOTIFY = "cosmicadventureco@gmail.com"
 
 # To serve it on your own domain instead of workers.dev, uncomment and edit:
 # routes = [{ pattern = "showcase.yourdomain.com", custom_domain = true }]

@@ -483,7 +483,11 @@
     var b = document.getElementById('playBtn');
     if (b) b.addEventListener('click', play);
     /* ?play or #play starts it straight away: handy for a kiosk or a recording. */
-    if (/[?&]play\b/.test(location.search) || location.hash === '#play') setTimeout(play, 600);
+    if (/[?&]play\b/.test(location.search) || location.hash === '#play') {
+      /* Wait for the demo agreement first, when it is still unsigned. */
+      if (window.RCCNDA && !window.RCCNDA.signed) document.addEventListener('nda-signed', function () { setTimeout(play, 600); }, { once: true });
+      else setTimeout(play, 600);
+    }
   });
   window.Showcase = { play: play, stop: stop };
 })();
