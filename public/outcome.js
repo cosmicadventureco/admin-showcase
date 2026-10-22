@@ -25,11 +25,8 @@
     ['Newsletters', 'Goal-based emails from questionnaire answers.'],
     ['Video library', 'Free classes and short-course sales in one place.'],
     ['Shared work queue', 'One to-do list for the whole team, with roles.'],
-    ['Automation settings', 'Switches, settings and logs for each automatic job.'],
-    ['Clinic stock batching', 'One weekly supplier order with a pick list.'],
-    ['Shopify store', 'A members-only store feeding the same orders.'],
     ['Quotes and agreements', 'Retreat partnerships, signed online.'],
-    ['Biotics and DesBio carts', 'The same one-click ordering for the other suppliers.']
+    ['WPMP Course', 'Integrate the current course into the client portal.']
   ];
 
   function view() {
