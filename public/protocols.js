@@ -78,7 +78,8 @@
       (d.editing ? '<span class="pill ok">Editing the active protocol</span>' : '<span class="pill">New protocol</span>') + (sc ? '<button class="btn ghost small" id="pcSeeReport">' + (ps.report ? 'Hide' : 'View') + ' client report</button>' : '') + '</div>' +
       (sc && ps.report ? '<div style="margin-bottom:1rem">' + EGScan.reportHtml(sc, true) + '</div>' : '') +
       '<div class="split"><div class="card" data-tour="suggestions"><h3 class="h3">Suggestions</h3>' +
-        (sc ? '<p class="label" style="margin-top:.6rem">From the report of ' + U.fmtDate(sc.date) + '</p>' + sug.filter(function (x) { return x.from === 'report'; }).map(sugRow).join('') : '<p class="small muted">No published report yet. Create one in the Client Report Creator to get remedy suggestions from the scan.</p>') +
+        (sc ? '<div class="row" style="justify-content:space-between;margin-top:.6rem"><p class="label" style="margin:0">From the report of ' + U.fmtDate(sc.date) + ': top ' + sug.filter(function (x) { return x.from === 'report'; }).length + ' remedies</p>' +
+          (sug.some(function (x) { return x.from === 'report' && !have[x.sku]; }) ? '<button class="btn small" id="pcAddAll">Add all from the report</button>' : '') + '</div>' + sug.filter(function (x) { return x.from === 'report'; }).map(sugRow).join('') : '<p class="small muted">No published report yet. Create one in the Client Report Creator to get remedy suggestions from the scan.</p>') +
         '<p class="label" style="margin-top:1rem">From their goals: ' + c.goals.map(EG.goalLabel).join(', ') + '</p>' + sug.filter(function (x) { return x.from === 'goals'; }).slice(0, 4).map(sugRow).join('') + '</div>' +
       '<div class="card" data-tour="builder"><h3 class="h3">' + esc(U.first(c.name)) + '&rsquo;s protocol</h3>' +
         (d.items.length ? d.items.map(function (x, i) {
@@ -106,12 +107,19 @@
         b.addEventListener('click', function () { ps.viewing = b.getAttribute('data-pview'); App.render(); var el = $('#pcReport'); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 90); });
       });
       var hide = $('#pcHide'); if (hide) hide.addEventListener('click', function () { ps.viewing = null; keep(); });
-      var pr = $('#pcPrint'); if (pr) pr.addEventListener('click', function () { U.toast('PDF downloaded (simulated)'); });
+      var pr = $('#pcPrint'); if (pr) pr.addEventListener('click', function () { pdfOf(byId(ps.viewing), pr); });
       return;
     }
     $('#pcBack').addEventListener('click', function () { ps.mode = 'list'; ps.draft = null; App.render(); window.scrollTo(0, 0); });
     var sr = $('#pcSeeReport'); if (sr) sr.addEventListener('click', function () { ps.report = !ps.report; keep(); });
     $('#pcClient').addEventListener('change', function (e) { ps.client = e.target.value; ps.draft = null; ps.report = false; App.render(); });
+    var all = $('#pcAddAll');
+    if (all) all.addEventListener('click', function () {
+      var have = {}; d.items.forEach(function (x) { have[x.sku] = 1; });
+      EG.protoSuggestions(U.client(d.client), latestScan(d.client)).filter(function (x) { return x.from === 'report' && !have[x.sku]; })
+        .forEach(function (x) { d.items.push(EG.protoItem(x.sku, x.dose, x.weeks)); });
+      keep();
+    });
     $$('[data-padd]').forEach(function (b) {
       b.addEventListener('click', function () {
         var sku = b.getAttribute('data-padd'), sug = EG.protoSuggestions(U.client(d.client), latestScan(d.client)).filter(function (x) { return x.sku === sku; })[0] || {};
@@ -153,9 +161,14 @@
       U.save(); U.toast('Order created. It is waiting for approval in Shop.');
     });
     var pdf = $('#pcPdf');
-    if (pdf) pdf.addEventListener('click', function () {
-      U.toast('PDF downloaded (simulated). Published protocols are saved to ' + U.first(c.name) + '’s documents automatically.');
-    });
+    if (pdf) pdf.addEventListener('click', function () { pdfOf(d, pdf); });
+  }
+
+  function pdfOf(p, btn) {
+    var name = U.client(p.client).name + ' - Protocol - ' + (p.start || U.today()) + '.pdf', label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Making the PDF…';
+    EGPdf.save(doc(p, false), name).then(function () { U.toast('Saved ' + name); }, function (e) { U.toast('The PDF could not be made here: ' + e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = label; });
   }
 
   window.EGProto = { doc: doc, activeFor: activeFor, latestScan: latestScan, endDate: endDate, longest: longest };

@@ -76,7 +76,8 @@
     code: { label: 'Code', kind: 'Sarcode' },
     tox: { label: 'Tox', kind: 'Detoxifier homaccord' },
     nutri: { label: 'Nutritional', kind: 'Nutritional supplement' },
-    desbio: { label: 'DesBio', kind: 'Homeopathic formula' }
+    desbio: { label: 'DesBio', kind: 'Homeopathic formula' },
+    remedy: { label: 'Imprinted remedy', kind: 'Imprinted remedy from the scan' }
   };
 
   /* Names are from Physica Energetics' public catalogue. Their prices sit behind
@@ -289,7 +290,20 @@
   }
   function product(sku) {
     for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].sku === sku) return PRODUCTS[i];
-    return null;
+    return remedyProduct(sku);
+  }
+  /* A report remedy that is not a shop product is still something the client
+     takes: "RX:" + its name stands in as the sku, imprinted by the clinic. */
+  var remedyCache = {};
+  function remedySku(name) { return 'RX:' + name; }
+  function remedyProduct(sku) {
+    if (!/^RX:/.test(sku || '')) return null;
+    if (!remedyCache[sku]) {
+      var name = sku.slice(3), hue = 0;
+      for (var i = 0; i < name.length; i++) hue = (hue * 31 + name.charCodeAt(i)) % 360;
+      remedyCache[sku] = { sku: sku, name: name, line: 'remedy', dose: '30 mL imprinted remedy', price: 34, cost: 20.40, supplier: 'physica', goals: {}, tags: [], hue: hue, remedy: true };
+    }
+    return remedyCache[sku];
   }
   function video(id) {
     for (var i = 0; i < VIDEOS.length; i++) if (VIDEOS[i].id === id) return VIDEOS[i];
@@ -676,8 +690,9 @@
     if (scan && scan.data) {
       scan.data.items.filter(function (x) { return x.section === 'Recommended Remedies' && x.include; })
         .sort(function (a, b) { return a.rank - b.rank; }).slice(0, scan.data.limit).forEach(function (x) {
-          var p = PRODUCTS.filter(function (q) { return q.name === x.item; })[0];
-          if (p && !seen[p.sku]) { seen[p.sku] = 1; out.push({ sku: p.sku, from: 'report', why: x.doc + ' ' + x.dil + ' · ' + x.desc, dose: x.qty.replace('Drops', 'drops'), weeks: parseInt(x.dur, 10) || 4 }); }
+          /* Every remedy the report ranks, in its order; shop products where there is one. */
+          var p = PRODUCTS.filter(function (q) { return q.name === x.item; })[0] || product(remedySku(x.item));
+          if (!seen[p.sku]) { seen[p.sku] = 1; out.push({ sku: p.sku, from: 'report', why: x.doc + ' ' + x.dil + (x.desc ? ' · ' + (x.desc.length > 120 ? x.desc.slice(0, x.desc.lastIndexOf(' ', 115)) + '…' : x.desc) : ''), dose: x.qty.replace('Drops', 'drops'), weeks: parseInt(x.dur, 10) || 4 }); }
         });
     }
     recommend(c).picks.forEach(function (x) {
