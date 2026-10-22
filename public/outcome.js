@@ -26,8 +26,7 @@
         ['Packages', 'Recorded Review, Bioresonance Scan and the 12 Week Package, with the appointments each includes. Option to add custom packages.'],
         ['Waivers & Forms', 'Easily editable waivers and forms. The right clients sign them in their portal and the copy is filed.']
       ].map(function (x) { return '<div class="card"><h3 class="h3" style="font-size:1.05rem">' + x[0] + '</h3><p class="small muted" style="margin:0">' + x[1] + '</p></div>'; }).join('') + '</div>' +
-      '<h2 class="h2">Ready to add later, when you want them</h2><div class="later" data-tour="later">' + LATER.map(function (x) { return '<div class="card"><b>' + x[0] + '</b><p class="small muted" style="margin:.2rem 0 0">' + x[1] + '</p></div>'; }).join('') + '</div>' +
-      '<p class="small muted" style="margin-top:.8rem">Most of these are already sketched in this prototype and switched off to keep things simple. Today the sample data lives in the browser; the build adds a proper database.</p>';
+      '<h2 class="h2">Ready to add later, when you want them</h2><div class="later" data-tour="later">' + LATER.map(function (x) { return '<div class="card"><b>' + x[0] + '</b><p class="small muted" style="margin:.2rem 0 0">' + x[1] + '</p></div>'; }).join('') + '</div>';
   }
 
   App.register('outcome', view, function () {});
