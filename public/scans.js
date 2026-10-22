@@ -71,7 +71,8 @@
     var s = st(), D = S(), all = EG.SCAN_SLOTS.every(function (x) { return s.files[x.code]; });
     var clients = D.clients.slice().sort(function (a, b) { return (b.member ? 1 : 0) - (a.member ? 1 : 0) || a.name.localeCompare(b.name); });
     return '<div class="card newrep" data-tour="newreport">' + stepline(0) + '<h3 class="h3" style="margin-top:0">New client report</h3>' +
-      '<div class="row" style="margin-bottom:.9rem"><label for="scClient" style="margin:0">Client</label><select id="scClient" style="width:auto;min-width:16rem">' + clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === s.newClient ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (Premium)' : '') + '</option>'; }).join('') + '</select></div>' +
+      '<div class="row" style="margin-bottom:.9rem"><label for="scClient" style="margin:0">Client</label><select id="scClient" style="width:auto;min-width:16rem">' + clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === s.newClient ? ' selected' : '') + '>' + esc(c.name) + (c.member ? ' (Premium)' : '') + '</option>'; }).join('') + '<option value="new"' + (s.newClient === 'new' ? ' selected' : '') + '>+ New name&hellip;</option></select>' +
+        (s.newClient === 'new' ? '<input type="text" id="scNewName" placeholder="Client&rsquo;s full name" value="' + esc(s.newName || '') + '" style="width:auto;min-width:14rem" autocomplete="off">' : '') + '</div>' +
       '<div class="slots" data-tour="slots">' + EG.SCAN_SLOTS.map(function (x) {
         var f = s.files[x.code];
         return '<label class="slot' + (f ? ' filled' : '') + '"><input type="file" accept=".pdf,.csv,.txt" data-slotfile="' + x.code + '"><b>' + x.code + '</b><span class="small">' + esc(x.label) + '</span><span class="small ' + (f ? 'ok' : 'muted') + '">' + (f ? '&#10003; ' + esc(f) : esc(x.hint) + '. Click to choose the file.') + '</span></label>';
@@ -115,12 +116,29 @@
       '<div class="fsec"><div class="fsec-h">Recommended Remedies <span class="muted">' + rem.length + '</span></div>' + rem.map(function (x) { return findingRow(x, s); }).join('') + '</div></div>' +
       '<div class="row" style="margin-top:1rem"><button class="btn" id="scBuild">Build the report</button><button class="btn ghost" id="scBack">Back to scans</button></div>';
   }
+  /* Supplement wording may describe support, never a treatment: cure, treat,
+     prevent, eliminate, heal and reverse are drug claims. Each flagged word
+     gets a plainer stand-in the practitioner can accept with one click. */
+  var SAFER = { cure: 'support', cures: 'supports', cured: 'supported', treat: 'support', treats: 'supports', prevent: 'help maintain', prevents: 'helps maintain', heal: 'support', heals: 'supports', reverse: 'support', reverses: 'supports' };
+  function saferWord(w) {
+    var l = w.toLowerCase(), out = SAFER[l] || (/^eliminat/.test(l) ? l.replace(/^eliminat(e|es|ed|ing|ion)?/, function (m, e) { return { e: 'process', es: 'processes', ed: 'processed', ing: 'processing', ion: 'processing' }[e || 'e'] || 'process'; }) : l);
+    return w[0] === w[0].toUpperCase() ? out[0].toUpperCase() + out.slice(1) : out;
+  }
+  function suggest(t) { return String(t).replace(/\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b/gi, saferWord); }
+
   function findingRow(x, s) {
-    return '<div class="frow' + (x.include ? '' : ' off') + '" id="fr-' + x.id + '"><input type="checkbox" data-inc="' + x.id + '"' + (x.include ? ' checked' : '') + ' aria-label="Include ' + esc(x.item) + '"><button class="sw ' + x.status + '" data-sw="' + x.id + '" title="' + STATUS[x.status] + ': click to change" aria-label="Status ' + STATUS[x.status] + '"></button>' +
-      '<div class="grow"><b class="small">' + esc(x.item) + (x.code ? ' (' + esc(x.code) + ')' : '') + '</b> <span class="small muted">' + x.doc + ' &middot; ' + esc(x.category) + ' &middot; ' + esc(x.dil) + ' &middot; ' + esc(x.qty) + ' &middot; ' + esc(x.dur) + '</span>' + (x.note ? ' <span class="pill">' + esc(x.note) + '</span>' : '') +
-      '<div class="small">' + esc(x.desc) + '</div>' +
-      (x.claims.length ? '<div class="claimflag">&#9873; Claim language: &ldquo;' + esc(x.claims.join('&rdquo;, &ldquo;')) + '&rdquo;. <button class="linkish" data-edit="' + x.id + '">Edit text</button></div>' : '') +
-      (s.editing === x.id ? '<textarea data-desc="' + x.id + '" rows="2" style="margin-top:.4rem">' + esc(x.desc) + '</textarea>' : '') + '</div></div>';
+    var open = s.editing === x.id;
+    return '<div class="frow' + (x.include ? '' : ' off') + (open ? ' editing' : '') + '" id="fr-' + x.id + '"><input type="checkbox" data-inc="' + x.id + '"' + (x.include ? ' checked' : '') + ' aria-label="Include ' + esc(x.item) + '"><button class="sw ' + x.status + '" data-sw="' + x.id + '" title="' + STATUS[x.status] + ': click to change" aria-label="Status ' + STATUS[x.status] + '"></button>' +
+      '<div class="grow"><div class="frow-top"><span><b class="small">' + esc(x.item) + (x.code ? ' (' + esc(x.code) + ')' : '') + '</b> <span class="small muted">' + x.doc + ' &middot; ' + esc(x.category) + ' &middot; ' + esc(x.dil) + ' &middot; ' + esc(x.qty) + ' &middot; ' + esc(x.dur) + '</span>' + (x.note ? ' <span class="pill">' + esc(x.note) + '</span>' : '') + '</span>' +
+      (open ? '' : '<button class="linkish fedit" data-edit="' + x.id + '">Edit</button>') + '</div>' +
+      (open ? '' : '<div class="small">' + esc(x.desc) + '</div>') +
+      (x.claims.length ? '<div class="claimflag"><b>&#9873; Claim language: &ldquo;' + esc(x.claims.join('&rdquo;, &ldquo;')) + '&rdquo;</b>' +
+        '<span>Supplement and remedy wording can say a product <i>supports</i> the body, but not that it cures, treats, prevents, heals or eliminates anything. Those are drug claims under FDA and FTC rules, so they put the clinic at risk if a client reads them.</span>' +
+        '<span class="sugg">Suggested: &ldquo;' + esc(suggest(x.desc)) + '&rdquo;</span>' +
+        '<span class="row" style="gap:.4rem"><button class="btn small" data-sugg="' + x.id + '">Use suggested wording</button>' + (open ? '' : '<button class="btn ghost small" data-edit="' + x.id + '">Edit text myself</button>') + '</span></div>' : '') +
+      (open ? '<div class="fedit-box"><label for="fd-' + x.id + '">Description in the report</label><textarea id="fd-' + x.id + '" data-desc="' + x.id + '" rows="2">' + esc(x.desc) + '</textarea>' +
+        '<div class="fedit-row">' + [['dil', 'Dilution'], ['qty', 'Amount'], ['dur', 'How long']].map(function (f) { return '<div><label for="ff-' + f[0] + '-' + x.id + '">' + f[1] + '</label><input id="ff-' + f[0] + '-' + x.id + '" type="text" data-ffield="' + f[0] + '" data-fid="' + x.id + '" value="' + esc(x[f[0]]) + '"></div>'; }).join('') + '</div>' +
+        '<button class="btn small" data-done="' + x.id + '">Done</button></div>' : '') + '</div></div>';
   }
 
   function finalView(sc) {
@@ -152,13 +170,23 @@
       });
     });
     $$('[data-scfiles]').forEach(function (b) { b.addEventListener('click', function () { s.newClient = b.getAttribute('data-scfiles'); s.files = {}; App.render(); window.scrollTo(0, 0); }); });
-    var pick = $('#scClient'); if (pick) pick.addEventListener('change', function () { s.newClient = pick.value; s.files = {}; App.render(); });
+    var pick = $('#scClient'); if (pick) pick.addEventListener('change', function () { s.newClient = pick.value; s.files = {}; App.render(); var nn = $('#scNewName'); if (nn) nn.focus(); });
+    var nn = $('#scNewName'); if (nn) nn.addEventListener('input', function () { s.newName = nn.value; });
     $$('[data-slotfile]').forEach(function (inp) { inp.addEventListener('change', function () { if (inp.files[0]) { s.files[inp.getAttribute('data-slotfile')] = inp.files[0].name; App.render(); } }); });
-    var nb = slug(U.client(s.newClient || 'c7').name);
+    var nbc = U.client(s.newClient || 'c7'), nb = slug(nbc ? nbc.name : (s.newName || 'new client'));
     var all = $('#scAll'); if (all) all.addEventListener('click', function () { EG.SCAN_SLOTS.forEach(function (x) { s.files[x.code] = nb + '_' + x.code + '.pdf'; }); App.render(); });
     var ex = $('#scExtract');
     if (ex) ex.addEventListener('click', function () {
-      var c = U.client(s.newClient), D = S();
+      var D = S();
+      /* A typed name becomes a client record first, so the report has somewhere to live. */
+      if (s.newClient === 'new') {
+        var nm = (s.newName || '').trim();
+        if (!nm) { U.toast('Type the client’s name first.'); var f = $('#scNewName'); if (f) f.focus(); return; }
+        var nc = { id: 'c' + (D.nextClient++), name: nm, email: '', phone: '', goals: [], diet: 'omnivore', plan: 'client', joined: U.today(), ltv: 0, autoship: false,
+          allergies: [], consent: false, intake: false, videos: {}, notes: [], videosOwned: [], forms: {}, packs: [], docs: [], practitioner: 'Deana', card: 'No card on file yet', dob: '', address: '', fresh: true };
+        D.clients.unshift(nc); U.activity(nm + ' added from the Client Report Creator.'); s.newClient = nc.id; s.newName = '';
+      }
+      var c = U.client(s.newClient);
       /* Attach the files to the scan already on record, or start a new one. */
       var sc = D.scans.filter(function (x) { return x.client === c.id && !x.data && x.status !== 'published'; })[0];
       if (!sc) { sc = { id: 's' + Date.now(), client: c.id, date: U.today(), status: 'uploaded', data: null }; D.scans.push(sc); }
@@ -198,13 +226,17 @@
       b.addEventListener('click', function () { var x = item(b.getAttribute('data-sw')), o = ['none', 'stressed', 'weakened', 'balanced']; x.status = o[(o.indexOf(x.status) + 1) % 4]; U.save(); keepScroll(); });
     });
     $$('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { s.editing = b.getAttribute('data-edit'); keepScroll(); var t = $('[data-desc]'); if (t) t.focus(); }); });
+    /* Edits save as you type; the row redraws on Done, not on blur, so a click on the next button is never swallowed. */
     $$('[data-desc]').forEach(function (t) {
       t.addEventListener('input', function () { var x = item(t.getAttribute('data-desc')); x.desc = t.value; x.claims = EG.claimWords(t.value); U.save(); });
-      /* No redraw on blur: it would swallow a click on the next button. */
-      t.addEventListener('blur', function () { s.editing = null; });
+    });
+    $$('[data-ffield]').forEach(function (i) { i.addEventListener('input', function () { item(i.getAttribute('data-fid'))[i.getAttribute('data-ffield')] = i.value; U.save(); }); });
+    $$('[data-done]').forEach(function (b) { b.addEventListener('click', function () { s.editing = null; keepScroll(); }); });
+    $$('[data-sugg]').forEach(function (b) {
+      b.addEventListener('click', function () { var x = item(b.getAttribute('data-sugg')); x.desc = suggest(x.desc); x.claims = EG.claimWords(x.desc); s.editing = null; U.save(); keepScroll(); U.toast('Reworded. The flag is cleared.'); });
     });
     var age = $('#scAge'); if (age) age.addEventListener('change', function () { d.ageEst = age.value; U.save(); });
-    var build = $('#scBuild'); if (build) build.addEventListener('click', function () { go('final'); });
+    var build = $('#scBuild'); if (build) build.addEventListener('click', function () { s.editing = null; go('final'); });
     /* final */
     var edit = $('#scEdit'); if (edit) edit.addEventListener('click', function () { go('review'); });
     var sign = $('#scSign'); if (sign) sign.addEventListener('change', function () { s.signed = sign.checked; $('#scPublish').disabled = !sign.checked; });

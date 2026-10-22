@@ -267,7 +267,7 @@
       await sleep(300);
       say('Check it, then sign off', 'Readings and remedies are pulled out and ranked. Flagged supplier wording is reworded before it goes out.');
       await spot('[data-tour="remedies"]', 2000);
-      if (document.querySelector('[data-edit]')) { await click('[data-edit]', { after: 400 }); await type('[data-desc]', 'Chosen to support a calmer inflammatory pattern.', 14); }
+      if (document.querySelector('.claimflag [data-sugg]')) { await spot('.claimflag', 1800); await click('.claimflag [data-sugg]', { after: 600 }); }
       await click('#scBuild', { after: 700 });
       await click('#scSign', { after: 300 });
       await click('#scPublish', { after: 1000 });

@@ -858,3 +858,14 @@ label.slot:hover { border-color: var(--sage); }
 .cmob { max-width: 76rem; margin: 0 auto; }
 .cmob .phone { max-width: 26rem; margin: 0 auto; }
 @media (max-width: 900px) { .cmob .phone { width: 100%; } }
+.frow-top { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; }
+.frow .fedit { flex: none; font-size: .78rem; }
+.claimflag { display: flex; flex-direction: column; gap: .35rem; padding: .55rem .7rem; margin-top: .45rem; line-height: 1.45; }
+.claimflag b { font-weight: 600; }
+.claimflag .sugg { color: var(--ink); }
+.fedit-box { display: grid; gap: .5rem; margin-top: .5rem; padding: .7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.fedit-box label { margin-bottom: .2rem; }
+.fedit-box .btn { justify-self: start; }
+.fedit-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+@media (max-width: 560px) { .fedit-row { grid-template-columns: minmax(0, 1fr); } }
+.frow.editing { background: var(--sunk); border-radius: 8px; padding-inline: .4rem; }
