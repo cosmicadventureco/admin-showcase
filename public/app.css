@@ -685,9 +685,9 @@ body.clientmode:not(.clientdesk) .caption { left: auto; right: max(16px, env(saf
 
 /* Report creator: new report card */
 .newrep { border: 1.5px solid var(--deep); }
-.newrep .stepline { display: flex; gap: .4rem; flex-wrap: wrap; margin: .2rem 0 .9rem; }
-.newrep .stepline span { font-size: .72rem; padding: .2rem .6rem; border-radius: 999px; background: var(--line); color: var(--muted); }
-.newrep .stepline span.on { background: var(--deep); color: var(--bg); }
+.stepline { display: flex; gap: .4rem; flex-wrap: wrap; margin: .2rem 0 .9rem; }
+.stepline span { font-size: .72rem; padding: .2rem .6rem; border-radius: 999px; background: var(--line); color: var(--muted); }
+.stepline span.on { background: var(--deep); color: var(--bg); }
 .slot input[type=file] { display: none; }
 label.slot { font-size: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; margin: 0; }
 label.slot:hover { border-color: var(--sage); }
