@@ -43,7 +43,7 @@
   function draftFor(id) {
     var a = activeFor(id);
     if (a) { var d = clone(a); d.editing = a.id; return d; }
-    return { id: null, client: id, status: 'draft', created: U.today(), start: EG.iso(2), by: 'Theo Marsh', items: [], note: '' };
+    return { id: null, client: id, status: 'draft', created: U.today(), start: EG.iso(2), by: 'Deana', items: [], note: '' };
   }
 
   /* Every protocol, newest first, each with its report one click away. */

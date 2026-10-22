@@ -42,7 +42,7 @@
     return '<div class="rr' + (compact ? ' compact' : '') + '" data-tour="report">' +
       '<div class="rr-banner"><div class="rr-title">Root Cause Resonance Map</div><div class="rr-sub">Energetic scan report &middot; sample brand, sample data</div>' +
       '<div class="rr-grid">' + [['Client', c.name], ['Scan date', U.fmtDate(sc.date, { month: 'short', day: 'numeric', year: 'numeric' })], ['Date of birth', dob],
-        ['Practitioner', sc.by || 'Theo Marsh'], ['Approx. age imbalances began', d.ageEst], ['Course week', (U.enrollment(c.id) || { week: 1 }).week + ' of 12']].map(function (x) { return '<div><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>' +
+        ['Practitioner', sc.by || 'Deana'], ['Approx. age imbalances began', d.ageEst], ['Course week', (U.enrollment(c.id) || { week: 1 }).week + ' of 12']].map(function (x) { return '<div><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>' +
       (compact ? '' : '<p class="rr-welcome">This report turns your scan into three parts: which body systems stood out, what the scan linked them to, and the remedies your practitioner chose in priority order. The dials show energetic resonance. They are not a diagnosis and not a measure of how well an organ works.</p>') + '</div>' +
       '<div class="rr-body"><div class="rr-h">Organ systems</div>' + organs.map(function (o) {
         var stt = scoreState(o.score);
@@ -127,7 +127,7 @@
     var c = U.client(sc.client), s = st(), done = sc.status === 'published';
     return '<div class="card" style="margin-bottom:1rem">' + stepline(done ? 3 : 2) + '<div class="row" style="justify-content:space-between"><h3 class="h3" style="margin:0">' + (done ? 'Published to ' + esc(c.name) + '&rsquo;s app' : 'Report ready to publish') + '</h3>' + (done ? '<span class="pill ok">Signed off by ' + esc(sc.by) + '</span>' : '') + '</div>' +
       (done ? '<p class="small muted">Saved to ' + esc(U.first(c.name)) + '&rsquo;s documents in the Client Portal and published to their app. ' + esc(U.first(c.name)) + ' was emailed.</p><div class="row"><button class="btn" id="scProto">Next: build the protocol</button><button class="btn ghost" id="scDocs">Open in Client Portal</button><button class="btn ghost" id="scSeeApp">See it in the client app</button><button class="btn ghost" id="scPdf">Download PDF</button><button class="btn ghost" id="scBack">Back to scans</button></div>'
-        : '<label class="check" style="margin:.8rem 0" data-tour="signoff"><input type="checkbox" id="scSign"' + (s.signed ? ' checked' : '') + '> I have reviewed this report and it is ready for the client. <span class="muted">(Theo Marsh, Certified Energetics Practitioner)</span></label>' +
+        : '<label class="check" style="margin:.8rem 0" data-tour="signoff"><input type="checkbox" id="scSign"' + (s.signed ? ' checked' : '') + '> I have reviewed this report and it is ready for the client. <span class="muted">(Deana, Certified Energetics Practitioner)</span></label>' +
           '<div class="row"><button class="btn" id="scPublish"' + (s.signed ? '' : ' disabled') + '>Publish to client app</button><button class="btn ghost" id="scEdit">Back to edit</button><button class="btn ghost" id="scPdf">Download PDF</button></div>') + '</div>' +
       reportHtml(sc, false);
   }
@@ -211,10 +211,10 @@
     var pub = $('#scPublish');
     if (pub) pub.addEventListener('click', function () {
       if (d.items.some(function (x) { return x.include && x.claims.length; })) { U.toast('Reword the flagged claim language first.'); go('review'); return; }
-      sc.status = 'published'; sc.by = 'Theo Marsh';
+      sc.status = 'published'; sc.by = 'Deana';
       var e = U.enrollment(c.id); if (e) e.assess = 'Complete';
       S().emails.unshift({ at: U.today(), to: c.id, kind: 'Scan report', subject: 'Your Root Cause Resonance Map is ready' });
-      U.activity('Scan report for ' + c.name + ' signed off by Theo Marsh and published to the client app. Client emailed; ' + remedies(d).slice(0, d.limit).length + ' remedies ready to order.');
+      U.activity('Scan report for ' + c.name + ' signed off by Deana and published to the client app. Client emailed; ' + remedies(d).slice(0, d.limit).length + ' remedies ready to order.');
       U.save(); App.render(); U.toast('Published. ' + U.first(c.name) + ' has been emailed.');
     });
     var pdf = $('#scPdf'); if (pdf) pdf.addEventListener('click', function () { U.toast('PDF saved to ' + c.name + '’s record (simulated)'); });

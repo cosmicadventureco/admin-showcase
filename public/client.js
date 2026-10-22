@@ -59,11 +59,11 @@
     return [
       ['reports', 'Client Reports', pubs.length ? pubs.length + ' report' + (pubs.length > 1 ? 's' : '') + ', latest ' + U.fmtDate(pubs[pubs.length - 1].date, { month: 'short', day: 'numeric' }) : 'Appears after your scan'],
       ['protocol', 'Protocols', pr ? 'Next: ' + slot[1].toLowerCase() + ', ' + slot[2] : 'Being prepared'],
-      ['course', 'WPMP Course', U.enrollment(c.id) ? 'Week ' + U.enrollment(c.id).week + ' of 12' : 'Twelve weeks with a practitioner'],
       ['shop', 'Shop', orders ? orders + ' order' + (orders > 1 ? 's' : '') + ' on the way' : c.member ? '20% member pricing' : 'Your remedies'],
       ['appts', 'Appointments', next ? U.fmtDate(next.date, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + U.fmtTime(next.time) : 'Book a session'],
       ['packages', 'Packages', packs(c).length ? packs(c).map(function (p) { return p.short; }).join(' \u00b7 ') : 'Recorded Review, scan, 12 weeks'],
-      ['billing', 'Billing & Payments', due ? (due[3] === 'Failed' ? 'Payment needs attention' : 'Next ' + money(due[2], false) + ' on ' + U.fmtDate(due[0], { month: 'short', day: 'numeric' })) : 'All paid up']
+      ['billing', 'Billing & Payments', due ? (due[3] === 'Failed' ? 'Payment needs attention' : 'Next ' + money(due[2], false) + ' on ' + U.fmtDate(due[0], { month: 'short', day: 'numeric' })) : 'All paid up'],
+      ['course', 'WPMP Course', U.enrollment(c.id) ? 'Week ' + U.enrollment(c.id).week + ' of 12' : 'Twelve weeks with a practitioner']
     ];
   }
   /* A look at their latest report and today's protocol, straight from Home. */
@@ -97,7 +97,7 @@
       previews(c) +
       '<div class="ca-pair">' +
       (next ? '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Next appointment</p><b class="small">' + esc(EGCal.label(next)) + '</b><div class="small muted">' + U.fmtDate(next.date, { weekday: 'long', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(next.time) + ' &middot; with ' + esc(EGCal.prac(next)) + '</div>' + (next.zoom ? '<button class="btn small" data-czoom="' + next.id + '" style="margin-top:.6rem">Join Zoom</button>' : '<div class="small muted">' + esc(next.where) + '</div>') + '</div>' : '') +
-      '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Messages</p>' + (last ? '<div class="small"><b>' + esc(last.by) + '</b></div><div class="small muted ca-clip">' + esc(last.text) + '</div>' : '<div class="small muted">Questions about your protocol or an order? Message ' + esc(c.practitioner) + '.</div>') + '<button class="btn ghost small" data-ctab="msg" style="margin-top:.6rem">Message Practitioner</button></div></div>';
+      '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Messages</p>' + (last ? '<div class="small row" style="justify-content:space-between"><b>' + esc(last.by) + '</b><span class="muted">' + U.fmtDate(last.at, { month: 'short', day: 'numeric' }) + (last.time ? ', ' + U.fmtTime(last.time) : '') + '</span></div><div class="small muted ca-clip">' + esc(last.text) + '</div>' : '<div class="small muted">Questions about your protocol or an order? Message ' + esc(c.practitioner) + '.</div>') + '<button class="btn ghost small" data-ctab="msg" style="margin-top:.6rem">Message Practitioner</button></div></div>';
   }
   /* The thread with their practitioner. Replies come from the Client Portal. */
   function thread(c) { return (S().messages || []).filter(function (m) { return m.client === c.id; }); }
@@ -350,12 +350,12 @@
   function svg(k, n) { return '<svg width="' + (n || 20) + '" height="' + (n || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + '</svg>'; }
   /* The six main sections, plus Home. Messages and the course videos sit under More. */
   function navFor(c) {
-    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['course', 'WPMP Course'], ['shop', 'Shop'], ['appts', 'Appointments'], ['packages', 'Packages'], ['billing', 'Billing & Payments']];
+    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['shop', 'Shop'], ['appts', 'Appointments'], ['packages', 'Packages'], ['billing', 'Billing & Payments'], ['course', 'WPMP Course']];
     var more = [['msg', 'Messages'], ['me', 'Account']];
     return { main: main, more: more };
   }
-  /* On a phone the bottom bar holds five; the rest sit under More. */
-  var PHONE = ['home', 'reports', 'protocol', 'course', 'more'];
+  /* On a phone the bottom bar holds five; the rest, ending with the WPMP Course, sit under More. */
+  var PHONE = ['home', 'reports', 'protocol', 'shop', 'more'];
   function moreScreen(c) {
     var nav = navFor(c), rest = nav.main.filter(function (t) { return PHONE.indexOf(t[0]) < 0; }).concat(nav.more);
     return '<h2 class="ca-title">More</h2>' + rest.map(function (t) { return '<button class="ca-card ca-morerow" data-ctab="' + t[0] + '">' + svg(t[0], 20) + '<b class="grow">' + t[1] + '</b><span class="muted">&rsaquo;</span></button>'; }).join('');

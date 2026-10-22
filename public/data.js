@@ -121,7 +121,7 @@
     { id: 'v11', title: 'Sleep Reset', mins: 52, lessons: 4, price: 79, goals: ['sleep'], views: 1380, hue: 238, access: 'paid' },
     { id: 'v12', title: 'Stress & Adrenals Deep Dive', mins: 74, lessons: 5, price: 99, goals: ['stress', 'energy'], views: 1612, hue: 30, access: 'paid' },
     { id: 'v13', title: 'Detox Done Gently', mins: 61, lessons: 4, price: 89, goals: ['detox', 'digestion'], views: 990, hue: 160, access: 'paid' },
-    { id: 'v14', title: 'Energetics 101 with Theo Marsh', mins: 96, lessons: 6, price: 119, goals: ['energy', 'focus', 'immunity'], views: 1204, hue: 280, access: 'paid' },
+    { id: 'v14', title: 'Energetics 101 with Deana', mins: 96, lessons: 6, price: 119, goals: ['energy', 'focus', 'immunity'], views: 1204, hue: 280, access: 'paid' },
     { id: 'v15', title: 'Gut Reset in 14 Days', mins: 70, lessons: 5, price: 99, goals: ['digestion', 'immunity'], views: 1105, hue: 110, access: 'paid' },
     { id: 'v7', title: 'Guided Meditation Series', mins: 40, lessons: 3, price: 59, goals: ['sleep', 'stress'], views: 7015, hue: 290, access: 'paid' },
     { id: 'v8', title: 'Strength Basics for Bone Health', mins: 44, lessons: 3, price: 69, goals: ['joints', 'energy'], views: 1960, hue: 350, access: 'paid' },
@@ -133,7 +133,7 @@
   /* One-to-one sessions with a Certified Practitioner. */
   var SESSION = { base: 99, mins: 30, upgrade: 49, upgradeMins: 60, premiumOff: 0.25 };
   var CERTIFIED = [
-    { id: 'p1', name: 'Theo Marsh', role: 'Certified Energetics Practitioner', hue: 280 },
+    { id: 'p1', name: 'Deana', role: 'Certified Energetics Practitioner', hue: 280 },
     { id: 'p2', name: 'Anna Moore', role: 'Certified Practitioner', hue: 160 },
     { id: 'p3', name: 'Lena Ortiz', role: 'Certified Wellness Practitioner', hue: 30 }
   ];
@@ -195,7 +195,7 @@
   };
   var PRACTITIONERS = [
     { name: 'Maya Brooks', role: 'Founder, wellness coach' },
-    { name: 'Theo Marsh', role: 'Energetics practitioner' },
+    { name: 'Deana', role: 'Energetics practitioner' },
     { name: 'Anna Moore', role: 'Certified Practitioner' }
   ];
   var MODULES = [
@@ -337,21 +337,21 @@
 
     var bookings = [
       { id: 'b1', service: 'review60', date: iso(0), time: '09:30', guests: ['c9'], where: 'Video call', with: 'Lena Ortiz' },
-      { id: 'b2', service: 'recorded', date: iso(0), time: '13:00', guests: ['c2'], where: 'Recorded', with: 'Theo Marsh' },
-      { id: 'b3', service: 'review60', date: iso(3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh', paid: 165 },
-      { id: 'b4', service: 'pkg1', date: iso(2), time: '10:00', guests: ['c3'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b2', service: 'recorded', date: iso(0), time: '13:00', guests: ['c2'], where: 'Recorded', with: 'Deana' },
+      { id: 'b3', service: 'review60', date: iso(3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Deana', paid: 165 },
+      { id: 'b4', service: 'pkg1', date: iso(2), time: '10:00', guests: ['c3'], where: 'Studio', with: 'Deana' },
       { id: 'b5', service: 'review60', date: iso(4), time: '12:00', guests: ['c11'], where: 'Video call', with: 'Anna Moore' },
-      { id: 'b6', service: 'review60', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call', with: 'Theo Marsh' },
-      { id: 'b7', service: 'pkg1', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b6', service: 'review60', date: iso(6), time: '16:30', guests: ['c7'], where: 'Video call', with: 'Deana' },
+      { id: 'b7', service: 'pkg1', date: iso(8), time: '11:00', guests: ['c14'], where: 'Studio', with: 'Deana' },
       { id: 'b8', service: 'recorded', date: iso(11), time: '09:00', guests: ['c6'], where: 'Recorded', with: 'Anna Moore' },
-      { id: 'b9', service: 'pkg2', date: iso(15), time: '15:00', guests: ['c12'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b9', service: 'pkg2', date: iso(15), time: '15:00', guests: ['c12'], where: 'Studio', with: 'Deana' },
       { id: 'b10', service: 'review60', date: iso(19), time: '14:00', guests: ['c13'], where: 'Video call', with: 'Lena Ortiz' },
-      { id: 'b11', service: 'review60', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh' },
+      { id: 'b11', service: 'review60', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Deana' },
       { id: 'b12', service: 'review60', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Video call', with: 'Anna Moore' },
       { id: 'b13', service: 'review60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 165 },
-      { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Theo Marsh', paid: 500 },
-      { id: 'b15', service: 'pkg2', date: iso(14), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
-      { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
+      { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Deana', paid: 500 },
+      { id: 'b15', service: 'pkg2', date: iso(14), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Deana' },
+      { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Deana' },
       { id: 'b17', service: 'recorded', date: iso(-30), time: '10:00', guests: ['c11'], where: 'Recorded', with: 'Anna Moore', video: true }
     ];
 
@@ -359,9 +359,9 @@
     var orders = [
       { id: 'EG-10482', client: 'c12', at: iso(-6), items: [['PE-RLX', 1], ['PE-ADM', 1], ['EG-MAG', 1]], stage: 4, tracking: '1Z84F2A10398', sub: true, discount: 0.2, approvedBy: 'Maya Brooks' },
       { id: 'EG-10483', client: 'c7', at: iso(-5), items: [['PE-DRN', 1], ['EG-PRO', 1]], stage: 4, tracking: '9400 1112 0274', sub: true, discount: 0.2, approvedBy: 'Maya Brooks' },
-      { id: 'EG-10484', client: 'c2', at: iso(-4), items: [['PE-INF', 1], ['EG-OM3', 1]], stage: 3, tracking: '1Z84F2A10411', sub: true, approvedBy: 'Theo Marsh' },
+      { id: 'EG-10484', client: 'c2', at: iso(-4), items: [['PE-INF', 1], ['EG-OM3', 1]], stage: 3, tracking: '1Z84F2A10411', sub: true, approvedBy: 'Deana' },
       { id: 'EG-10485', client: 'c4', at: iso(-3), source: 'Shopify', items: [['PE-MET', 1]], stage: 3, tracking: '9400 1112 0298', sub: false, approvedBy: 'Maya Brooks' },
-      { id: 'EG-10486', client: 'c14', at: iso(-2), items: [['PE-MTL', 1], ['EG-BCX', 1]], stage: 2, sub: true, discount: 0.2, approvedBy: 'Theo Marsh' },
+      { id: 'EG-10486', client: 'c14', at: iso(-2), items: [['PE-MTL', 1], ['EG-BCX', 1]], stage: 2, sub: true, discount: 0.2, approvedBy: 'Deana' },
       { id: 'EG-10487', client: 'c6', at: iso(-1), source: 'Shopify', items: [['PE-FLU', 2], ['EG-D3K', 1]], stage: 1, sub: true, approvedBy: 'Maya Brooks' },
       { id: 'EG-10488', client: 'c8', at: iso(-1), items: [['PE-INF', 1], ['EG-D3K', 1]], stage: 0, sub: true },
       { id: 'EG-10489', client: 'c10', at: iso(0), source: 'Shopify', items: [['PE-THY', 1]], stage: 0, sub: false }
@@ -418,7 +418,7 @@
       c.videosOwned = [];
       c.dob = String(1 + (i * 5) % 12).padStart(2, '0') + '/' + String(3 + (i * 7) % 25).padStart(2, '0') + '/' + (1968 + (i * 3) % 30);
       c.address = (120 + i * 37) + ' ' + ['Juniper Way', 'Canyon Rd', 'Sage Ave', 'Aspen Ct'][i % 4] + ', ' + ['Salt Lake City', 'Park City', 'Sandy', 'Provo'][i % 4] + ', UT';
-      c.practitioner = ['Theo Marsh', 'Anna Moore', 'Lena Ortiz'][i % 3];
+      c.practitioner = ['Deana', 'Anna Moore', 'Lena Ortiz'][i % 3];
       c.card = ['Visa', 'Mastercard', 'Amex'][i % 3] + ' \u2022\u2022\u2022\u2022 ' + (4242 + i * 111) % 10000;
       c.packs = []; c.docs = [];
     });
@@ -443,9 +443,9 @@
     /* Energetic scans done in the clinic. Jane's is published, Amy's
        exports are in and waiting for a practitioner, Laura's is booked. */
     var scans = [
-      { id: 's1', client: 'c1', date: iso(-58), status: 'published', by: 'Theo Marsh', data: null },
+      { id: 's1', client: 'c1', date: iso(-58), status: 'published', by: 'Deana', data: null },
       { id: 's2', client: 'c7', date: iso(-1), status: 'uploaded', data: null },
-      { id: 's3', client: 'c12', date: iso(-70), status: 'published', by: 'Theo Marsh', data: null },
+      { id: 's3', client: 'c12', date: iso(-70), status: 'published', by: 'Deana', data: null },
       { id: 's4', client: 'c14', date: iso(8), status: 'booked', data: null },
       { id: 's5', client: 'c11', date: iso(-40), status: 'published', by: 'Anna Moore', data: null }
     ];
@@ -455,7 +455,7 @@
     var protocols = scans.filter(function (sc) { return sc.status === 'published'; }).map(function (sc, i) {
       var c = clients.filter(function (x) { return x.id === sc.client; })[0];
       var items = protoSuggestions(c, sc).filter(function (x) { return x.from === 'report'; }).slice(0, 5).map(function (x) { return protoItem(x.sku, x.dose, x.weeks); });
-      return { id: 'p' + (i + 1), client: c.id, status: 'active', created: iso(-55 + i * 10), start: iso(-54 + i * 10), by: 'Theo Marsh', items: items,
+      return { id: 'p' + (i + 1), client: c.id, status: 'active', created: iso(-55 + i * 10), start: iso(-54 + i * 10), by: 'Deana', items: items,
         note: 'Start with the morning remedies for the first three days, then add the evening ones. Drink plenty of water while the drainage remedies are working.' };
     });
 
@@ -478,9 +478,9 @@
     /* Conversations between clients and their practitioner, from the app. */
     var messages = [
       ['c1', 'client', 'Jane Smith', -3, '08:12', 'Is it okay to take the Adrenal Milieu drops in water, or straight under the tongue?', true],
-      ['c1', 'team', 'Theo Marsh', -3, '10:40', 'Either works. Under the tongue is best, but a little water is fine if that is easier to stick with.', true],
+      ['c1', 'team', 'Deana', -3, '10:40', 'Either works. Under the tongue is best, but a little water is fine if that is easier to stick with.', true],
       ['c1', 'client', 'Jane Smith', 0, '07:55', 'Thank you! Sleeping much better this week. Should I keep the bedtime dose the same?', false],
-      ['c7', 'team', 'Theo Marsh', -1, '16:20', 'Hi Amy, your scan went well. I will have your report and protocol to you in a day or two.', true],
+      ['c7', 'team', 'Deana', -1, '16:20', 'Hi Amy, your scan went well. I will have your report and protocol to you in a day or two.', true],
       ['c7', 'client', 'Amy Clark', -1, '18:02', 'Great, thank you. I have a work trip next week. Will that be a problem with timing?', false],
       ['c3', 'client', 'Lisa Garcia', 0, '09:30', 'Can I take Drainage Milieu with my morning coffee, or should I wait?', false],
       ['c5', 'client', 'Sarah Davis', -2, '12:05', 'Is there a workbook to go with the Sleep Reset course?', true],
@@ -535,7 +535,7 @@
       [-1, '11:08', 'Emily Young finished the free questionnaire. Plan emailed, added to Immunity newsletter.'],
       [-2, '19:25', 'Laura King enrolled in WPMP Course. Welcome pack, Zoom invites and week 1 sent.'],
       [-2, '09:12', 'Reorder reminder sent to 6 auto-ship clients.'],
-      [-3, '14:30', 'Emily Young bought Energetics 101 with Theo Marsh ($119). Access granted.']
+      [-3, '14:30', 'Emily Young bought Energetics 101 with Deana ($119). Access granted.']
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {

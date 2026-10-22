@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'rootcause-showcase-v19';
+  var KEY = 'rootcause-showcase-v20';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
@@ -1012,7 +1012,7 @@
       '<div class="guest" data-tour="welcome"><div class="result-hero"><div class="check-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg></div>' +
       '<div><p class="eyebrow" style="margin:0">Welcome, ' + esc(first(c.name)) + '</p><h2 class="h1" style="margin:0">You&rsquo;re enrolled</h2></div></div>' +
       '<p class="muted">Your twelve weeks start now. Week 1 is unlocked, and your course will be shaped by your assessment and goals. Your track: <b>' + esc(EG.trackFor(c.goals)) + '</b>.</p>' +
-      '<div class="grid g2" style="margin-top:1rem"><div class="pick"><div class="grow"><div class="title">Book your energetics assessment</div><div class="why">75 minutes with Theo Marsh</div></div><button type="button" class="btn small">Pick a time</button></div>' +
+      '<div class="grid g2" style="margin-top:1rem"><div class="pick"><div class="grow"><div class="title">Book your energetics assessment</div><div class="why">75 minutes with Deana</div></div><button type="button" class="btn small">Pick a time</button></div>' +
       '<div class="pick"><div class="grow"><div class="title">Week 1: ' + esc(mods[0].title) + '</div><div class="why">' + mods[0].vids + ' videos &middot; ' + mods[0].mins + ' min &middot; workbook</div></div><button type="button" class="btn ghost small">Watch</button></div></div>' +
       '</div></div>' +
       '<h2 class="h2">Behind the scenes, automatically</h2><div class="card" data-tour="enrollbehind"><div class="list">' +
@@ -1039,7 +1039,7 @@
     var e = enrollment(ui.progStudent) || S.enrollments[0], c = client(e.client);
     return '<div class="row" style="margin-bottom:1rem"><label for="pStudent" style="margin:0">Viewing as</label><select id="pStudent" style="width:auto">' + S.enrollments.map(function (x) { var cc = client(x.client); return '<option value="' + cc.id + '"' + (cc.id === c.id ? ' selected' : '') + '>' + esc(cc.name) + ' (week ' + x.week + ')</option>'; }).join('') + '</select>' +
       '<span class="small muted">Each member sees their own track, protocol and unlock dates.</span></div>' +
-      '<div class="card" style="margin-bottom:1rem"><div class="row" style="justify-content:space-between"><div><b>Custom energetics protocol for ' + esc(first(c.name)) + '</b><br><span class="small muted">Written by Theo Marsh after the assessment &middot; PDF, 6 pages</span></div><button class="btn small" data-dl="protocol">Download</button></div></div>' +
+      '<div class="card" style="margin-bottom:1rem"><div class="row" style="justify-content:space-between"><div><b>Custom energetics protocol for ' + esc(first(c.name)) + '</b><br><span class="small muted">Written by Deana after the assessment &middot; PDF, 6 pages</span></div><button class="btn small" data-dl="protocol">Download</button></div></div>' +
       '<div class="card"><div class="list" data-tour="modules">' + EG.MODULES.map(function (m) {
         var state = m.w < e.week ? 'done' : m.w === e.week ? 'now' : 'locked';
         var unlock = fmtDate(EG.iso(7 * (m.w - e.week)), { month: 'short', day: 'numeric' });

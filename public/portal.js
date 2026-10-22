@@ -36,7 +36,7 @@
     var toBook = D.clients.reduce(function (n, c) { return n + EGPkg.holdings(c).reduce(function (m, x) { return m + Math.max(0, x.left); }, 0); }, 0);
     var doors = [
       ['clients', 'portal', 'Client Portal', 'Every client: details, bookings, billing, protocols, notes, forms and documents.', D.clients.length + ' clients'],
-      ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' to approve' : 'All clear'],
+      ['shop', 'shop', 'Shop', 'Orders, products and suppliers. Every order waits for a person before it ships.', approve ? approve + ' Order' + (approve > 1 ? 's' : '') + ' to Approve' : 'All clear'],
       ['scans', 'reports', 'Client Report Creator', 'Upload the four scan files and get a finished client report, signed off by a practitioner.', review ? review + ' to review' : files ? files + ' waiting for files' : 'All clear'],
       ['protocols', 'protocols', 'Protocol Creator', 'What each client takes, how much and when, with reminders in their app.', active + ' active'],
       ['calendar', 'calendar', 'Booking Calendar', 'Every practitioner’s week. Clients book online and Zoom links go out on their own.', weekCount + ' this week'],
@@ -45,12 +45,12 @@
     ];
     var todo = [], unread = unreadBy();
     Object.keys(unread).forEach(function (id) { todo.push(['msg:' + id, 'Reply to ' + U.client(id).name + ' (' + unread[id] + ' new message' + (unread[id] > 1 ? 's' : '') + ')']); });
-    if (approve) todo.push(['shop', approve + ' order' + (approve > 1 ? 's' : '') + ' waiting for approval']);
+    if (approve) todo.push(['shop', approve + ' Order' + (approve > 1 ? 's' : '') + ' to Approve']);
     D.scans.filter(function (x) { return x.status === 'uploaded' || x.status === 'review'; }).forEach(function (x) { todo.push(['scans', (x.data ? 'Review the report for ' : 'Upload the scan files for ') + U.client(x.client).name]); });
     D.clients.filter(function (c) { return c.member && !EGProto.activeFor(c.id); }).slice(0, 2).forEach(function (c) { todo.push(['protocols:' + c.id, c.name + ' has no protocol yet']); });
     return '<p class="eyebrow">Good morning, ' + esc(U.first(EG.BRAND.owner)) + '</p><h1 class="h1">Root Cause Clinic</h1><p class="lede">Everything you need to run the practice, in seven places.</p>' +
       '<div class="doors" data-tour="doors">' + doors.map(function (d) {
-        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/approve|review|waiting|unsigned/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
+        return '<button class="door" data-door="' + d[0] + '"><span class="door-i">' + icon(d[1], 26) + '</span><b>' + d[2] + '</b><span class="small muted">' + d[3] + '</span><span class="pill' + (/Approve|review|waiting|unsigned/.test(d[4]) ? ' warn' : '') + '">' + d[4] + '</span></button>';
       }).join('') + '</div>' +
       '<div class="homecols"><div><div class="row" style="justify-content:space-between;align-items:baseline"><h2 class="h2">Checklist</h2></div><div class="card" data-tour="today">' + (todo.length ? todo.slice(0, 7).map(function (x) { return '<div class="todo"><span class="dotmark"></span><span class="grow">' + esc(x[1]) + '</span><button class="btn ghost small" data-todo="' + x[0] + '">Open</button></div>'; }).join('') : '<p class="muted" style="margin:0">Nothing needs you right now.</p>') + '</div></div>' +
       '<div><div class="row" style="justify-content:space-between;align-items:baseline"><h2 class="h2">Upcoming Appointments</h2><button class="linkish" data-door="calendar">Open the calendar</button></div><div class="card" data-tour="appts">' + appointments() + '</div></div></div>';
