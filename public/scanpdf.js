@@ -326,7 +326,23 @@
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'], avoid: ['.rr-organ', '.rr-rem', '.rr-item', '.rr-h'] }
-      }).from(box).save(); });
+      }).from(box).outputPdf('blob'); }).then(function (blob) { return deliver(blob, filename); });
+    });
+  }
+
+  /* Inside the claude.ai preview the page cannot download on its own, so the
+     viewer is offered the file through the preview's save prompt. Anywhere
+     else it is an ordinary browser download. */
+  function deliver(blob, filename) {
+    var dl = root.claude && root.claude.use ? root.claude.use('downloads') : Promise.resolve(null);
+    return dl.then(function (d) {
+      if (d) return d.save({ filename: filename, data: blob }).catch(function (e) {
+        if (e && e.code === 'declined') throw new Error('Download cancelled.');
+        throw new Error((e && e.message) || 'Downloads are not available here.');
+      });
+      var a = document.createElement('a'), url = URL.createObjectURL(blob);
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
     });
   }
 
