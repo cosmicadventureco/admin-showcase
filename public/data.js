@@ -283,7 +283,7 @@
 
   function seed() {
     var people = [
-      ['c1', 'Priya Raman', ['stress', 'sleep', 'focus'], 'vegetarian', 'vip', -142, 1186, true],
+      ['c1', 'Jane Smith', ['stress', 'sleep', 'focus'], 'vegetarian', 'vip', -142, 1186, true],
       ['c2', 'Marcus Bell', ['joints', 'energy'], 'omnivore', 'monthly', -96, 642, true],
       ['c3', 'Elena Fuentes', ['digestion', 'detox'], 'vegan', 'monthly', -63, 418, true],
       ['c4', 'Jordan Okafor', ['energy', 'focus'], 'omnivore', 'newsletter', -40, 96, false],
@@ -399,6 +399,7 @@
       c.card = ['Visa', 'Mastercard', 'Amex'][i % 3] + ' \u2022\u2022\u2022\u2022 ' + (4242 + i * 111) % 10000;
       c.packs = []; c.docs = [];
     });
+    clients[0].packs = [{ name: '3 \u00d7 30-minute sessions', used: 1, total: 3, bought: iso(-30), paid: 279 }];
     clients[1].packs = [{ name: '3 \u00d7 30-minute sessions', used: 1, total: 3, bought: iso(-40), paid: 279 }];
     clients[10].packs = [{ name: '5 \u00d7 1-hour sessions', used: 3, total: 5, bought: iso(-70), paid: 695 }];
     clients[0].docs = [{ name: 'Blood panel (from her doctor).pdf', at: iso(-50), kind: 'Upload' }];
@@ -409,7 +410,7 @@
     clients[9].videosOwned = ['v14'];
     enrollments[3].payIssue = 'Card declined for payment 2 of 3';
 
-    /* Energetic scans done in the clinic. Priya's is published, Aiko's
+    /* Energetic scans done in the clinic. Jane's is published, Aiko's
        exports are in and waiting for a practitioner, Leila's is booked. */
     var scans = [
       { id: 's1', client: 'c1', date: iso(-58), status: 'published', by: 'Theo Marsh', data: null },
@@ -445,9 +446,9 @@
 
     /* Conversations between clients and their practitioner, from the app. */
     var messages = [
-      ['c1', 'client', 'Priya Raman', -3, '08:12', 'Is it okay to take the Adrenal Milieu drops in water, or straight under the tongue?', true],
+      ['c1', 'client', 'Jane Smith', -3, '08:12', 'Is it okay to take the Adrenal Milieu drops in water, or straight under the tongue?', true],
       ['c1', 'team', 'Theo Marsh', -3, '10:40', 'Either works. Under the tongue is best, but a little water is fine if that is easier to stick with.', true],
-      ['c1', 'client', 'Priya Raman', 0, '07:55', 'Thank you! Sleeping much better this week. Should I keep the bedtime dose the same?', false],
+      ['c1', 'client', 'Jane Smith', 0, '07:55', 'Thank you! Sleeping much better this week. Should I keep the bedtime dose the same?', false],
       ['c7', 'team', 'Theo Marsh', -1, '16:20', 'Hi Aiko, your scan went well. I will have your report and protocol to you in a day or two.', true],
       ['c7', 'client', 'Aiko Tanaka', -1, '18:02', 'Great, thank you. I have a work trip next week. Will that be a problem with timing?', false],
       ['c3', 'client', 'Elena Fuentes', 0, '09:30', 'Can I take Drainage Milieu with my morning coffee, or should I wait?', false],
@@ -509,7 +510,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 14, forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 15, forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };

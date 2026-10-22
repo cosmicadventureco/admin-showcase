@@ -321,18 +321,20 @@
     } },
     { name: 'The client portal', run: async function () {
       App.ui.ca = null; App.go('client'); App.ui.ca.device = 'desktop'; App.render(); await sleep(500);
-      await choose('#caAs', 'c7');
-      say('The client portal, on a computer', 'Aiko signs in to five big buttons: Client Reports, Protocols, Shop, Appointments and Billing & Payments.');
+      await choose('#caAs', 'c1');
+      say('The client portal, on a computer', 'Jane Smith signs in to six big buttons: Client Reports, Protocols, Shop, Appointments, Packages and Billing & Payments.');
       await spot('[data-tour="ca-tiles"]', 3400);
+      say('A preview of what is new', 'Her latest report and today’s protocol are right on the landing page, one click from the full versions.');
+      await spot('[data-tour="ca-tiles"] ~ .ca-pair', 3000);
       var sg = document.querySelector('[data-csign]');
       if (sg) {
         say('Forms are signed right here', 'A waiver she still needs to sign comes first. The signed copy goes to her documents.');
         await click(sg, { after: 700 });
-        await type('.ca-sheet [data-ffsign]', 'Aiko Tanaka', 50);
+        await type('.ca-sheet [data-ffsign]', 'Jane Smith', 50);
         await click('#caSignForm', { after: 900 });
       }
       await click('.ca-tile[data-ctab="reports"]', { after: 700 });
-      say('Client Reports', 'Every scan report once a practitioner has signed it off, including the one published a minute ago.');
+      say('Client Reports', 'Every scan report once a practitioner has signed it off, opened in full.');
       var rp = document.querySelector('[data-crep]');
       if (rp) { await click(rp, { after: 900 }); await spot('#caBody [data-tour="report"] .rr-banner', 2200); }
       await click('[data-ctab="protocol"]', { after: 700 });
@@ -344,6 +346,9 @@
       await click('[data-ctab="shop"]', { after: 700 });
       say('Shop', 'Her remedies at member pricing. Every order still waits for a practitioner’s approval before it ships.');
       await sleep(2400);
+      await click('[data-ctab="packages"]', { after: 700 });
+      say('Packages', 'Her Premium Course and session packs: how far along she is, sessions left, and packages she can add.');
+      await spot('[data-tour="ca-packages"]', 2800);
       await click('[data-ctab="billing"]', { after: 700 });
       say('Billing & Payments', 'What she has paid, what is due next, receipts and her card on file.');
       await spot('[data-tour="ca-billing"]', 2800);

@@ -12,7 +12,7 @@
 
   var U = App.util, esc = U.esc, money = U.money;
   var STAGES = ['Being checked by our team', 'Sent to the pharmacy', 'Being packed', 'On its way', 'Delivered'];
-  var PREVIEW = [['c1', 'Priya Raman (Premium Course)'], ['c7', 'Aiko Tanaka (Premium Course)'], ['c2', 'Marcus Bell (Monthly coaching)']];
+  var PREVIEW = [['c1', 'Jane Smith (Premium Course)'], ['c7', 'Aiko Tanaka (Premium Course)'], ['c2', 'Marcus Bell (Monthly coaching)']];
 
   function S() { return App.state(); }
   function st() {
@@ -44,7 +44,7 @@
   /* Signed out: the portal's sign-in page. */
   function signin() {
     return '<div class="ca-signin"><h2 class="ca-title">Sign in to your client portal</h2><p class="small muted">Your reports, protocols, appointments and billing in one place.</p>' +
-      '<label for="caEmailIn">Email</label><input id="caEmailIn" type="email" value="priya.raman@example.com"><label for="caPassIn" style="margin-top:.7rem">Password</label><input id="caPassIn" type="password" value="sample-password">' +
+      '<label for="caEmailIn">Email</label><input id="caEmailIn" type="email" value="jane.smith@example.com"><label for="caPassIn" style="margin-top:.7rem">Password</label><input id="caPassIn" type="password" value="sample-password">' +
       '<button class="btn ca-wide" id="caSignIn" style="margin-top:1rem">Sign in</button><p class="small muted" style="text-align:center;margin-top:.8rem">New clients get their sign-in link after booking their first session.</p></div>';
   }
   function canShop(c) {
@@ -61,8 +61,27 @@
       ['protocol', 'Protocols', pr ? 'Next: ' + slot[1].toLowerCase() + ', ' + slot[2] : 'Being prepared'],
       ['shop', 'Shop', orders ? orders + ' order' + (orders > 1 ? 's' : '') + ' on the way' : c.member ? '20% member pricing' : 'Your remedies'],
       ['appts', 'Appointments', next ? U.fmtDate(next.date, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ' + U.fmtTime(next.time) : 'Book a session'],
+      ['packages', 'Packages', packs(c).length ? packs(c).map(function (p) { return p.short; }).join(' \u00b7 ') : 'Session packs and the course'],
       ['billing', 'Billing & Payments', due ? (due[3] === 'Failed' ? 'Payment needs attention' : 'Next ' + money(due[2], false) + ' on ' + U.fmtDate(due[0], { month: 'short', day: 'numeric' })) : 'All paid up']
     ];
+  }
+  /* A look at their latest report and today's protocol, straight from Home. */
+  function previews(c) {
+    var sc = S().scans.filter(function (x) { return x.client === c.id && x.status === 'published'; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0], pr = EGProto.activeFor(c.id);
+    if (!sc && !pr) return '';
+    var out = '<div class="ca-pair">';
+    if (sc) {
+      var organs = sc.data.organs.filter(function (o) { return o.include; }).slice(0, 3), rem = EGScan.remedies(sc.data).slice(0, 3);
+      out += '<div class="ca-card ca-prev" data-tour="ca-repprev"><div class="ca-prevhead"><span class="small">Latest report</span><b>Evergrove Resonance Map</b><span class="small">' + U.fmtDate(sc.date, { month: 'long', day: 'numeric', year: 'numeric' }) + ' &middot; signed off by ' + esc(sc.by) + '</span></div>' +
+        '<div class="ca-gauges">' + organs.map(function (o) { return '<div>' + EGScan.gauge(o.score) + '<span class="small">' + esc(o.organ) + '</span></div>'; }).join('') + '</div>' +
+        '<p class="label" style="margin-top:.4rem;margin-bottom:.2rem">Top remedies</p>' + rem.map(function (x, i) { return '<div class="small">' + (i + 1) + '. <b>' + esc(x.item) + '</b> <span class="muted">' + esc(x.dil) + '</span></div>'; }).join('') +
+        '<button class="btn small" data-crep="' + sc.id + '" style="margin-top:.7rem">Open full report</button></div>';
+    }
+    if (pr) {
+      out += '<div class="ca-card" data-tour="ca-protoprev"><div class="row" style="justify-content:space-between"><p class="label" style="margin:0">Today&rsquo;s protocol</p><span class="small muted">Started ' + U.fmtDate(pr.start, { month: 'short', day: 'numeric' }) + '</span></div>' + todayList(pr, true) +
+        '<button class="btn small" data-ctab="protocol" style="margin-top:.5rem">Open protocol report</button></div>';
+    }
+    return out + '</div>';
   }
   function home(c) {
     var due = window.EGForms ? EGForms.outstanding(c) : [], next = upcoming(c)[0], last = thread(c).filter(function (m) { return m.from === 'team'; }).pop();
@@ -72,6 +91,7 @@
       '<div class="ca-tiles" data-tour="ca-tiles">' + tiles(c).map(function (t) {
         return '<button class="ca-tile" data-ctab="' + t[0] + '"><span class="ca-ti">' + svg(t[0], 22) + '</span><b>' + t[1] + '</b><span class="small muted">' + esc(t[2]) + '</span></button>';
       }).join('') + '</div>' +
+      previews(c) +
       '<div class="ca-pair">' +
       (next ? '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Next appointment</p><b class="small">' + esc(EGCal.label(next)) + '</b><div class="small muted">' + U.fmtDate(next.date, { weekday: 'long', month: 'short', day: 'numeric' }) + ' at ' + U.fmtTime(next.time) + ' &middot; with ' + esc(EGCal.prac(next)) + '</div>' + (next.zoom ? '<button class="btn small" data-czoom="' + next.id + '" style="margin-top:.6rem">Join Zoom</button>' : '<div class="small muted">' + esc(next.where) + '</div>') + '</div>' : '') +
       '<div class="ca-card"><p class="label" style="margin:0 0 .3rem">Messages</p>' + (last ? '<div class="small"><b>' + esc(last.by) + '</b></div><div class="small muted ca-clip">' + esc(last.text) + '</div>' : '<div class="small muted">Questions about your protocol or an order? Message ' + esc(c.practitioner) + '.</div>') + '<button class="btn ghost small" data-ctab="msg" style="margin-top:.6rem">Message ' + esc(U.first(c.practitioner)) + '</button></div></div>';
@@ -109,6 +129,36 @@
       '<div class="ca-split">' + book(c) + '</div>';
   }
 
+  /* Packages: what they have bought and what is left, and what they can add. */
+  var OFFERS = [
+    { name: '3 \u00d7 30-minute sessions', total: 3, price: 279, note: 'Save $18 on three half-hour sessions' },
+    { name: '5 \u00d7 1-hour sessions', total: 5, price: 695, note: 'Save $45 on five full-hour sessions' }
+  ];
+  function packs(c) {
+    var e = U.enrollment(c.id), out = [];
+    if (e) out.push({ short: 'Course week ' + e.week, course: e });
+    (c.packs || []).forEach(function (p) { out.push({ short: (p.total - p.used) + ' session' + (p.total - p.used === 1 ? '' : 's') + ' left', pack: p }); });
+    return out;
+  }
+  function packagesScreen(c) {
+    var mine = packs(c);
+    return '<h2 class="ca-title">Packages</h2><p class="small muted" style="margin-top:-.4rem">What you have, what is left, and packages you can add.</p><div data-tour="ca-packages">' +
+      (mine.length ? mine.map(function (x) {
+        if (x.course) {
+          var e = x.course;
+          return '<div class="ca-card"><div class="row" style="justify-content:space-between"><b>Premium Course</b><span class="pill ok">Active</span></div><div class="small muted">Week ' + e.week + ' of 12 &middot; ' + esc(/Paid in full/.test(e.pay) ? 'paid in full' : e.pay) + '</div><div class="bar" style="margin:.5rem 0 .6rem"><i style="width:' + Math.round(e.week / 12 * 100) + '%"></i></div>' +
+            '<ul class="ca-ben">' + EG.PROGRAM.includes.slice(0, 6).map(function (i) { return '<li>' + esc(i[0]) + '</li>'; }).join('') + '</ul></div>';
+        }
+        var p = x.pack, left = p.total - p.used;
+        return '<div class="ca-card"><div class="row" style="justify-content:space-between"><b>' + esc(p.name) + '</b><span class="pill' + (left ? ' ok' : '') + '">' + left + ' of ' + p.total + ' left</span></div><div class="small muted">Bought ' + U.fmtDate(p.bought, { month: 'short', day: 'numeric', year: 'numeric' }) + ' &middot; ' + money(p.paid, false) + '</div>' +
+          '<div class="ca-pips">' + Array.apply(null, Array(p.total)).map(function (_, i) { return '<span class="' + (i < p.used ? 'used' : '') + '"></span>'; }).join('') + '</div>' +
+          (left ? '<button class="btn small" data-ctab="appts">Book a session</button>' : '') + '</div>';
+      }).join('') : '<p class="small muted">No packages yet.</p>') + '</div>' +
+      '<h3 class="ca-h">Add a package</h3>' + OFFERS.map(function (o, i) {
+        return '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="small"><b>' + esc(o.name) + '</b><br><span class="muted">' + esc(o.note) + '</span></span><button class="btn ghost small" data-cpack="' + i + '">' + money(o.price, false) + '</button></div>';
+      }).join('');
+  }
+
   /* Billing: every payment, what is due next, and the card on file. */
   function billingScreen(c) {
     var pays = EGPortal.payments(c), paid = pays.filter(function (p) { return p[3] === 'Paid'; }).reduce(function (t, p) { return t + p[2]; }, 0);
@@ -141,7 +191,8 @@
     return '<h2 class="ca-title">Client Reports</h2><p class="small muted" style="margin-top:-.4rem">Your energetic scan reports, reviewed and signed off by your practitioner.</p><div data-tour="ca-reports">' +
       (list.length ? list.map(function (x) {
         return '<div class="ca-card row" style="justify-content:space-between;flex-wrap:nowrap"><span class="docicon">RPT</span><span class="grow small"><b>Resonance Map</b><br><span class="muted">' + (x.status === 'published' ? 'Scan of ' + U.fmtDate(x.date, { month: 'short', day: 'numeric', year: 'numeric' }) + ' &middot; signed off by ' + esc(x.by) : x.status === 'booked' ? 'Scan booked for ' + U.fmtDate(x.date) : 'Your practitioner is preparing it') + '</span></span>' + (x.status === 'published' ? '<button class="btn small" data-crep="' + x.id + '">Open</button>' : '<span class="pill">' + (x.status === 'booked' ? 'Booked' : 'In progress') + '</span>') + '</div>';
-      }).join('') : '<p class="small muted">Your reports appear here after your energetic scan.</p>') + '</div>';
+      }).join('') : '<p class="small muted">Your reports appear here after your energetic scan.</p>') + '</div>' +
+      (pub.length ? '<h3 class="ca-h">Your latest report</h3>' + EGScan.reportHtml(pub[0], true) : '');
   }
   function reportScreen(c, id) {
     var sc = id ? S().scans.filter(function (x) { return x.id === id; })[0] : scanFor(c);
@@ -256,6 +307,7 @@
     reports: '<circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-4 3 8 2-4h6"/>',
     protocol: '<path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/>',
     appts: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    packages: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
     billing: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',
     videos: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>',
     shop: '<path d="M4 7h16l-1.5 12h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
@@ -263,13 +315,13 @@
     me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'
   };
   function svg(k, n) { return '<svg width="' + (n || 20) + '" height="' + (n || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + '</svg>'; }
-  /* The five main sections, plus Home. Messages and the course videos sit under More. */
+  /* The six main sections, plus Home. Messages and the course videos sit under More. */
   function navFor(c) {
-    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['shop', 'Shop'], ['appts', 'Appointments'], ['billing', 'Billing & Payments']];
+    var main = [['home', 'Home'], ['reports', 'Client Reports'], ['protocol', 'Protocols'], ['shop', 'Shop'], ['appts', 'Appointments'], ['packages', 'Packages'], ['billing', 'Billing & Payments']];
     var more = [['msg', 'Messages']].concat(c.member ? [['videos', 'Course videos']] : []).concat([['me', 'Account']]);
     return { main: main, more: more };
   }
-  var SHORT = { 'Client Reports': 'Reports', Appointments: 'Appts', Protocols: 'Protocol', 'Billing & Payments': 'Billing' };
+  var SHORT = { Packages: 'Packages', 'Client Reports': 'Reports', Appointments: 'Appts', Protocols: 'Protocol', 'Billing & Payments': 'Billing' };
 
   function view() {
     var ca = st(), c0 = me();
@@ -277,11 +329,11 @@
     if (ca.tab === 'book') ca.tab = 'appts';
     if (c0 && ca.tab === 'msg') thread(c0).forEach(function (m) { if (m.from === 'team') m.seen = true; });
     var c = me(), tab = c ? ca.tab : 'home', desk = ca.device === 'desktop';
-    var screen = !c ? signin() : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'appts' ? apptsScreen(c) : tab === 'reports' ? reportsScreen(c) : tab === 'billing' ? billingScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
+    var screen = !c ? signin() : tab === 'protocol' ? protocolScreen(c) : tab === 'videos' ? videos(c) : tab === 'appts' ? apptsScreen(c) : tab === 'reports' ? reportsScreen(c) : tab === 'billing' ? billingScreen(c) : tab === 'packages' ? packagesScreen(c) : tab === 'shop' ? shop(c) : tab === 'me' ? account(c) : tab === 'msg' ? messages(c) : home(c);
     var n = cartCount(), nav = c ? navFor(c) : null;
     var brand = '<span class="brand-s"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="var(--deep)"/><path d="M16 7c5 3 7 8 5 13-1.5 3.5-5 5-5 5s-3.5-1.5-5-5C9 15 11 10 16 7z" fill="var(--bg)"/></svg>Evergrove</span>';
-    var icons = c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages">' + svg('msg') + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-cartbtn" data-ctab="me" id="caMe" aria-label="My account">' + svg('me') + '</button><button class="ca-cartbtn" id="caCart" aria-label="Cart">' + svg('shop') + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '';
-    var picker = '<label for="caAs">Preview as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>';
+    var icons = c ? '<span class="row" style="gap:.2rem;flex-wrap:nowrap"><button class="ca-cartbtn" data-ctab="msg" id="caMsgs" aria-label="Messages">' + svg('msg') + (unseen(c) ? '<span class="ca-badge">' + unseen(c) + '</span>' : '') + '</button><button class="ca-who" data-ctab="me" id="caMe" aria-label="My account, signed in as ' + esc(c.name) + '"><span class="ca-av">' + U.initials(c.name) + '</span>' + (desk ? '<span class="small">' + esc(c.name) + '</span>' : '') + '</button><button class="ca-cartbtn" id="caCart" aria-label="Cart">' + svg('shop') + (n ? '<span class="ca-badge">' + n + '</span>' : '') + '</button></span>' : '';
+    var picker = '<label for="caAs">Signed in as</label><select id="caAs">' + PREVIEW.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === ca.as ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + (ca.as && PREVIEW.every(function (p) { return p[0] !== ca.as; }) ? '<option value="' + ca.as + '" selected>' + esc(c.name) + (c.fresh ? ' (just signed up)' : (c.member ? ' (Premium member)' : '')) + '</option>' : '') + '</select>';
     var device = '<div class="seg" data-tour="device" role="group" aria-label="Device"><button class="' + (desk ? 'is-on' : '') + '" data-cdev="desktop">Desktop</button><button class="' + (!desk ? 'is-on' : '') + '" data-cdev="mobile">Mobile</button></div>';
     if (desk) {
       return '<div class="cdesk"><div class="cdesk-bar"><div><p class="eyebrow" style="margin:0">Client view</p><b>The client portal, on a computer</b></div><div class="row">' + device + '<div class="row" style="flex-wrap:nowrap">' + picker + '</div></div></div>' +
@@ -292,11 +344,11 @@
     }
     return '<div class="cmode"><div class="phone" data-tour="phone"><div class="ph-top">' + brand + icons + '</div>' +
       '<div class="ph-body" id="caBody">' + screen + '</div>' +
-      (c ? '<nav class="ph-tabs six">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0]) + (SHORT[t[1]] || t[1]) + '</button>'; }).join('') + '</nav>' : '') +
+      (c ? '<nav class="ph-tabs seven">' + nav.main.map(function (t) { return '<button class="' + (tab === t[0] ? 'is-on' : '') + '" data-ctab="' + t[0] + '">' + svg(t[0]) + (SHORT[t[1]] || t[1]) + '</button>'; }).join('') + '</nav>' : '') +
       sheet() + '</div>' +
       '<aside class="cside"><p class="eyebrow">Client view</p><h1 class="h1">The client portal</h1><p class="lede" style="margin-bottom:1rem">What clients use, on their phone or computer, at <code>evergrove.example/portal</code>. Everything they do here shows up on your side straight away.</p>' +
       device + picker +
-      '<ul class="cfeat"><li><b>Client Reports</b> Their energetic scan reports, once a practitioner has signed off.</li><li><b>Protocols</b> What to take and when, with tick-offs, reminders and the protocol report.</li><li><b>Shop</b> Their remedies, at member pricing, with order tracking.</li><li><b>Appointments</b> Upcoming sessions with the Zoom link, and booking.</li><li><b>Billing &amp; Payments</b> Every payment, what is due next, receipts and the card on file.</li></ul></aside></div>';
+      '<ul class="cfeat"><li><b>Client Reports</b> Their energetic scan reports, once a practitioner has signed off.</li><li><b>Protocols</b> What to take and when, with tick-offs, reminders and the protocol report.</li><li><b>Shop</b> Their remedies, at member pricing, with order tracking.</li><li><b>Appointments</b> Upcoming sessions with the Zoom link, and booking.</li><li><b>Packages</b> The Premium Course and session packs: what is left, and adding more.</li><li><b>Billing &amp; Payments</b> Every payment, what is due next, receipts and the card on file.</li></ul></aside></div>';
   }
 
   function bind() {
@@ -307,10 +359,18 @@
     $$('[data-ctab]').forEach(function (b) { b.addEventListener('click', function () { ca.tab = b.getAttribute('data-ctab'); ca.sheet = null; ca.rep = null; App.render(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
     document.body.classList.toggle('clientdesk', ca.device === 'desktop');
     $$('[data-cdev]').forEach(function (b) { b.addEventListener('click', function () { ca.device = b.getAttribute('data-cdev'); App.render(); }); });
-    $$('[data-crep]').forEach(function (b) { b.addEventListener('click', function () { ca.rep = b.getAttribute('data-crep'); rerender(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
+    $$('[data-crep]').forEach(function (b) { b.addEventListener('click', function () { ca.rep = b.getAttribute('data-crep'); ca.tab = 'reports'; rerender(); var bd = $('#caBody'); if (bd) bd.scrollTop = 0; }); });
     var rb = $('#caRepBack'); if (rb) rb.addEventListener('click', function () { ca.rep = null; rerender(); });
     $$('[data-czoom]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Opening Zoom (simulated)'); }); });
     $$('[data-creceipt]').forEach(function (b) { b.addEventListener('click', function () { U.toast('Receipt emailed (simulated)'); }); });
+    $$('[data-cpack]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var c = me(), o = OFFERS[+b.getAttribute('data-cpack')];
+        c.packs = c.packs || []; c.packs.push({ name: o.name, used: 0, total: o.total, bought: U.today(), paid: o.price }); c.ltv += o.price;
+        U.activity(c.name + ' bought a package in the client portal: ' + o.name + ' (' + money(o.price, false) + '). Receipt sent.');
+        U.save(); rerender(); U.toast('Added. Your receipt is on its way.');
+      });
+    });
     var cc = $('#caCard'); if (cc) cc.addEventListener('click', function () { U.toast('Opens a secure card form (simulated)'); });
     $$('[data-csign]').forEach(function (b) { b.addEventListener('click', function () { open({ type: 'form', id: b.getAttribute('data-csign') }); }); });
     var sf = $('#caSignForm');

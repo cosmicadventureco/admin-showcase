@@ -89,11 +89,15 @@ modelled on Practice Better but simpler. It shows in a desktop browser window
 or on a phone (Desktop / Mobile switch). There is no free sign-up or
 snapshot: clients get their sign-in after booking.
 
-- **Landing page:** five big buttons, Client Reports, Protocols, Shop,
-  Appointments and Billing & Payments, each with a one-line status (latest
-  report, next dose, orders on the way, next session, next payment). Above
-  them, any waiver still to sign; below, the next appointment with its Zoom
-  link and the latest message from their practitioner.
+- **Signed in as Jane Smith**, a sample Premium Course client (switch to
+  other sample clients with "Signed in as").
+- **Landing page:** six big buttons, Client Reports, Protocols, Shop,
+  Appointments, Packages and Billing & Payments, each with a one-line status.
+  Above them, any waiver still to sign; below, a preview of the latest report
+  (dials and top remedies) and today's protocol, the next appointment with
+  its Zoom link, and the latest message from their practitioner.
+- **Packages:** the Premium Course (week, what is included) and session packs
+  (sessions left), plus packages to add (3 x 30 min $279, 5 x 1 hour $695).
 - **Client Reports:** every signed-off scan report. **Protocols:** today's
   doses to tick off, reminders and the protocol report. **Shop:** their
   remedies (member pricing for Premium), every order approved by a person.

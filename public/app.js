@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var KEY = 'evergrove-showcase-v14';
+  var KEY = 'evergrove-showcase-v15';
   var S = load();
   var ui = {
     view: 'dashboard', recordsTab: 'clients', q: '', schedTab: 'list', shopTab: 'pipeline',
