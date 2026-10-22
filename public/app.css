@@ -863,6 +863,8 @@ label.slot:hover { border-color: var(--sage); }
 .claimflag { display: flex; flex-direction: column; gap: .35rem; padding: .55rem .7rem; margin-top: .45rem; line-height: 1.45; }
 .claimflag b { font-weight: 600; }
 .claimflag .sugg { color: var(--ink); }
+.claimflag .sugg-line { display: block; margin-top: .2rem; }
+.claimflag .sugg-line s { color: var(--muted); }
 .fedit-box { display: grid; gap: .5rem; margin-top: .5rem; padding: .7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .fedit-box label { margin-bottom: .2rem; }
 .fedit-box .btn { justify-self: start; }

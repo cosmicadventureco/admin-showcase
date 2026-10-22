@@ -129,7 +129,19 @@
     var l = w.toLowerCase(), out = SAFER[l] || (/^eliminat/.test(l) ? l.replace(/^eliminat(e|es|ed|ing|ion)?/, function (m, e) { return { e: 'process', es: 'processes', ed: 'processed', ing: 'processing', ion: 'processing' }[e || 'e'] || 'process'; }) : l);
     return w[0] === w[0].toUpperCase() ? out[0].toUpperCase() + out.slice(1) : out;
   }
-  function suggest(t) { return String(t).replace(/\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b/gi, saferWord); }
+  var CLAIM = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b(?!\s*T3)/gi;
+  function suggest(t) { return String(t).replace(CLAIM, saferWord); }
+  /* Just the phrases that change, old word struck through and the new one in bold, not the whole description. */
+  function changes(t) {
+    var out = [], m, re = new RegExp(CLAIM.source, 'gi');
+    t = String(t);
+    while ((m = re.exec(t))) {
+      var a = Math.max(0, t.lastIndexOf(' ', Math.max(0, m.index - 50)) + 1), b = t.indexOf(' ', Math.min(t.length, m.index + m[0].length + 50));
+      if (b < 0) b = t.length;
+      out.push(esc(t.slice(a, m.index)) + '<s>' + esc(m[0]) + '</s> <b>' + esc(saferWord(m[0])) + '</b>' + esc(t.slice(m.index + m[0].length, b)));
+    }
+    return out;
+  }
 
   function findingRow(x, s) {
     var open = s.editing === x.id;
@@ -137,9 +149,9 @@
       '<div class="grow"><div class="frow-top"><span><b class="small">' + esc(x.item) + (x.code ? ' (' + esc(x.code) + ')' : '') + '</b> <span class="small muted">' + x.doc + ' &middot; ' + esc(x.category) + ' &middot; ' + esc(x.dil) + ' &middot; ' + esc(x.qty) + ' &middot; ' + esc(x.dur) + '</span>' + (x.note ? ' <span class="pill">' + esc(x.note) + '</span>' : '') + '</span>' +
       (open ? '' : '<button class="linkish fedit" data-edit="' + x.id + '">Edit</button>') + '</div>' +
       (open ? '' : '<div class="small">' + esc(x.desc) + '</div>') +
-      (x.claims.length ? '<div class="claimflag"><b>&#9873; Claim language: &ldquo;' + esc(x.claims.join('&rdquo;, &ldquo;')) + '&rdquo;</b>' +
+      (x.claims.length ? '<div class="claimflag"><b>&#9873; Claim language: ' + x.claims.map(function (w) { return '&ldquo;' + esc(w) + '&rdquo;'; }).join(', ') + '</b>' +
         '<span>Supplement and remedy wording can say a product <i>supports</i> the body, but not that it cures, treats, prevents, heals or eliminates anything. Those are drug claims under FDA and FTC rules, so they put the clinic at risk if a client reads them.</span>' +
-        '<span class="sugg">Suggested: &ldquo;' + esc(suggest(x.desc)) + '&rdquo;</span>' +
+        '<span class="sugg">Suggested change' + (changes(x.desc).length > 1 ? 's' : '') + ':' + changes(x.desc).map(function (c) { return '<span class="sugg-line">&hellip;' + c + '&hellip;</span>'; }).join('') + '</span>' +
         '<span class="row" style="gap:.4rem"><button class="btn small" data-sugg="' + x.id + '">Use suggested wording</button>' + (open ? '' : '<button class="btn ghost small" data-edit="' + x.id + '">Edit text myself</button>') + '</span></div>' : '') +
       (open ? '<div class="fedit-box"><label for="fd-' + x.id + '">Description in the report</label><textarea id="fd-' + x.id + '" data-desc="' + x.id + '" rows="2">' + esc(x.desc) + '</textarea>' +
         '<div class="fedit-row">' + [['dil', 'Dilution'], ['qty', 'Amount'], ['dur', 'How long']].map(function (f) { return '<div><label for="ff-' + f[0] + '-' + x.id + '">' + f[1] + '</label><input id="ff-' + f[0] + '-' + x.id + '" type="text" data-ffield="' + f[0] + '" data-fid="' + x.id + '" value="' + esc(x[f[0]]) + '"></div>'; }).join('') + '</div>' +

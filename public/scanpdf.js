@@ -93,7 +93,7 @@
   };
   var DIL_NOTES = { V: 'May be low', X: 'May be low', C: 'May fluctuate', K: 'May fluctuate', M: 'May be high', LM: 'May be high', DM: 'May be high or unable to absorb', CM: 'May be high or unable to absorb', MM: 'May be high or unable to absorb' };
   var DIL_SERIES = ['V', 'X', 'K', 'C', 'M', 'LM', 'DM', 'CM', 'MM'];
-  var CLAIM_RE = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b/gi;
+  var CLAIM_RE = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b(?!\s*T3)/gi;
 
   function categoryLabel(cat) { var k = String(cat || '').trim(); return CATEGORY_LABELS[k.toLowerCase()] || k; }
   function classify(category, name) {
@@ -158,13 +158,15 @@
       return parts.length <= 6 ? full : label + ': ' + parts.slice(0, 5).join(', ') + ', and ' + (parts.length - 5) + ' more.';
     });
   }
-  function simplify(desc, max) {
+  function simplify(desc, max, maxLen) {
     if (!desc) return '';
     var t = desc;
     STRIP.forEach(function (r) { t = t.replace(r[0], r[1]); });
     t = condense(t).replace(/\s+/g, ' ').replace(/\s+([.,;:])/g, '$1').replace(/([.,;:]){2,}/g, '$1').replace(/\(\s*\)/g, '').trim().replace(/^[\s.,;:|\-]+/, '');
     var out = t.split(/(?<=[.!?])\s+/).filter(function (p) { return p.split(/\s+/).length > 2; }).slice(0, max || 3).join(' ').trim();
-    if (out && !/[.!?]$/.test(out)) out += '.';
+    /* Some supplier text has no full stops, so one "sentence" can run to a page. */
+    if (maxLen && out.length > maxLen + 20) { out = out.slice(0, maxLen); var cut = Math.max(out.lastIndexOf('; '), out.lastIndexOf('. ')); out = (cut > maxLen / 2 ? out.slice(0, cut + 1) : out.slice(0, out.lastIndexOf(' '))).replace(/[;,:]$/, '') + '…'; }
+    if (out && !/[.!?…]$/.test(out)) out += '.';
     return out;
   }
 
@@ -227,7 +229,7 @@
       var codeM = name.match(CODE_RE); if (codeM) { name = codeM[1].trim(); code = codeM[2]; }
       var desc = [], k = i + 1;
       while (k < lines.length && !CAT_RE.test(lines[k]) && !DOSAGE_RE.test(lines[k]) && !NOISE_RE.test(lines[k])) desc.push(lines[k++]);
-      var full = desc.join(' ').replace(/\s+/g, ' ').trim(), plain = simplify(full, 3);
+      var full = desc.join(' ').replace(/\s+/g, ' ').trim(), plain = simplify(full, 3, 400);
       items.push({ doc: doc, category: categoryLabel(cat), item: name, code: code, dil: dm[1], qty: dm[2], dur: dm[3], desc: plain, raw: full,
         claims: claimWords(plain), section: classify(cat, name), status: 'none', include: !SETTING_CATEGORIES.test(cat), rc: doc === 'RC', note: dilNote(doc, cat, dm[1]) });
       i = k;

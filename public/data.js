@@ -593,7 +593,7 @@
     for (var i = 0; i < 3; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i];
     return 0;
   }
-  var CLAIM_RE = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b/gi;
+  var CLAIM_RE = /\b(cures?|cured|treats?|prevents?|eliminat\w+|heals?|reverses?)\b(?!\s*T3)/gi;
   function claimWords(t) { var m = String(t || '').match(CLAIM_RE); return m ? m.map(function (x) { return x.toLowerCase(); }).filter(function (x, i, a) { return a.indexOf(x) === i; }) : []; }
 
   var ORGANS = [
