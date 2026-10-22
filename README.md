@@ -85,9 +85,9 @@ Appointments for the week; The Outcome sits apart at the bottom of the menu):
    Appointment types: 1 Hour Practitioner Review, Recorded Review, 12 Week
    Package 1/2 and 12 Week Package 2/2. Appointments the team books wait for
    the client to confirm in their portal.
-6. **Packages:** Recorded Review ($99), Bioresonance Scan ($195) and the 12
-   Week Package ($6,995), each with what it includes and its appointment
-   credits (prices other than the 12 Week Package are placeholders). Edit or
+6. **Packages:** Recorded Review ($500), Bioresonance Scan ($350) and the 12
+   Week Package ($1,200), each with what it includes and its appointment
+   credits. A 1 Hour Practitioner Review booked on its own is $165. Edit or
    create packages, choose which show in the client portal, see every client
    package and how many of its appointments are booked, and add one for a
    client with a payment link. Credits are used up as appointments are booked.

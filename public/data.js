@@ -145,8 +145,8 @@
   /* Appointment types. The first four are what clients and the team book;
      the rest are kept only for older records. */
   var SERVICES = [
-    { id: 'review60', label: '1 Hour Practitioner Review', mins: 60, price: 148, desc: 'One-to-one with a Certified Practitioner by Zoom, going over your report, protocol and progress.' },
-    { id: 'recorded', label: 'Recorded Review', mins: 30, price: 99, recorded: true, desc: 'Your practitioner reviews your report and protocol and records a video walkthrough for you to watch any time.' },
+    { id: 'review60', label: '1 Hour Practitioner Review', mins: 60, price: 165, desc: 'One-to-one with a Certified Practitioner by Zoom, going over your report, protocol and progress.' },
+    { id: 'recorded', label: 'Recorded Review', mins: 30, price: 500, recorded: true, desc: 'Your practitioner reviews your report and protocol and records a video walkthrough for you to watch any time.' },
     { id: 'pkg1', label: '12 Week Package 1/2', mins: 75, price: 0, pkg: 'twelve', desc: 'Your first 12 Week Package session: bioresonance scan and planning.' },
     { id: 'pkg2', label: '12 Week Package 2/2', mins: 60, price: 0, pkg: 'twelve', desc: 'Your second 12 Week Package session: retest and next steps.' },
     { id: 'initial', label: 'Initial Wellness Consultation', mins: 60, price: 145, legacy: true },
@@ -160,15 +160,15 @@
 
   /* What clients buy. Each package can include appointment credits. */
   var PACKAGES = [
-    { id: 'recorded', name: 'Recorded Review', price: 99, credits: { recorded: 1 }, active: true,
+    { id: 'recorded', name: 'Recorded Review', price: 500, credits: { recorded: 1 }, active: true,
       desc: 'A practitioner reviews your latest report and protocol and records a personal video walkthrough.',
       includes: ['1 Recorded Review appointment', 'Video walkthrough in your portal within 3 business days', 'Follow-up questions by message'] },
-    { id: 'scan', name: 'Bioresonance Scan', price: 195, credits: { recorded: 1 }, active: true,
+    { id: 'scan', name: 'Bioresonance Scan', price: 350, credits: { recorded: 1 }, active: true,
       desc: 'An in-house bioresonance scan, your Resonance Map report, and a recorded review of the results.',
       includes: ['In-house bioresonance scan', 'Resonance Map client report', '1 Recorded Review of your results'] },
-    { id: 'twelve', name: '12 Week Package', price: 6995, plan: '3 payments of $2,395', credits: { pkg1: 1, pkg2: 1 }, active: true,
-      desc: 'The Premium Course: twelve weeks with a practitioner, built around your scan.',
-      includes: ['12 Week Package 1/2: scan and planning', '12 Week Package 2/2: retest and next steps', 'Your personal protocol with reminders', 'Weekly live Zoom and course videos', '20% off remedies, free shipping'] }
+    { id: 'twelve', name: '12 Week Package', price: 1200, credits: { pkg1: 1, pkg2: 1 }, active: true,
+      desc: 'Twelve weeks with a practitioner, built around your scan.',
+      includes: ['12 Week Package 1/2: scan and planning', '12 Week Package 2/2: retest and next steps', 'Your personal protocol with reminders'] }
   ];
 
   var PLANS = { free: 'Free account', newsletter: 'Newsletter', monthly: 'Monthly Coaching', vip: 'VIP Concierge', program: 'Premium Course' };
@@ -348,8 +348,8 @@
       { id: 'b10', service: 'review60', date: iso(19), time: '14:00', guests: ['c13'], where: 'Video call', with: 'Lena Ortiz' },
       { id: 'b11', service: 'review60', date: iso(-3), time: '10:00', guests: ['c1'], where: 'Video call', with: 'Theo Marsh' },
       { id: 'b12', service: 'review60', date: iso(-6), time: '15:00', guests: ['c4'], where: 'Video call', with: 'Dr. Ana Whitlock, ND' },
-      { id: 'b13', service: 'review60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 148 },
-      { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Theo Marsh', paid: 99 },
+      { id: 'b13', service: 'review60', date: iso(3), time: '11:00', guests: ['c2'], where: 'Video call', with: 'Lena Ortiz', paid: 165 },
+      { id: 'b14', service: 'recorded', date: iso(5), time: '15:30', guests: ['c5'], where: 'Recorded', with: 'Theo Marsh', paid: 500 },
       { id: 'b15', service: 'pkg2', date: iso(14), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' },
       { id: 'b16', service: 'pkg1', date: iso(-58), time: '10:00', guests: ['c1'], where: 'Studio', with: 'Theo Marsh' }
     ];
@@ -422,14 +422,14 @@
       c.packs = []; c.docs = [];
     });
     /* Packages each client has bought; credits are used as appointments are booked. */
-    clients[0].packs = [{ pkg: 'recorded', bought: iso(-5), paid: 99, used: { recorded: 1 } }];
-    clients[1].packs = [{ pkg: 'scan', bought: iso(-40), paid: 195, used: { recorded: 1 } }];
-    clients[10].packs = [{ pkg: 'recorded', bought: iso(-12), paid: 99, used: {} }];
+    clients[0].packs = [{ pkg: 'recorded', bought: iso(-5), paid: 500, used: { recorded: 1 } }];
+    clients[1].packs = [{ pkg: 'scan', bought: iso(-40), paid: 350, used: { recorded: 1 } }];
+    clients[10].packs = [{ pkg: 'recorded', bought: iso(-12), paid: 500, used: {} }];
     enrollments.forEach(function (e) {
       var c = clients.filter(function (x) { return x.id === e.client; })[0];
       var has = function (t) { return bookings.some(function (b) { return b.service === t && b.guests[0] === c.id; }); };
       var used = {}; if (has('pkg1') || /Complete|Retest/.test(e.assess)) used.pkg1 = 1; if (has('pkg2')) used.pkg2 = 1;
-      c.packs.unshift({ pkg: 'twelve', bought: e.start, paid: 6995, used: used });
+      c.packs.unshift({ pkg: 'twelve', bought: e.start, paid: 1200, used: used });
     });
     bookings.forEach(function (b) { if (b.service === 'pkg1' || b.service === 'pkg2') b.pkg = 'twelve'; if (b.service === 'recorded' && (b.guests[0] === 'c1' || b.guests[0] === 'c2')) b.pkg = b.guests[0] === 'c1' ? 'recorded' : 'scan'; });
     clients[0].docs = [{ name: 'Blood panel (from her doctor).pdf', at: iso(-50), kind: 'Upload' }];
@@ -538,7 +538,7 @@
     ].map(function (a) { return { at: iso(a[0]), time: a[1], text: a[2] }; });
 
     return {
-      v: 16, packages: JSON.parse(JSON.stringify(PACKAGES)), forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
+      v: 17, packages: JSON.parse(JSON.stringify(PACKAGES)), forms: forms, bookcfg: bookcfg, messages: messages, clients: clients, bookings: bookings, orders: orders, emails: emails,
       campaigns: campaigns, agreements: agreements, enrollments: enrollments, inbox: inbox, activity: activity, scans: scans, protocols: protocols, batches: batches, pos: [], nextOrder: 10490, nextClient: 15,
       revenue: [3120, 3480, 3290, 3910, 4260, 4105, 4870, 5340]
     };

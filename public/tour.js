@@ -227,7 +227,7 @@
       say('Create a package', 'Name it, price it, and choose which appointments come with it.');
       await click('#pkNew', { after: 600 });
       await type('#pkName', 'Follow-up Review', 40);
-      await type('#pkPrice', '148', 80);
+      await type('#pkPrice', '165', 80);
       await type('#pkDesc', 'A one-hour review of your progress and protocol.', 16);
       await type('[data-pkcred="review60"]', '1', 80);
       await click('#pkSave', { after: 700 });
