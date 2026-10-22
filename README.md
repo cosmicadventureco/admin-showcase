@@ -209,9 +209,9 @@ PDF layout.
 
 ### Outcome (last page)
 
-The case for the build, kept off the working screens: the four tools, the
-admin hours they replace (about 22 a week to 3, estimates to confirm with the
-team), and what can be added later. The tour ends here.
+The case for the build, kept off the working screens: the seven tools in menu
+order, and what can be added later (including WPMP Course integration). The
+tour's end card links here.
 
 ### Drop-shipping always needs a person
 
