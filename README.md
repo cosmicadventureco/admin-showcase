@@ -84,22 +84,25 @@ Appointments for the week; The Outcome sits apart at the bottom of the menu):
    the client sees and a count of who has signed. Clients sign in their
    portal; the signed copy is filed in their Documents.
 
-**Client view** (`/app`): the client portal, shown either in a desktop
-browser window or on a phone (Desktop / Mobile switch). Members get four main
-sections, Client Reports, Protocols, Appointments (with Zoom links, and
-booking) and Billing (payments, what is due, receipts, card on file), plus
-Courses, Shop, Messages and Account. Waivers still to sign appear first on
-Home.
+**Client view** (`/app`): the client portal for signed-in clients, loosely
+modelled on Practice Better but simpler. It shows in a desktop browser window
+or on a phone (Desktop / Mobile switch). There is no free sign-up or
+snapshot: clients get their sign-in after booking.
 
-- **Free account:** a short questionnaire gives a wellness snapshot (no product
-  suggestions: those are what the Premium Course is for), free classes, short
-  courses from $59 to $119, and Certified Practitioner booking ($99 / 30 min,
-  +$49 for an hour). The shop opens after a consultation or with the course.
-- **Premium Course ($6,995, or 3 x $2,395):** today's protocol with tick-offs
-  and reminders, the full protocol and one-tap reorder, their scan report, the
-  course week and Thursday's live Zoom.
-- **Everyone:** a Messages screen (chat icon, top of the app) to write to their
-  practitioner. Replies come from the client's Messages tab in the Client Portal.
+- **Landing page:** five big buttons, Client Reports, Protocols, Shop,
+  Appointments and Billing & Payments, each with a one-line status (latest
+  report, next dose, orders on the way, next session, next payment). Above
+  them, any waiver still to sign; below, the next appointment with its Zoom
+  link and the latest message from their practitioner.
+- **Client Reports:** every signed-off scan report. **Protocols:** today's
+  doses to tick off, reminders and the protocol report. **Shop:** their
+  remedies (member pricing for Premium), every order approved by a person.
+  **Appointments:** upcoming sessions with Join Zoom, past sessions, booking
+  ($99 / 30 min, +$49 for an hour). **Billing & Payments:** paid so far, next
+  payment, card on file, history with receipts.
+- **More:** Messages (replies come from the Messages tab in the Client
+  Portal), course videos for Premium members, and Account.
+- Premium Course: $6,995, or 3 x $2,395.
 
 Data lives in the browser for the showcase; the real build adds a database.
 
@@ -108,10 +111,10 @@ account and two Premium members.
 
 ## Presenting
 
-- **Play Showcase** (top right): restores the sample data, then plays 10
-  chapters in about 9 minutes at normal speed: Home, Client Portal,
+- **Play Showcase** (top right): restores the sample data, then plays 9
+  chapters in about 8 minutes at normal speed: Home, Client Portal,
   Booking Calendar, Waivers & Forms, Client Report Creator, Protocol Creator,
-  The client portal, Free accounts, Shop, The Outcome.
+  The client portal, Shop, The Outcome.
   - **« 10s** (or Left arrow) goes back about 10 seconds. The app's data is put
     back the way it was and the tour replays to that point.
   - **» 1×** (or F) speeds up: 1×, 2× (about 4.5 minutes), 4×.

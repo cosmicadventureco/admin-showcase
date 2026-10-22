@@ -322,8 +322,8 @@
     { name: 'The client portal', run: async function () {
       App.ui.ca = null; App.go('client'); App.ui.ca.device = 'desktop'; App.render(); await sleep(500);
       await choose('#caAs', 'c7');
-      say('The client portal, on a computer', 'Aiko signs in and sees the four things that matter: Client Reports, Protocols, Appointments and Billing.');
-      await spot('[data-tour="ca-nav"]', 2600);
+      say('The client portal, on a computer', 'Aiko signs in to five big buttons: Client Reports, Protocols, Shop, Appointments and Billing & Payments.');
+      await spot('[data-tour="ca-tiles"]', 3400);
       var sg = document.querySelector('[data-csign]');
       if (sg) {
         say('Forms are signed right here', 'A waiver she still needs to sign comes first. The signed copy goes to her documents.');
@@ -331,7 +331,7 @@
         await type('.ca-sheet [data-ffsign]', 'Aiko Tanaka', 50);
         await click('#caSignForm', { after: 900 });
       }
-      await click('[data-ctab="reports"]', { after: 700 });
+      await click('.ca-tile[data-ctab="reports"]', { after: 700 });
       say('Client Reports', 'Every scan report once a practitioner has signed it off, including the one published a minute ago.');
       var rp = document.querySelector('[data-crep]');
       if (rp) { await click(rp, { after: 900 }); await spot('#caBody [data-tour="report"] .rr-banner', 2200); }
@@ -341,39 +341,23 @@
       await click('[data-ctab="appts"]', { after: 700 });
       say('Appointments', 'Her sessions with the Zoom link to join, and booking an open time with her practitioner.');
       await spot('[data-tour="ca-appts"]', 2800);
+      await click('[data-ctab="shop"]', { after: 700 });
+      say('Shop', 'Her remedies at member pricing. Every order still waits for a practitioner’s approval before it ships.');
+      await sleep(2400);
       await click('[data-ctab="billing"]', { after: 700 });
-      say('Billing', 'What she has paid, what is due next, receipts and her card on file.');
+      say('Billing & Payments', 'What she has paid, what is due next, receipts and her card on file.');
       await spot('[data-tour="ca-billing"]', 2800);
       await click('[data-cdev="mobile"]', { after: 900 });
       await click('[data-ctab="home"]', { after: 600 });
-      say('The same portal on her phone', 'Today’s protocol on the home screen. She ticks things off as she goes.');
+      say('The same portal on her phone', 'The same five buttons, sized for a phone, with the main sections along the bottom.');
+      await spot('[data-tour="ca-tiles"]', 2600);
+      await click('[data-ctab="protocol"]', { after: 700 });
       var t = document.querySelector('[data-ctake]');
-      if (t) await click(t, { after: 600 });
+      if (t) { say('Ticking off today’s doses', 'Reminders arrive at each time of day; she ticks each one as she takes it.'); await click(t, { after: 800 }); }
       await click('#caMsgs', { after: 700 });
       say('A direct line to her practitioner', 'She asks a question. It lands on her page in the Client Portal and on the Checklist.');
       await type('#caMsg', 'Can I take the evening drops with dinner?', 30);
       await click('#caMsgSend', { after: 1200 });
-    } },
-    { name: 'Free accounts', run: async function () {
-      App.ui.ca = null; App.go('client'); App.ui.ca.device = 'mobile'; App.render(); await sleep(600);
-      say('Anyone can start free', 'A short questionnaire gives a wellness snapshot, free classes, short courses and session booking.');
-      await click('#caStart', { after: 600 });
-      await click('[data-cgoal="sleep"]', { after: 250 });
-      await click('[data-cgoal="stress"]', { after: 400 });
-      await click('#caNext', { after: 500 });
-      await click('#caNext', { after: 500 });
-      await type('#caName', 'Sofia Martinez', 45);
-      await type('#caEmail', 'sofia.martinez@example.com', 25);
-      await click('#caConsent', { after: 250 });
-      await click('#caFinish', { after: 900 });
-      say('A snapshot, not product picks', 'Remedy recommendations are what the Premium Course is for, so free accounts get guidance and classes instead.');
-      await spot('[data-tour="ca-snapshot"]', 3400);
-      await spot('[data-tour="ca-picked"]', 2400);
-      say('The Premium Course: $6,995', 'A personal protocol built with a practitioner, the energetic scan, the course and weekly Zoom.');
-      await spot('[data-tour="ca-upsell"]', 2600);
-      await click('#caProgram', { after: 700 });
-      await sleep(3200);
-      await click('#caClose', { after: 400 });
     } },
     { name: 'Shop', run: async function () {
       App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(600);
