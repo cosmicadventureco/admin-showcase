@@ -214,7 +214,7 @@
   function newId() { var c = App.state().clients.filter(function (x) { return x.name === NEW_NAME; })[0]; return c ? c.id : 'c1'; }
 
   var CHAPTERS = [
-    { name: 'Practitioner 1/7 · Add a client', run: async function () {
+    { name: 'Practitioner · Add a client', step: '1/7', run: async function () {
       App.ui.cp = null; App.go('clients'); await sleep(500);
       say('Add a client to the portal', 'Name, email, their practitioner and, if they have bought one, a package.');
       await click('#cpAdd', { after: 500 });
@@ -225,7 +225,7 @@
       say('Her portal invite goes out on its own', 'Emma’s page opens, ready for the next steps.');
       await spot('[data-tour="clienthead"]', 2200);
     } },
-    { name: 'Practitioner 2/7 · Create a package', run: async function () {
+    { name: 'Practitioner · Create a package', step: '2/7', run: async function () {
       App.ui.pk = null; App.go('packages'); await sleep(500);
       say('Create a package', 'Name it, price it, and choose which appointments come with it.');
       await click('#pkNew', { after: 600 });
@@ -239,13 +239,13 @@
       say('Saved and on sale', 'It now shows in every client’s portal under Packages.');
       await sleep(1600);
     } },
-    { name: 'Practitioner 3/7 · Send forms & waivers', run: async function () {
+    { name: 'Practitioner · Send forms & waivers', step: '3/7', run: async function () {
       EGPortal.open(newId(), 'forms'); await sleep(500);
       say('Send forms and waivers', 'Her page lists what she needs to sign. One click sends them to her portal.');
       await spot('[data-tour="forms"]', 2200);
       await click('#cpSendAll', { after: 900 });
     } },
-    { name: 'Practitioner 4/7 · Book an appointment', run: async function () {
+    { name: 'Practitioner · Book an appointment', step: '4/7', run: async function () {
       App.ui.cal = null; App.go('calendar'); await sleep(500);
       say('Book an appointment', 'Click an open time, then pick the client and the appointment type.');
       var t = App.util.today(), pick = function () { return Array.prototype.filter.call(document.querySelectorAll('[data-cslot]'), function (e) { var p = e.getAttribute('data-cslot').split('|'); return p[0] > t && p[1] === '14:00'; })[0]; };
@@ -257,7 +257,7 @@
       say('Zoom link and invite, automatically', 'Emma is asked to confirm it in her portal.');
       await spot('[data-tour="caldetail"]', 2600);
     } },
-    { name: 'Practitioner 5/7 · Create a client report', run: async function () {
+    { name: 'Practitioner · Create a client report', step: '5/7', run: async function () {
       App.ui.sc = null; App.go('scans'); await sleep(500);
       say('Create a client report', 'Pick the client and upload the four scan files from the scanner.');
       await choose('#scClient', newId());
@@ -272,7 +272,7 @@
       await click('#scSign', { after: 300 });
       await click('#scPublish', { after: 1000 });
     } },
-    { name: 'Practitioner 6/7 · Create a protocol', run: async function () {
+    { name: 'Practitioner · Create a protocol', step: '6/7', run: async function () {
       if (document.querySelector('#scProto')) await click('#scProto', { after: 800 });
       else { App.ui.pc = { client: newId(), draft: null, mode: 'edit' }; App.go('protocols'); await sleep(500); }
       say('Create a protocol', 'Suggestions come from her report. Add them, set the times of day, and publish.');
@@ -282,7 +282,7 @@
       say('Order her remedies in one click', 'The order goes to the Shop to be approved.');
       await click('#pcOrder', { after: 1000 });
     } },
-    { name: 'Practitioner 7/7 · Approve the order', run: async function () {
+    { name: 'Practitioner · Approve the order', step: '7/7', run: async function () {
       App.ui.shopTab = 'pipeline'; App.go('shop'); await sleep(500);
       say('Approve the order in the Shop', 'Nothing reaches a supplier until someone approves it.');
       var mine = App.state().orders.filter(function (o) { return o.source === 'Protocol'; }).pop();
@@ -293,7 +293,7 @@
         await click('[data-confirm="' + mine.id + '"]', { after: 1400 });
       }
     } },
-    { name: 'Client 1/6 · Health questionnaire', run: async function () {
+    { name: 'Client · Health questionnaire', step: '1/6', run: async function () {
       App.ui.ca = null; App.go('client'); App.ui.ca.as = newId(); App.ui.ca.device = window.innerWidth >= 1000 ? 'desktop' : 'mobile'; App.render(); await sleep(600);
       say('Now Emma’s side', 'She signs in to her portal. What she needs to do is at the top.');
       await sleep(1800);
@@ -307,7 +307,7 @@
       await type('.ca-sheet [data-ff="b3"]', 'None', 60);
       await click('#caSignForm', { after: 900 });
     } },
-    { name: 'Client 2/6 · Sign a waiver', run: async function () {
+    { name: 'Client · Sign a waiver', step: '2/6', run: async function () {
       await click('[data-csign="f1"]', { after: 700 });
       say('Sign a waiver', 'She reads it, ticks to agree and types her name to sign. The signed copy is filed on her page.');
       await type('.ca-sheet [data-ff="a1"]', NEW_NAME, 40);
@@ -315,26 +315,26 @@
       await type('.ca-sheet [data-ffsign]', NEW_NAME, 45);
       await click('#caSignForm', { after: 900 });
     } },
-    { name: 'Client 3/6 · Confirm appointment', run: async function () {
+    { name: 'Client · Confirm appointment', step: '3/6', run: async function () {
       say('Confirm the appointment', 'The session booked for her is waiting for her to confirm. The Zoom link is in her portal and her email.');
       await spot('[data-tour="ca-confirm"]', 1800);
       await click('[data-cconfirm]', { after: 900 });
     } },
-    { name: 'Client 4/6 · Client reports', run: async function () {
+    { name: 'Client · Client reports', step: '4/6', run: async function () {
       await click('.ca-tile[data-ctab="reports"]', { after: 700 });
       say('Her client report', 'Published by her practitioner a moment ago, with her readings and remedies.');
       var rp = document.querySelector('[data-crep]');
       if (rp) await click(rp, { after: 800 });
       await spot('#caBody [data-tour="report"] .rr-banner', 2400);
     } },
-    { name: 'Client 5/6 · Protocol', run: async function () {
+    { name: 'Client · Protocol', step: '5/6', run: async function () {
       await click('[data-ctab="protocol"]', { after: 700 });
       say('Her protocol', 'What to take and when, with reminders. She ticks each dose off as she goes.');
       var t = document.querySelector('[data-ctake]');
       if (t) await click(t, { after: 700 });
       await spot('[data-tour="ca-protocol"]', 2000);
     } },
-    { name: 'Client 6/6 · Shop', run: async function () {
+    { name: 'Client · Shop', step: '6/6', run: async function () {
       if (!document.querySelector('[data-ctab="shop"]')) await click('[data-ctab="more"]', { after: 600 });
       await click('[data-ctab="shop"]', { after: 700 });
       say('The shop', 'Her remedies, ready to reorder. Every order is checked by her practitioner before it ships.');
@@ -430,7 +430,7 @@
       replaying = false;
       if (!snaps[chapterIndex]) snaps[chapterIndex] = { data: JSON.stringify(App.state()), ui: JSON.stringify(App.ui) };
       $('#cChap').textContent = ch.name;
-      $('#cCount').textContent = (chapterIndex + 1) + ' of ' + CHAPTERS.length;
+      $('#cCount').textContent = ch.step ? 'Step ' + ch.step : (chapterIndex + 1) + ' of ' + CHAPTERS.length;
       $('#cProg').style.width = ((chapterIndex + 1) / CHAPTERS.length * 100) + '%';
       try { await ch.run(); }
       catch (e) {
